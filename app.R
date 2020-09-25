@@ -111,7 +111,7 @@ ui <- fluidPage(
                         choices = levels(aoc_y$org_f), 
                         selected = levels(aoc_y$org_f)), # Default is to have everything selected.
                     br()), # line break
-                    mainPanel("Microplastics in Aquatic Environments Data Exploration of Toxicological EFfects",
+                    mainPanel("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects",
                       p(" "),
                       plotOutput(outputId = "ssp_plot"))), # patchwork plot
         
@@ -175,7 +175,8 @@ server <- function(input, output) {
       geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (particles/mL)")
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
     (size1 + size2)
     
