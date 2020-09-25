@@ -160,7 +160,7 @@ server <- function(input, output) {
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
       labs(x = "Concentration (mg/L)",
@@ -172,7 +172,7 @@ server <- function(input, output) {
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
       labs(x = "Concentration (particles/mL)",
