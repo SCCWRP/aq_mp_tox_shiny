@@ -56,8 +56,16 @@ ui <- fluidPage(
 #### Heili UI ####
                   tabPanel("Data Exploration", 
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
+                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
                     br(), # line break
+                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
+                    sidebarPanel("Use the options below to filter the dataset.",
+                      radioButtons(inputId = "organism_select", # multiple choice
+                        label = "Choose an organism:",
+                        choices = unique(aoc$organism.group))),
+                    mainPanel("Microplastics in Aquatic Environments Data Exploration of Toxicological EFfects",
+                      p(" "),
+                      plotOutput(outputId = "ssp_plot")), # patchwork plot
                     verbatimTextOutput(outputId = "Heili1")),
         
 #### Scott UI ####
