@@ -108,8 +108,8 @@ ui <- fluidPage(
                       br(), # line break
                       checkboxGroupInput(inputId = "organism_check", # checklist
                         label = "Organisms:",
-                        choices = list("Algae" = 1, "Annelida" = 2, "Bacteria" = 3, "Cnidaria" = 4, "Crustacea" = 5, "Echinoderm" = 6, "Fish" = 7, "Insect" = 8, "Mollusca" = 9, "Nematoda" = 10, "Plant" = 11, "Rotifera" = 12, "unavailable" = 13), 
-                        selected = 1:13),
+                        choices = levels(aoc_y$org_f), 
+                        selected = levels(aoc_y$org_f)), # Default is to have everything selected.
                     br()), # line break
                     mainPanel("Microplastics in Aquatic Environments Data Exploration of Toxicological EFfects",
                       p(" "),
@@ -145,8 +145,16 @@ server <- function(input, output) {
   
 #### Heili S ####
   
+  # Create new dataset based on widget filtering.
+  aoc_filter <- reactive({
+    aoc_y %>%
+      filter(org_f %in% input$organism_check)
+  })
+  
+  # Use newly created dataset from above to generate mg/L vs. size ggplot.
   output$ssp_plot <- renderPlot({
-    ggplot(aoc_y, aes(x = dose.mg.L, y = size_f)) +
+    aoc_filter() %>% 
+    ggplot(aes(x = dose.mg.L, y = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
@@ -157,6 +165,8 @@ server <- function(input, output) {
       theme(legend.position="none") +
       labs(x = "Concentration (mg/L)",
         y = "Size")
+    
+    #(sizeL() + sizeR())
   })
 
 #### Scott S ####
