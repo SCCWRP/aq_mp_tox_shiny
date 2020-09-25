@@ -106,9 +106,10 @@ ui <- fluidPage(
                     
                     sidebarPanel("Use the options below to filter the dataset.",
                       br(), # line break
-                      radioButtons(inputId = "organism_select", # multiple choice
+                      checkboxGroupInput(inputId = "organism_check", # checklist
                         label = "Organisms:",
-                        choices = unique(aoc_y$org_f)),
+                        choices = list("Algae" = 1, "Annelida" = 2, "Bacteria" = 3, "Cnidaria" = 4, "Crustacea" = 5, "Echinoderm" = 6, "Fish" = 7, "Insect" = 8, "Mollusca" = 9, "Nematoda" = 10, "Plant" = 11, "Rotifera" = 12, "unavailable" = 13), 
+                        selected = 1:13),
                     br()), # line break
                     mainPanel("Microplastics in Aquatic Environments Data Exploration of Toxicological EFfects",
                       p(" "),
