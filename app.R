@@ -12,6 +12,7 @@ library(patchwork)
 library(calecopal)
 library(shiny)
 library(shinythemes)
+library(scales)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -37,19 +38,22 @@ aoc_y <- aoc %>% # start with original dataset
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "<1µ",
-    size.category.noNA == 2 ~ "1µ < 10µ",
-    size.category.noNA == 3 ~ "10µ < 100µ",
-    size.category.noNA == 4 ~ "100µ < 1mm",
+    size.category.noNA == 1 ~ "<1µm",
+    size.category.noNA == 2 ~ "1µm < 10µm",
+    size.category.noNA == 3 ~ "10µm < 100µm",
+    size.category.noNA == 4 ~ "100µm < 1mm",
     size.category.noNA == 5 ~ "1mm < 5mm",
     size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("<1µ", "1µ < 10µ", "10µ < 100µ", "100µ < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+  mutate(size_f = factor(size_cat, levels = c("<1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
-  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA with 0 so we can better relabel it.
-  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) # order our different polymers.
+  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
+  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
+  # taxonomic category data tidying.
+  mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
+  mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) # order our different organisms.
 
 #### Scott Setup ####
 
@@ -103,13 +107,12 @@ ui <- fluidPage(
                     sidebarPanel("Use the options below to filter the dataset.",
                       br(), # line break
                       radioButtons(inputId = "organism_select", # multiple choice
-                        label = "Choose an organism:",
-                        choices = unique(aoc$organism.group)),
+                        label = "Organisms:",
+                        choices = unique(aoc_y$org_f)),
                     br()), # line break
                     mainPanel("Microplastics in Aquatic Environments Data Exploration of Toxicological EFfects",
                       p(" "),
-                      plotOutput(outputId = "ssp_plot")), # patchwork plot
-                    verbatimTextOutput(outputId = "Heili1")),
+                      plotOutput(outputId = "ssp_plot"))), # patchwork plot
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -140,8 +143,19 @@ server <- function(input, output) {
   })
   
 #### Heili S ####
-  output$Heili1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  
+  output$ssp_plot <- renderPlot({
+    ggplot(aoc_y, aes(x = dose.mg.L, y = size_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (mg/L)",
+        y = "Size")
   })
 
 #### Scott S ####
