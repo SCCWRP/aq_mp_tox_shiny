@@ -151,10 +151,10 @@ server <- function(input, output) {
       filter(org_f %in% input$organism_check)
   })
   
-  # Use newly created dataset from above to generate mg/L vs. size ggplot.
+  # Use newly created dataset from above to generate patchwork plot.
   output$ssp_plot <- renderPlot({
-    aoc_filter() %>% 
-    ggplot(aes(x = dose.mg.L, y = size_f)) +
+     
+    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
@@ -166,7 +166,19 @@ server <- function(input, output) {
       labs(x = "Concentration (mg/L)",
         y = "Size")
     
-    #(sizeL() + sizeR())
+    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (particles/mL)")
+    
+    (size1 + size2)
+    
   })
 
 #### Scott S ####
