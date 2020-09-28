@@ -55,13 +55,13 @@ aoc_y <- aoc %>% # start with original dataset
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "<1µm",
-    size.category.noNA == 2 ~ "1µm < 10µm",
-    size.category.noNA == 3 ~ "10µm < 100µm",
+    size.category.noNA == 1 ~ "1nm < 100nm",
+    size.category.noNA == 2 ~ "100nm < 1µm",
+    size.category.noNA == 3 ~ "1µm < 100µm",
     size.category.noNA == 4 ~ "100µm < 1mm",
     size.category.noNA == 5 ~ "1mm < 5mm",
     size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("<1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
