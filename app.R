@@ -13,6 +13,7 @@ library(calecopal)
 library(shiny)
 library(shinythemes)
 library(scales)
+library(reshape2)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -27,6 +28,22 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 #### Leah Setup ####
 
 #### Emily Setup ####
+
+#Data frame for Shape
+
+shape<-data.frame(Shape=c("cube","fiber","fragment","sphere"), N =c(100,70,79,86), Y =c(0,30,21,14))
+shape_data<-melt(shape, id.vars='Shape') 
+
+#Data frame for Size
+
+size_<-data.frame(size=c("<1um","1um < 10um","10um < 100um","100um<1mm","1mm < 5mm"), N =c(62,60,71,79,70), Y =c(38,40,29,21,30))
+size.class<-melt(size_, id.vars='size')
+
+#Data frame for Polymer 
+
+poly_<-data.frame(poly=c("BIO","EVA","LTX","PA","PC","PE","PET","PI","PLA","PMMA","PP","PS","PUR","PVC"), N =c(4,71,100,76,71,74,88,100,84,64,66,70,0,64), Y =c(96,29,0,24,29,26,12,0,16,36,34,30,100,36))
+poly.class<-melt(poly_, id.vars='poly') 
+
 
 #### Heili Setup ####
 
@@ -94,8 +111,18 @@ ui <- fluidPage(
                     br(), # line break
                     p("You can add paragraphs of text this way, each using a new p()."),
                     br(), # line break
-                    verbatimTextOutput(outputId = "Emily1")),
-        
+                    plotOutput(outputId = "shape_plot"),
+
+            br(), # line break
+            p("You can add paragraphs of text this way, each using a new p()."),
+            br(), # line break
+            plotOutput(outputId = "size_plot"),
+
+            br(), # line break
+            p("You can add paragraphs of text this way, each using a new p()."),
+            br(), # line break
+            plotOutput(outputId = "poly_plot")),
+          
 #### Heili UI ####
                   tabPanel("Data Exploration", 
                     br(), # line break
@@ -139,9 +166,79 @@ server <- function(input, output) {
   })
   
 #### Emily S ####
+  
   output$Emily1 <- renderText({
     paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
+
+  # Stacked bar chart for Shape 
+  
+  output$shape_plot <- renderPlot({ggplot(shape_data, aes(fill=variable, y=value, x=Shape)) + 
+    geom_bar(position="stack", stat="identity")+
+    geom_text(x=1,y=60, label="100%", size=3, color="white")+
+    geom_text(x=2,y=60, label="70%", size=3, color="white")+
+    geom_text(x=2,y=15, label="30%", size=3, color="white")+
+    geom_text(x=3,y=60, label="79%", size=3, color="white")+
+    geom_text(x=3,y=13, label="21%", size=3, color="white")+
+    geom_text(x=4,y=60, label="86%", size=3, color="white")+
+    geom_text(x=4,y=5, label="14%", size=3, color="white")+
+    annotate("text", x=1:4,y=90,label=c("4", "105","2,104","2,366"),size=3,color="Chocolate3")+
+    scale_fill_manual(values = cal_palette("wetland")) + 
+    labs(x = "Plastic Shape",
+         color = "System") +
+    theme_classic() +
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+
+  
+  #Stacked bar chart for Size 
+  
+  output$size_plot<-renderPlot({ggplot(size.class, aes(fill=variable, y=value, x=size))+ 
+    geom_bar(position="stack", stat="identity")+
+    scale_fill_manual(values = cal_palette("halfdome"))+
+    labs(x = "size category",
+         color = "System")+
+    annotate("text", x=1:5, y=70, label=c("62%","60%","71%","79%","70%"),size=3,color="white")+
+    annotate("text",x=1:5,y=90, label=c("373","484","1975","1773","138"),size=3,color="white")+
+    geom_text(x=1,y=15,label="38%",size=3,color="white")+
+    geom_text(x=2,y=12,label="40%",size=3,color="white")+
+    geom_text(x=3,y=20,label="29%",size=3,color="white")+
+    geom_text(x=4,y=17,label="21%",size=3,color="white")+
+    geom_text(x=5,y=20,label="30%",size=3,color="white")+
+    theme_classic()+ 
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+  #Stacked bar chart for Polymer 
+  
+  output$poly_plot<-renderPlot({ggplot(poly.class, aes(fill=variable, y=value, x=poly))+ 
+    geom_bar(position="stack", stat="identity")+
+    scale_fill_manual(values = cal_palette("tidepool"))+
+    labs(x = "Polymer Type",
+         color = "System")+
+    annotate("text",x=1,y=98,label=c("4%"),size=3,color="white")+
+    annotate("text", x=2:12, y=70, label=c("71%","100%","76%","71%","74%","88%","100%","84%","64%","66%","70%"),size=3,color="white")+
+    annotate("text",x=14,y=65,label=c("64%"),size=3,color="white")+
+    geom_text(x=1,y=50,label="96%",size=3,color="white")+
+    geom_text(x=2,y=15,label="29%",size=3,color="white")+
+    geom_text(x=4,y=12,label="24%",size=3,color="white")+
+    geom_text(x=5,y=15,label="29%",size=3,color="white")+
+    geom_text(x=6,y=15,label="26%",size=3,color="white")+
+    geom_text(x=7,y=8,label="22%%",size=3,color="white")+
+    geom_text(x=9,y=6,label="26%",size=3,color="white")+
+    geom_text(x=10,y=20,label="36%",size=3,color="white")+
+    geom_text(x=11,y=18,label="32%",size=3,color="white")+
+    geom_text(x=12,y=16,label="30%",size=3,color="white")+
+    geom_text(x=13,y=60,label="100%",size=3,color="white")+
+    geom_text(x=14,y=20,label="36%",size=3,color="white")+
+    annotate("text", x=1:14,y=85,label=c("5","7","4","54","28","1,583","175","1","39","22","224","2,164","1","304"),size=3,color="white")+
+    theme_classic()+ 
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
   
 #### Heili S ####
   
