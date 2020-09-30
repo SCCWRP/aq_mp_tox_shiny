@@ -88,31 +88,50 @@ aoc_y <- aoc %>% # start with original dataset
 
 #### Scott Setup ####
 
+# Master dataset for SSDs - copied from Heili's setup. NOTE: may be able to use Heili's setup for faster loading/
+aoc_z <- aoc %>% # start with original dataset
+  # full dataset filters.
+  filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
+  filter(environment != "Terrestrial") %>% # removes terrestrial data.
+  # size category data tidying.
+  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
+  mutate(size_cat = case_when(
+    size.category.noNA == 1 ~ "1nm < 100nm",
+    size.category.noNA == 2 ~ "100nm < 1µm",
+    size.category.noNA == 3 ~ "1µm < 100µm",
+    size.category.noNA == 4 ~ "100µm < 1mm",
+    size.category.noNA == 5 ~ "1mm < 5mm",
+    size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
+  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+  # shape category data tidying.
+  mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
+  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
+  # polymer category data tidying.
+  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
+  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
+  # taxonomic category data tidying.
+  mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
+    mutate(lvl1_cat = case_when(
+    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    lvl1 == "community" ~ "Community",
+    lvl1 == "fitness" ~ "Fitness",
+    lvl1 == "immune" ~ "Immune",
+    lvl1 == "metabolism" ~ "Metabolism",
+    lvl1 == "microbiome" ~ "Microbiome",
+    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
+  mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
+  
+  
 #SSD package depends on specific naming conventions. Prep factors accordingly below
-aoc$Conc <- aoc$dose.mg.L #must make value named 'Conc' for this package
-aoc$Species <-paste(aoc$genus,aoc$species) #must make value 'Species" (uppercase)
-aoc$Group <- as.factor(aoc$organism.group) #must make value "Group"
-aoc$Group <- fct_explicit_na(aoc$Group) #makes sure that species get counted even if they're missing a group
+aoc_z$Conc <- aoc_z$dose.mg.L #must make value named 'Conc' for this package
+aoc_z$Species <-paste(aoc_z$genus,aoc_z$species) #must make value 'Species" (uppercase)
+aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
+aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
-#Each row should be the sensitivity concentration for a separate species (i.e. min_dose)
-#make new data table with threshold effect concentrations for each species. 
-aocSSD <- aoc %>%
-  group_by(Species, Group) %>% 
-  filter(effect_f == "Y") %>% #only select observed effects
-  summarise(Conc = min(Conc)) %>% #set concentration to minimum observed effect
+aoc_z <- aoc_z %>%
   drop_na(Conc) #must drop NAs or else nothing will work
-
-
-aoc_dists <- ssd_fit_dists(aocSSD)
-ssd_gof(aoc_dists) #check the goodness of fit
-#there are multiple fitting distributions, so check which fits best
-aoc_gof <- ssd_gof(aoc_dists)
-aoc_gof[order(aoc_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
-set.seed(99)
-aoc_pred <- predict(aoc_dists, ci= TRUE) #estimates model-averaged estimates based on aicc
-#aoc_pred is a data frame of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
-
-
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
@@ -202,6 +221,29 @@ ui <- fluidPage(
                     p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082"),
                     p("Model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line"),
                     br(), #line break
+                    
+                    sidebarPanel("Use the options below to filter the dataset.",
+                                 br(), # line break
+                                 
+                                 checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
+                                                    label = "Sizes:",
+                                                    choices = levels(aoc_z$size_f), 
+                                                    selected = levels(aoc_z$size_f)), # Default is to have everything selected.
+                                 br(),
+                                 
+                                 checkboxGroupInput(inputId = "lvl1_check_ssd", # endpoint checklist
+                                                    label = "Endpoint Examined:",
+                                                    choices = levels(aoc_z$lvl1_f), 
+                                                    selected = levels(aoc_z$lvl1_f)), # Default is to have everything selected.
+                                 br(), # line break 
+                                 
+                                 checkboxGroupInput(inputId = "polyf_check_ssd", # endpoint checklist
+                                       label = "Polymers Examined:",
+                                       choices = levels(aoc_z$poly_f), 
+                                       selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
+                    br()), # line break
+
+                    
                     mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
                               br(), # line break
                               plotOutput(outputId = "SSD_plot_react")))
@@ -305,7 +347,7 @@ server <- function(input, output) {
   # Create new dataset based on widget filtering.
   aoc_filter <- reactive({
     aoc_y %>%
-      filter(org_f %in% input$organism_check) %>%
+      filter(org_f %in% input$organism_check_ssd) %>%
       filter(lvl1_f %in% input$lvl1_check)
   })
   
@@ -402,12 +444,88 @@ server <- function(input, output) {
   })
 
 #### Scott S ####
+  
+  
+  # Create new dataset based on widget filtering. Note: copied from Heili
+  aoc_filter_ssd <- reactive({
+    aoc_z %>%
+      filter(size_f %in% input$size_check_ssd) %>%
+      filter(lvl1_f %in% input$lvl1_check_ssd) %>%
+      filter(poly_f %in% input$polyf_check_ssd) %>%
+    group_by(Species, Group) %>% 
+      summarise(Conc = min(Conc)) #set concentration to minimum observed effect
+    })
+  
+  # Use newly created dataset from above to generate SSD
+  
+  #create distribution based on newly created dataset
+  aoc_dists <- reactive({
+    ssd_fit_dists(aoc_filter_ssd())
+  }) 
+  
+  # #create the table for goodness of fit, and also calculate different fits
+  # table_gof <- reactive({
+  #   ssd_gof(aoc_dists) #check the goodness of fit
+  #   gof #Print
+  #       }) 
+  
+  #Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
+    aoc_pred <- reactive({
+    set.seed(99)
+    predict(aoc_dists(), ci= TRUE) #estimates model-averaged estimates based on aicc
+  }) 
+ #  
+ #    #there are multiple fitting distributions, so check which fits best
+ # table_gof <- reactive({
+ #   ssd_gof(aoc_dists)
+ #   })
+ #  
+ 
+# aoc_gof[order(aoc_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
+  
+ 
+ 
+  
+  
+  
+  
+  
+  ##code copied from SSDshiny app
+  # # --- fit distributions
+  # fit_dist <- reactive({
+  #   req(input$selectConc)
+  #   req(input$selectDist)
+  #   req(check_fit() == "")
+  #   data <- names_data()
+  #   conc <- input$selectConc %>% make.names()
+  #   dist <- input$selectDist
+  #   x <- try(ssdtools::ssd_fit_dists(data,
+  #                                    left = conc,
+  #                                    dists = input$selectDist,
+  #                                    silent = TRUE
+  #   ), silent = TRUE)
+  #   if (inherits(x, "try-error")) {
+  #     x <- NULL
+  #   }
+  #   x
+  # })
+  # 
+  # table_gof <- reactive({
+  #   req(fit_dist())
+  #   dist <- fit_dist()
+  #   gof <- ssdtools::ssd_gof(dist) %>% dplyr::mutate_if(is.numeric, ~ signif(., 3))
+  #   names(gof) <- gsub("weight", tr("ui_2weight", trans()), names(gof))
+  #   gof
+  # })
+  
+ 
+  
   output$Scott1 <- renderText({
     paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
   output$SSD_plot_react <- renderPlot({
-    ssd_plot(aocSSD, aoc_pred, #native ggplot with SSD package
+    ssd_plot(aoc_filter_ssd(), aoc_pred(), #native ggplot with SSD package
                    color = "Group", label = "Species",
                    xlab = "Concentration (mg/L)", ribbon = TRUE) +
       scale_fill_viridis_d() + #make colors more differentiable 
