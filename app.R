@@ -55,13 +55,13 @@ aoc_y <- aoc %>% # start with original dataset
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "<1µm",
-    size.category.noNA == 2 ~ "1µm < 10µm",
-    size.category.noNA == 3 ~ "10µm < 100µm",
+    size.category.noNA == 1 ~ "1nm < 100nm",
+    size.category.noNA == 2 ~ "100nm < 1µm",
+    size.category.noNA == 3 ~ "1µm < 100µm",
     size.category.noNA == 4 ~ "100µm < 1mm",
     size.category.noNA == 5 ~ "1mm < 5mm",
     size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("<1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
@@ -70,7 +70,18 @@ aoc_y <- aoc %>% # start with original dataset
   mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
   # taxonomic category data tidying.
   mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) # order our different organisms.
+  mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
+  mutate(lvl1_cat = case_when(
+    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    lvl1 == "community" ~ "Community",
+    lvl1 == "fitness" ~ "Fitness",
+    lvl1 == "immune" ~ "Immune",
+    lvl1 == "metabolism" ~ "Metabolism",
+    lvl1 == "microbiome" ~ "Microbiome",
+    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
+  mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
 
 #### Scott Setup ####
 
@@ -133,14 +144,26 @@ ui <- fluidPage(
                     
                     sidebarPanel("Use the options below to filter the dataset.",
                       br(), # line break
-                      checkboxGroupInput(inputId = "organism_check", # checklist
+                      
+                      checkboxGroupInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:",
                         choices = levels(aoc_y$org_f), 
                         selected = levels(aoc_y$org_f)), # Default is to have everything selected.
-                    br()), # line break
+                      br(),
+                      
+                      checkboxGroupInput(inputId = "lvl1_check", # endpoint checklist
+                        label = "Endpoint Examined:",
+                        choices = levels(aoc_y$lvl1_f), 
+                        selected = levels(aoc_y$lvl1_f)), # Default is to have everything selected.
+                      br()), # line break
+                    
                     mainPanel("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects",
-                      p(" "),
-                      plotOutput(outputId = "ssp_plot"))), # patchwork plot
+                      br(), # line break
+                      plotOutput(outputId = "size_plot_react"),
+                      br(), # line break
+                      plotOutput(outputId = "shape_plot_react"),
+                      br(), # line break
+                      plotOutput(outputId = "poly_plot_react"))), 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -245,11 +268,13 @@ server <- function(input, output) {
   # Create new dataset based on widget filtering.
   aoc_filter <- reactive({
     aoc_y %>%
-      filter(org_f %in% input$organism_check)
+      filter(org_f %in% input$organism_check) %>%
+      filter(lvl1_f %in% input$lvl1_check)
   })
   
-  # Use newly created dataset from above to generate patchwork plot.
-  output$ssp_plot <- renderPlot({
+  # Use newly created dataset from above to generate patchwork plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
+  
+  output$size_plot_react <- renderPlot({
      
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
@@ -276,6 +301,66 @@ server <- function(input, output) {
         y = " ")
     
     (size1 + size2)
+    
+  })
+  
+  output$shape_plot_react <- renderPlot({
+    
+    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      scale_color_manual(values = cal_palette("chaparral3")) +
+      scale_fill_manual(values = cal_palette("chaparral3")) +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (mg/L)",
+        y = "Shape")
+    
+    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      scale_color_manual(values = cal_palette("chaparral3")) +
+      scale_fill_manual(values = cal_palette("chaparral3")) +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
+    
+    (shape1 + shape2)
+    
+  })
+  
+  output$poly_plot_react <- renderPlot({
+    
+    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
+      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (mg/L)",
+        y = "Polymer")
+    
+    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
+      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
+      theme_classic() +
+      theme(legend.position="none") +
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
+    
+    (poly1 + poly2)
     
   })
 
