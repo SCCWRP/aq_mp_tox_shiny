@@ -149,17 +149,17 @@ ui <- fluidPage(
 #### Emily UI ####
                   tabPanel("Data Overview", 
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
+                    p("Measured Effects of Different Plastic Shapes"),
                     br(), # line break
                     plotOutput(outputId = "shape_plot"),
 
             br(), # line break
-            p("You can add paragraphs of text this way, each using a new p()."),
+            p("Measured Effects of Different Plastic Sizes"),
             br(), # line break
             plotOutput(outputId = "size_plot"),
 
             br(), # line break
-            p("You can add paragraphs of text this way, each using a new p()."),
+            p("Measured Effects of Different Polymers"),
             br(), # line break
             plotOutput(outputId = "poly_plot")),
           
@@ -235,16 +235,16 @@ server <- function(input, output) {
   
   output$shape_plot <- renderPlot({ggplot(shape_data, aes(fill=variable, y=value, x=Shape)) + 
     geom_bar(position="stack", stat="identity")+
-    geom_text(x=1,y=60, label="100%", size=3, color="white")+
-    geom_text(x=2,y=60, label="70%", size=3, color="white")+
-    geom_text(x=2,y=15, label="30%", size=3, color="white")+
-    geom_text(x=3,y=60, label="79%", size=3, color="white")+
-    geom_text(x=3,y=13, label="21%", size=3, color="white")+
-    geom_text(x=4,y=60, label="86%", size=3, color="white")+
-    geom_text(x=4,y=5, label="14%", size=3, color="white")+
-    annotate("text", x=1:4,y=90,label=c("4", "105","2,104","2,366"),size=3,color="Chocolate3")+
+    geom_text(x=1,y=60, label="100%", size=4.5, color="white")+
+    geom_text(x=2,y=60, label="70%", size=4.5, color="white")+
+    geom_text(x=2,y=15, label="30%", size=4.5, color="white")+
+    geom_text(x=3,y=60, label="79%", size=4.5, color="white")+
+    geom_text(x=3,y=13, label="21%", size=4.5, color="white")+
+    geom_text(x=4,y=60, label="86%", size=4.5, color="white")+
+    geom_text(x=4,y=5, label="14%", size=4.5, color="white")+
+    annotate("text", x=1:4,y=105,label=c("4", "105","2,104","2,366"),size=4.5,color="Chocolate3")+
     scale_fill_manual(values = cal_palette("wetland")) + 
-    labs(x = "Plastic Shape",
+    labs(x = "Microplastic Shape",
          color = "System") +
     theme_classic() +
     theme(legend.position = "right")+
@@ -258,15 +258,15 @@ server <- function(input, output) {
   output$size_plot<-renderPlot({ggplot(size.class, aes(fill=variable, y=value, x=size))+ 
     geom_bar(position="stack", stat="identity")+
     scale_fill_manual(values = cal_palette("halfdome"))+
-    labs(x = "size category",
+    labs(x = "Size Category",
          color = "System")+
-    annotate("text", x=1:5, y=70, label=c("62%","60%","71%","79%","70%"),size=3,color="white")+
-    annotate("text",x=1:5,y=90, label=c("373","484","1975","1773","138"),size=3,color="white")+
-    geom_text(x=1,y=15,label="38%",size=3,color="white")+
-    geom_text(x=2,y=12,label="40%",size=3,color="white")+
-    geom_text(x=3,y=20,label="29%",size=3,color="white")+
-    geom_text(x=4,y=17,label="21%",size=3,color="white")+
-    geom_text(x=5,y=20,label="30%",size=3,color="white")+
+    annotate("text", x=1:5, y=70, label=c("62%","60%","71%","79%","70%"),size=4.5,color="white")+
+    annotate("text",x=1:5,y=105, label=c("373","484","1975","1773","138"),size=4.5,color="lightsteelblue4")+
+    geom_text(x=1,y=15,label="38%",size=4.5,color="white")+
+    geom_text(x=2,y=12,label="40%",size=4.5,color="white")+
+    geom_text(x=3,y=20,label="29%",size=4.5,color="white")+
+    geom_text(x=4,y=17,label="21%",size=4.5,color="white")+
+    geom_text(x=5,y=20,label="30%",size=4.5,color="white")+
     theme_classic()+ 
     theme(legend.position = "right")+
     labs(fill="Effect")+
@@ -279,22 +279,22 @@ server <- function(input, output) {
     scale_fill_manual(values = cal_palette("tidepool"))+
     labs(x = "Polymer Type",
          color = "System")+
-    annotate("text",x=1,y=98,label=c("4%"),size=3,color="white")+
-    annotate("text", x=2:12, y=70, label=c("71%","100%","76%","71%","74%","88%","100%","84%","64%","66%","70%"),size=3,color="white")+
-    annotate("text",x=14,y=65,label=c("64%"),size=3,color="white")+
-    geom_text(x=1,y=50,label="96%",size=3,color="white")+
-    geom_text(x=2,y=15,label="29%",size=3,color="white")+
-    geom_text(x=4,y=12,label="24%",size=3,color="white")+
-    geom_text(x=5,y=15,label="29%",size=3,color="white")+
-    geom_text(x=6,y=15,label="26%",size=3,color="white")+
-    geom_text(x=7,y=8,label="22%%",size=3,color="white")+
-    geom_text(x=9,y=6,label="26%",size=3,color="white")+
-    geom_text(x=10,y=20,label="36%",size=3,color="white")+
-    geom_text(x=11,y=18,label="32%",size=3,color="white")+
-    geom_text(x=12,y=16,label="30%",size=3,color="white")+
-    geom_text(x=13,y=60,label="100%",size=3,color="white")+
-    geom_text(x=14,y=20,label="36%",size=3,color="white")+
-    annotate("text", x=1:14,y=85,label=c("5","7","4","54","28","1,583","175","1","39","22","224","2,164","1","304"),size=3,color="white")+
+    annotate("text",x=1,y=98,label=c("4%"),size=4.5,color="white")+
+    annotate("text", x=2:12, y=70, label=c("71%","100%","76%","71%","74%","88%","100%","84%","64%","66%","70%"),size=4.5,color="white")+
+    annotate("text",x=14,y=65,label=c("64%"),size=4.5,color="white")+
+    geom_text(x=1,y=50,label="96%",size=4.5,color="white")+
+    geom_text(x=2,y=15,label="29%",size=4.5,color="white")+
+    geom_text(x=4,y=12,label="24%",size=4.5,color="white")+
+    geom_text(x=5,y=15,label="29%",size=4.5,color="white")+
+    geom_text(x=6,y=15,label="26%",size=4.5,color="white")+
+    geom_text(x=7,y=8,label="22%%",size=4.5,color="white")+
+    geom_text(x=9,y=6,label="26%",size=4.5,color="white")+
+    geom_text(x=10,y=20,label="36%",size=4.5,color="white")+
+    geom_text(x=11,y=18,label="32%",size=4.5,color="white")+
+    geom_text(x=12,y=16,label="30%",size=4.5,color="white")+
+    geom_text(x=13,y=60,label="100%",size=4.5,color="white")+
+    geom_text(x=14,y=20,label="36%",size=4.5,color="white")+
+    annotate("text", x=1:14,y=105,label=c("5","7","4","54","28","1,583","175","1","39","22","224","2,164","1","304"),size=4.5,color="darkslategray")+
     theme_classic()+ 
     theme(legend.position = "right")+
     labs(fill="Effect")+
