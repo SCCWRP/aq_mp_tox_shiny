@@ -91,11 +91,11 @@ aoc_y <- aoc %>% # start with original dataset
 ui <- fluidPage(
   
   # App title
-  titlePanel("Aquatic Microplastics Toxicology Review"),
+  titlePanel("Microplastics Toxicity Database"),
   
   # Title panel subtext
   tags$div(
-    "This is a draft website to present the results of the aquatic microplastics toxicology literature review. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
+    "This is a draft website to present the results of the aquatic microplastics toxicology database. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
   
   br(), # line break
   
@@ -108,10 +108,10 @@ ui <- fluidPage(
 #### Leah UI ####        
                   tabPanel("Introduction", 
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
+                    p(""),
                     br(), # line break
                     verbatimTextOutput(outputId = "Leah1")),
-                  tabPanel("Metadata", 
+                  tabPanel("Study List", 
                     br(), # line break
                     p("You can add paragraphs of text this way, each using a new p()."),
                     br(), # line break
