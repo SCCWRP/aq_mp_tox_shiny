@@ -14,6 +14,9 @@ library(shiny)
 library(shinythemes)
 library(scales)
 library(reshape2)
+library(ssdtools) #for species sensitivity distributions
+
+#options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -84,6 +87,32 @@ aoc_y <- aoc %>% # start with original dataset
   mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
 
 #### Scott Setup ####
+
+#SSD package depends on specific naming conventions. Prep factors accordingly below
+aoc$Conc <- aoc$dose.mg.L #must make value named 'Conc' for this package
+aoc$Species <-paste(aoc$genus,aoc$species) #must make value 'Species" (uppercase)
+aoc$Group <- as.factor(aoc$organism.group) #must make value "Group"
+aoc$Group <- fct_explicit_na(aoc$Group) #makes sure that species get counted even if they're missing a group
+
+#Each row should be the sensitivity concentration for a separate species (i.e. min_dose)
+#make new data table with threshold effect concentrations for each species. 
+aocSSD <- aoc %>%
+  group_by(Species, Group) %>% 
+  filter(effect_f == "Y") %>% #only select observed effects
+  summarise(Conc = min(Conc)) %>% #set concentration to minimum observed effect
+  drop_na(Conc) #must drop NAs or else nothing will work
+
+
+aoc_dists <- ssd_fit_dists(aocSSD)
+ssd_gof(aoc_dists) #check the goodness of fit
+#there are multiple fitting distributions, so check which fits best
+aoc_gof <- ssd_gof(aoc_dists)
+aoc_gof[order(aoc_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
+set.seed(99)
+aoc_pred <- predict(aoc_dists, ci= TRUE) #estimates model-averaged estimates based on aicc
+#aoc_pred is a data frame of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
+
+
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
@@ -168,9 +197,17 @@ ui <- fluidPage(
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
+                    p("The figure below displays minimum observed effect concentrations for a range of species (i.e. species sensitivity distribution)"),
                     br(), # line break
-                    verbatimTextOutput(outputId = "Scott1"))
+                    p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082"),
+                    p("Model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line"),
+                    br(), #line break
+                    mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
+                              br(), # line break
+                              plotOutput(outputId = "SSD_plot_react")))
+                    
+
+#following three parentheses close out UI. Do not delete. 
         )
   )
   
@@ -369,8 +406,17 @@ server <- function(input, output) {
     paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
+  output$SSD_plot_react <- renderPlot({
+    ssd_plot(aocSSD, aoc_pred, #native ggplot with SSD package
+                   color = "Group", label = "Species",
+                   xlab = "Concentration (mg/L)", ribbon = TRUE) +
+      scale_fill_viridis_d() + #make colors more differentiable 
+      scale_colour_viridis_d() + #make colors more differentiable 
+      expand_limits(x = 5000) + # to ensure the species labels fit
+            ggtitle("Species Sensitivity for Microplastics")
+      })
   
-  }
+  } #Closes out server
 
 #### Full App ####
 shinyApp(ui = ui, server = server)
