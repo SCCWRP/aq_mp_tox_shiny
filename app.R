@@ -15,8 +15,9 @@ library(shinythemes)
 library(scales)
 library(reshape2)
 library(ssdtools) #for species sensitivity distributions
+library(DT) #to build HTML data tables
 
-#options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
+options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -88,7 +89,7 @@ aoc_y <- aoc %>% # start with original dataset
 
 #### Scott Setup ####
 
-# Master dataset for SSDs - copied from Heili's setup. NOTE: may be able to use Heili's setup for faster loading/
+# Master dataset for SSDs - copied from Heili's setup. NOTE: may be able to use Heili's setup for faster loading/less redundandcy
 aoc_z <- aoc %>% # start with original dataset
   # full dataset filters.
   filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
@@ -216,13 +217,10 @@ ui <- fluidPage(
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
                     br(), # line break
-                    p("The figure below displays minimum observed effect concentrations for a range of species (i.e. species sensitivity distribution)"),
+                    p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
-                    p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082"),
-                    p("Model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line"),
-                    br(), #line break
                     
-                    sidebarPanel("Use the options below to filter the dataset.",
+                    sidebarPanel("Use the options below to filter the dataset. NOTE: changes may take a long time to appear",
                                  br(), # line break
                                  
                                  checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
@@ -246,7 +244,24 @@ ui <- fluidPage(
                     
                     mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
                               br(), # line break
-                              plotOutput(outputId = "SSD_plot_react")))
+                              br(),
+                              p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
+                              br(),
+                              plotOutput(outputId = "autoplot_dists_react"),
+                              p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal). Given multiple distributions, choose the best fitting distribution."),
+                              p("Goodness of Fit Table"),
+                              DT::dataTableOutput(outputId = "table_gof_react"), #using DT package provides better functionality
+                              p("KEY:"),
+                              p("ad = Anderson-Darling statistic; ks = Kolmogorov-Smirnov statistic; cvm = Cramer-von Mises statistic; aic = Akaike's Information Criterion; aicc = Akaike's Information Criterion corrected for sample size; bic = Bayesian Information Criterion"),
+                              p("Following Burnham and Anderson (2002) we recommend the aicc for model selection. The best fitting model is that with the lowest aicc (indicated by the model with a delta value in the goodness of fit table). For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
+                              br(),
+                              p("Species Sensitivity Distribution"),
+                              plotOutput(outputId = "SSD_plot_react"),
+                              br(),
+                              p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
+                              br(),
+                              p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
+                              ))
                     
 
 #following three parentheses close out UI. Do not delete. 
@@ -347,7 +362,7 @@ server <- function(input, output) {
   # Create new dataset based on widget filtering.
   aoc_filter <- reactive({
     aoc_y %>%
-      filter(org_f %in% input$organism_check_ssd) %>%
+      filter(org_f %in% input$organism_check) %>%
       filter(lvl1_f %in% input$lvl1_check)
   })
   
@@ -459,71 +474,31 @@ server <- function(input, output) {
   # Use newly created dataset from above to generate SSD
   
   #create distribution based on newly created dataset
-  aoc_dists <- reactive({
+  fit_dists <- reactive({
     ssd_fit_dists(aoc_filter_ssd())
   }) 
   
-  # #create the table for goodness of fit, and also calculate different fits
-  # table_gof <- reactive({
-  #   ssd_gof(aoc_dists) #check the goodness of fit
-  #   gof #Print
-  #       }) 
+  #create an autoplot of the distributions
+  output$autoplot_dists_react <- renderPlot({
+    autoplot(fit_dists())
+  })
   
   #Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
     aoc_pred <- reactive({
     set.seed(99)
-    predict(aoc_dists(), ci= TRUE) #estimates model-averaged estimates based on aicc
+    predict(fit_dists(), ci= TRUE) #estimates model-averaged estimates based on aicc
   }) 
- #  
- #    #there are multiple fitting distributions, so check which fits best
- # table_gof <- reactive({
- #   ssd_gof(aoc_dists)
- #   })
- #  
  
-# aoc_gof[order(aoc_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
-  
- 
- 
-  
-  
-  
-  
-  
-  ##code copied from SSDshiny app
-  # # --- fit distributions
-  # fit_dist <- reactive({
-  #   req(input$selectConc)
-  #   req(input$selectDist)
-  #   req(check_fit() == "")
-  #   data <- names_data()
-  #   conc <- input$selectConc %>% make.names()
-  #   dist <- input$selectDist
-  #   x <- try(ssdtools::ssd_fit_dists(data,
-  #                                    left = conc,
-  #                                    dists = input$selectDist,
-  #                                    silent = TRUE
-  #   ), silent = TRUE)
-  #   if (inherits(x, "try-error")) {
-  #     x <- NULL
-  #   }
-  #   x
-  # })
-  # 
-  # table_gof <- reactive({
-  #   req(fit_dist())
-  #   dist <- fit_dist()
-  #   gof <- ssdtools::ssd_gof(dist) %>% dplyr::mutate_if(is.numeric, ~ signif(., 3))
-  #   names(gof) <- gsub("weight", tr("ui_2weight", trans()), names(gof))
-  #   gof
-  # })
-  
- 
-  
-  output$Scott1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  #Render table for goodness of fit
+  output$table_gof_react <- DT::renderDataTable({
+    req(fit_dists())
+    gof <- ssd_gof(fit_dists()) %>%
+      mutate_if(is.numeric, ~ signif(., 3)) %>%
+      arrange(delta) #orders by delta of fit
+    gof
   })
-  
+
+#Create the plot for species sensitivity distribution
   output$SSD_plot_react <- renderPlot({
     ssd_plot(aoc_filter_ssd(), aoc_pred(), #native ggplot with SSD package
                    color = "Group", label = "Species",
@@ -534,7 +509,7 @@ server <- function(input, output) {
             ggtitle("Species Sensitivity for Microplastics")
       })
   
-  } #Closes out server
+  } #Server end
 
 #### Full App ####
 shinyApp(ui = ui, server = server)
