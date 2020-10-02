@@ -91,7 +91,7 @@ aoc_y <- aoc %>% # start with original dataset
 ui <- fluidPage(
   
   # App title
-  titlePanel("Microplastics Toxicity Database"),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div(
@@ -107,30 +107,88 @@ ui <- fluidPage(
 
 #### Leah UI ####        
                   tabPanel("Introduction", 
+                    
+                    #Place holder for a cute logo someday? 
+                                  
                     br(), # line break
-                    p(""),
-                    br(), # line break
+                    h3("What is the Microplastics Toxicity Database?", align = "center", style = "color:darkcyan"),
+                    
+                    strong(p("The Microplastics Toxicity Database is a repository for microplastics 
+                      toxicity data pertaining to both human and aquatic organism health.")), 
+                    
+                    p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
+                      an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
+                      studies focused on the effects of microplastics are being rapidly published and 
+                      often vary in quality. Because of this, it is challenging to identify sensitive biological 
+                      endpoints and prioritize potential drivers of microplastic toxicity."),
+                    
+                    p("This web application is intended to meet these challenges
+                    by allowing users to explore toxicity 
+                    data using an intuitive interface while retaining the diversity and complexity inherent 
+                    to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
+                    toxicity data pertaining to microplastics and associated chemicals and organized into 5 
+                    main categories:"),
+                    
+                    img(src = "data_categories_image.png", height = 400, width = 400, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    br(),
+                    p("This web application allows users to visualize the data while selecting for specific 
+                      parameters within the data categories above. For instance, a user may want to visualize 
+                      how polymer type impacts the growth of early life stage fish that were exposed to 
+                      microplastics for 7 days or longer."),
+                    
+                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center", style = "color:darkcyan"),
+                    
+                    p("The database and application tools have been created for use by the participants of the ", a(href = "https://www.sccwrp.org/about/
+                      research-areas/additional-research-areas/
+                      trash-pollution/microplastics-health-effects-webinar-series/", 'Microplastics Health Effects Workshop', 
+                      .noWS = "outside"),
+                      ". The purpose of this workshop is to identify the primary pathways by which microplastics affect biota, prioritize 
+                      the microplastics characteristics (e.g., size, shape, polymer) that are of greatest biological concern, and identify 
+                      critical thresholds for each at which those biological effects become pronounced. These findings will 
+                      be used directly by the state of California to fulfill ", a(href = "https://www.sccwrp.org/about/research-areas/
+                      additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
+                      .noWS = "outside")," regarding the
+                      management of microplastics in drinking water and the aquatic environment."),
+                   
+                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center", style = "color:darkcyan"),
+                    
+                    p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
+                      More specific instructions may be found within each section."),
+                    
+                    #h3("Contributors", align = "center", style = "color:darkcyan"),
+                    
+                    h3("Contact", align = "center", style = "color:darkcyan"),
+                    p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    
                     verbatimTextOutput(outputId = "Leah1")),
+                  
+
                   tabPanel("Study List", 
                     br(), # line break
                     p("You can add paragraphs of text this way, each using a new p()."),
                     br(), # line break
                     verbatimTextOutput(outputId = "Leah2")),
+
+                  tabPanel("Data Category Descriptions", 
+                    br(), # line break
+                    p("You can add paragraphs of text this way, each using a new p()."),
+                    br(), # line break
+                    verbatimTextOutput(outputId = "Leah3")),
         
 #### Emily UI ####
                   tabPanel("Data Overview", 
                     br(), # line break
-                    p("Measured Effects of Different Plastic Shapes"),
+                    h3("Measured Effects of Different Shapes", align = "center", style = "color:darkcyan"),
                     br(), # line break
                     plotOutput(outputId = "shape_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Plastic Sizes"),
+            h3("Measured Effects of Different Size Categories", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "size_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Polymers"),
+            h3("Measured Effects of Different Polymers", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "poly_plot")),
           
@@ -181,11 +239,15 @@ server <- function(input, output) {
   
 #### Leah S ####
   output$Leah1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
   output$Leah2 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  })
+  
+  output$Leah3 <- renderText({
+    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
 #### Emily S ####
