@@ -203,26 +203,28 @@ ui <- fluidPage(
                     
                     p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
-                    
-                    #h3("Contributors", align = "center", style = "color:darkcyan"),
-                    
+                  
                     h3("Contact", align = "center", style = "color:darkcyan"),
+                    
                     p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
                     
+                    br(),
+                    
+                    img(src = "sccwrp.png", height = 100, width = 100, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    
+                    br(), 
+                    
                     verbatimTextOutput(outputId = "Leah1")),
-                  
-
-                  tabPanel("Study List", 
-                    br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
+                
+                  tabPanel("Resources", 
+                           
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+                           
                     verbatimTextOutput(outputId = "Leah2")),
-
-                  tabPanel("Data Category Descriptions", 
-                    br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
-                    verbatimTextOutput(outputId = "Leah3")),
         
 #### Emily UI ####
                   tabPanel("Data Overview", 
@@ -337,11 +339,7 @@ server <- function(input, output) {
   })
   
   output$Leah2 <- renderText({
-    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
-  })
   
-  output$Leah3 <- renderText({
-    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
 #### Emily S ####
