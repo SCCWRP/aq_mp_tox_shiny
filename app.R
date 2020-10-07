@@ -14,6 +14,10 @@ library(shiny)
 library(shinythemes)
 library(scales)
 library(reshape2)
+library(ssdtools) #for species sensitivity distributions
+library(DT) #to build HTML data tables
+
+options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -109,17 +113,62 @@ aoc_y <- aoc %>% # start with original dataset
 
 #### Scott Setup ####
 
+# Master dataset for SSDs - copied from Heili's setup. NOTE: may be able to use Heili's setup for faster loading/less redundandcy
+aoc_z <- aoc %>% # start with original dataset
+  # full dataset filters.
+  filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
+  filter(environment != "Terrestrial") %>% # removes terrestrial data.
+  # size category data tidying.
+  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
+  mutate(size_cat = case_when(
+    size.category.noNA == 1 ~ "1nm < 100nm",
+    size.category.noNA == 2 ~ "100nm < 1µm",
+    size.category.noNA == 3 ~ "1µm < 100µm",
+    size.category.noNA == 4 ~ "100µm < 1mm",
+    size.category.noNA == 5 ~ "1mm < 5mm",
+    size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
+  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+  # shape category data tidying.
+  mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
+  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
+  # polymer category data tidying.
+  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
+  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
+  # taxonomic category data tidying.
+  mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
+    mutate(lvl1_cat = case_when(
+    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    lvl1 == "community" ~ "Community",
+    lvl1 == "fitness" ~ "Fitness",
+    lvl1 == "immune" ~ "Immune",
+    lvl1 == "metabolism" ~ "Metabolism",
+    lvl1 == "microbiome" ~ "Microbiome",
+    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
+  mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
+  
+  
+#SSD package depends on specific naming conventions. Prep factors accordingly below
+aoc_z$Conc <- aoc_z$dose.mg.L #must make value named 'Conc' for this package
+aoc_z$Species <-paste(aoc_z$genus,aoc_z$species) #must make value 'Species" (uppercase)
+aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
+aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
+
+aoc_z <- aoc_z %>%
+  drop_na(Conc) #must drop NAs or else nothing will work
+
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
 ui <- fluidPage(
   
   # App title
-  titlePanel("Aquatic Microplastics Toxicology Review"),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div(
-    "This is a draft website to present the results of the aquatic microplastics toxicology literature review. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
+    "This is a draft website to present the results of the aquatic microplastics toxicology database. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
   
   br(), # line break
   
@@ -131,30 +180,90 @@ ui <- fluidPage(
 
 #### Leah UI ####        
                   tabPanel("Introduction", 
+                    
+                    #Place holder for a cute logo someday? 
+                                  
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
+                    h3("What is the Microplastics Toxicity Database?", align = "center", style = "color:darkcyan"),
+                    
+                    strong(p("The Microplastics Toxicity Database is a repository for microplastics 
+                      toxicity data pertaining to both human and aquatic organism health.")), 
+                    
+                    p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
+                      an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
+                      studies focused on the effects of microplastics are being rapidly published and 
+                      often vary in quality. Because of this, it is challenging to identify sensitive biological 
+                      endpoints and prioritize potential drivers of microplastic toxicity."),
+                    
+                    p("This web application is intended to meet these challenges
+                    by allowing users to explore toxicity 
+                    data using an intuitive interface while retaining the diversity and complexity inherent 
+                    to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
+                    toxicity data pertaining to microplastics and associated chemicals and organized into 5 
+                    main categories:"),
+                    
+                    img(src = "data_categories_image.png", height = 400, width = 400, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    br(),
+                    p("This web application allows users to visualize the data while selecting for specific 
+                      parameters within the data categories above. For instance, a user may want to visualize 
+                      how polymer type impacts the growth of early life stage fish that were exposed to 
+                      microplastics for 7 days or longer."),
+                    
+                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center", style = "color:darkcyan"),
+                    
+                    p("The database and application tools have been created for use by the participants of the ", a(href = "https://www.sccwrp.org/about/
+                      research-areas/additional-research-areas/
+                      trash-pollution/microplastics-health-effects-webinar-series/", 'Microplastics Health Effects Workshop', 
+                      .noWS = "outside"),
+                      ". The purpose of this workshop is to identify the primary pathways by which microplastics affect biota, prioritize 
+                      the microplastics characteristics (e.g., size, shape, polymer) that are of greatest biological concern, and identify 
+                      critical thresholds for each at which those biological effects become pronounced. These findings will 
+                      be used directly by the state of California to fulfill ", a(href = "https://www.sccwrp.org/about/research-areas/
+                      additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
+                      .noWS = "outside")," regarding the
+                      management of microplastics in drinking water and the aquatic environment."),
+                   
+                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center", style = "color:darkcyan"),
+                    
+                    p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
+                      More specific instructions may be found within each section."),
+                  
+                    h3("Contact", align = "center", style = "color:darkcyan"),
+                    
+                    p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    
+                    br(),
+                    
+                    img(src = "sccwrp.png", height = 100, width = 100, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    
+                    br(), 
+                    
                     verbatimTextOutput(outputId = "Leah1")),
-                  tabPanel("Metadata", 
-                    br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
+                
+                  tabPanel("Resources", 
+                           
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+                           
                     verbatimTextOutput(outputId = "Leah2")),
         
 #### Emily UI ####
                   tabPanel("Data Overview", 
                     br(), # line break
-                    p("Measured Effects of Different Plastic Shapes"),
+                    h3("Measured Effects of Different Shapes", align = "center", style = "color:darkcyan"),
                     br(), # line break
                     plotOutput(outputId = "shape_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Plastic Sizes"),
+            h3("Measured Effects of Different Size Categories", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "size_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Polymers"),
+            h3("Measured Effects of Different Polymers", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "poly_plot")),
 
@@ -203,9 +312,54 @@ ui <- fluidPage(
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
+                    p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
-                    verbatimTextOutput(outputId = "Scott1"))
+                    
+                    sidebarPanel("Use the options below to filter the dataset. NOTE: changes may take a long time to appear",
+                                 br(), # line break
+                                 
+                                 checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
+                                                    label = "Sizes:",
+                                                    choices = levels(aoc_z$size_f), 
+                                                    selected = levels(aoc_z$size_f)), # Default is to have everything selected.
+                                 br(),
+                                 
+                                 checkboxGroupInput(inputId = "lvl1_check_ssd", # endpoint checklist
+                                                    label = "Endpoint Examined:",
+                                                    choices = levels(aoc_z$lvl1_f), 
+                                                    selected = levels(aoc_z$lvl1_f)), # Default is to have everything selected.
+                                 br(), # line break 
+                                 
+                                 checkboxGroupInput(inputId = "polyf_check_ssd", # endpoint checklist
+                                       label = "Polymers Examined:",
+                                       choices = levels(aoc_z$poly_f), 
+                                       selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
+                    br()), # line break
+
+                    
+                    mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
+                              br(), # line break
+                              br(),
+                              p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
+                              br(),
+                              plotOutput(outputId = "autoplot_dists_react"),
+                              p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal). Given multiple distributions, choose the best fitting distribution."),
+                              p("Goodness of Fit Table"),
+                              DT::dataTableOutput(outputId = "table_gof_react"), #using DT package provides better functionality
+                              p("KEY:"),
+                              p("ad = Anderson-Darling statistic; ks = Kolmogorov-Smirnov statistic; cvm = Cramer-von Mises statistic; aic = Akaike's Information Criterion; aicc = Akaike's Information Criterion corrected for sample size; bic = Bayesian Information Criterion"),
+                              p("Following Burnham and Anderson (2002) we recommend the aicc for model selection. The best fitting model is that with the lowest aicc (indicated by the model with a delta value in the goodness of fit table). For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
+                              br(),
+                              p("Species Sensitivity Distribution"),
+                              plotOutput(outputId = "SSD_plot_react"),
+                              br(),
+                              p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
+                              br(),
+                              p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
+                              ))
+                    
+
+#following three parentheses close out UI. Do not delete. 
         )
   )
   
@@ -216,11 +370,11 @@ server <- function(input, output) {
   
 #### Leah S ####
   output$Leah1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
   output$Leah2 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  
   })
   
 #### Emily S ####
@@ -493,12 +647,57 @@ server <- function(input, output) {
   })
 
 #### Scott S ####
-  output$Scott1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  
+  
+  # Create new dataset based on widget filtering. Note: copied from Heili
+  aoc_filter_ssd <- reactive({
+    aoc_z %>%
+      filter(size_f %in% input$size_check_ssd) %>%
+      filter(lvl1_f %in% input$lvl1_check_ssd) %>%
+      filter(poly_f %in% input$polyf_check_ssd) %>%
+    group_by(Species, Group) %>% 
+      summarise(Conc = min(Conc)) #set concentration to minimum observed effect
+    })
+  
+  # Use newly created dataset from above to generate SSD
+  
+  #create distribution based on newly created dataset
+  fit_dists <- reactive({
+    ssd_fit_dists(aoc_filter_ssd())
+  }) 
+  
+  #create an autoplot of the distributions
+  output$autoplot_dists_react <- renderPlot({
+    autoplot(fit_dists())
   })
   
+  #Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
+    aoc_pred <- reactive({
+    set.seed(99)
+    predict(fit_dists(), ci= TRUE) #estimates model-averaged estimates based on aicc
+  }) 
+ 
+  #Render table for goodness of fit
+  output$table_gof_react <- DT::renderDataTable({
+    req(fit_dists())
+    gof <- ssd_gof(fit_dists()) %>%
+      mutate_if(is.numeric, ~ signif(., 3)) %>%
+      arrange(delta) #orders by delta of fit
+    gof
+  })
+
+#Create the plot for species sensitivity distribution
+  output$SSD_plot_react <- renderPlot({
+    ssd_plot(aoc_filter_ssd(), aoc_pred(), #native ggplot with SSD package
+                   color = "Group", label = "Species",
+                   xlab = "Concentration (mg/L)", ribbon = TRUE) +
+      scale_fill_viridis_d() + #make colors more differentiable 
+      scale_colour_viridis_d() + #make colors more differentiable 
+      expand_limits(x = 5000) + # to ensure the species labels fit
+            ggtitle("Species Sensitivity for Microplastics")
+      })
   
-  }
+  } #Server end
 
 #### Full App ####
 shinyApp(ui = ui, server = server)
