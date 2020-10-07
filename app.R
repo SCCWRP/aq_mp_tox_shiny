@@ -16,8 +16,10 @@ library(scales)
 library(reshape2)
 library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
+library(plotly) #to make plots interactive
+#library(htmlwidgets) #to animate time-series. May not be necessary
 
-options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
+#options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -52,10 +54,9 @@ poly.class<-melt(poly_, id.vars='poly')
 #### Heili Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
-aoc_y <- aoc %>% # start with original dataset
+aoc_x <- aoc %>% # start with original dataset
   # full dataset filters.
   filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
-  filter(environment != "Terrestrial") %>% # removes terrestrial data.
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_cat = case_when(
@@ -87,52 +88,26 @@ aoc_y <- aoc %>% # start with original dataset
     lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
   mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
 
+#filter out terrestrial data
+aoc_y <- aoc_x %>% 
+filter(environment != "Terrestrial") # removes terrestrial data.
+
 #### Scott Setup ####
 
-# Master dataset for SSDs - copied from Heili's setup. NOTE: may be able to use Heili's setup for faster loading/less redundandcy
-aoc_z <- aoc %>% # start with original dataset
-  # full dataset filters.
-  filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
-  filter(environment != "Terrestrial") %>% # removes terrestrial data.
-  # size category data tidying.
-  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
-  mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "1nm < 100nm",
-    size.category.noNA == 2 ~ "100nm < 1µm",
-    size.category.noNA == 3 ~ "1µm < 100µm",
-    size.category.noNA == 4 ~ "100µm < 1mm",
-    size.category.noNA == 5 ~ "1mm < 5mm",
-    size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
-  # shape category data tidying.
-  mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
-  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
-  # polymer category data tidying.
-  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
-  # taxonomic category data tidying.
-  mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
-    mutate(lvl1_cat = case_when(
-    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
-    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
-    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
-    lvl1 == "community" ~ "Community",
-    lvl1 == "fitness" ~ "Fitness",
-    lvl1 == "immune" ~ "Immune",
-    lvl1 == "metabolism" ~ "Metabolism",
-    lvl1 == "microbiome" ~ "Microbiome",
-    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
-  mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
-  
-  
+# Master dataset for SSDs
+aoc_z <- aoc_x %>% # start with Heili's altered dataset (no filtration for terrestrial data)
+  # environment category data tidying.
+  mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
+  #must drop NAs or else nothing will work 
+  drop_na(dose.mg.L) 
+
 #SSD package depends on specific naming conventions. Prep factors accordingly below
 aoc_z$Conc <- aoc_z$dose.mg.L #must make value named 'Conc' for this package
 aoc_z$Species <-paste(aoc_z$genus,aoc_z$species) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
-aoc_z <- aoc_z %>%
-  drop_na(Conc) #must drop NAs or else nothing will work
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
@@ -223,6 +198,12 @@ ui <- fluidPage(
                     sidebarPanel("Use the options below to filter the dataset. NOTE: changes may take a long time to appear",
                                  br(), # line break
                                  
+                                 checkboxGroupInput(inputId = "env_check_ssd", # environment checklist
+                                                    label = "Environment:",
+                                                    choices = levels(aoc_z$env_f), 
+                                                    selected = levels(aoc_z$env_f)), # Default is to have everything selected.
+                                 br(),
+                                 
                                  checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
                                                     label = "Sizes:",
                                                     choices = levels(aoc_z$size_f), 
@@ -239,6 +220,10 @@ ui <- fluidPage(
                                        label = "Polymers Examined:",
                                        choices = levels(aoc_z$poly_f), 
                                        selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
+                                 br(), #line break
+                                 
+                                 actionButton("SSDButton", "Submit"),
+                    
                     br()), # line break
 
                     
@@ -462,14 +447,21 @@ server <- function(input, output) {
   
   
   # Create new dataset based on widget filtering. Note: copied from Heili
+  # dependency on input$SSDButton
+  
+  #eventReactive(input$SSDButton, {
+               
   aoc_filter_ssd <- reactive({
+    
     aoc_z %>%
+      filter(env_f %in% input$env_check_ssd) %>%
       filter(size_f %in% input$size_check_ssd) %>%
       filter(lvl1_f %in% input$lvl1_check_ssd) %>%
       filter(poly_f %in% input$polyf_check_ssd) %>%
     group_by(Species, Group) %>% 
       summarise(Conc = min(Conc)) #set concentration to minimum observed effect
     })
+  #})
   
   # Use newly created dataset from above to generate SSD
   
@@ -515,3 +507,4 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 # End of R Shiny app script.
+
