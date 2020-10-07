@@ -275,10 +275,10 @@ ui <- fluidPage(
             br(), # line break
             p("Measured Effects of Life Stages"),
             br(), # line break
-            plotOutput(outputId = "life_plot"))
+            plotOutput(outputId = "life_plot")),
 
             
-#### Heili UI ####
+      #### Heili UI ####
                   tabPanel("Data Exploration", 
                     br(), # line break
                     p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
@@ -361,9 +361,6 @@ ui <- fluidPage(
 
 #following three parentheses close out UI. Do not delete. 
         )
-  )
-  
-  )
 
 #### Server ####
 server <- function(input, output) {
