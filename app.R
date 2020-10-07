@@ -42,8 +42,32 @@ size.class<-melt(size_, id.vars='size')
 #Data frame for Polymer 
 
 poly_<-data.frame(poly=c("BIO","EVA","LTX","PA","PC","PE","PET","PI","PLA","PMMA","PP","PS","PUR","PVC"), N =c(4,71,100,76,71,74,88,100,84,64,66,70,0,64), Y =c(96,29,0,24,29,26,12,0,16,36,34,30,100,36))
-poly.class<-melt(poly_, id.vars='poly') 
+poly.class<-melt(poly_, id.vars='poly')
 
+#Data frame for taxonomic group
+
+tax<-data.frame(taxa=c("Algae","Annelida","Bacterium","Cnidaria","Crustacea","Echinoderm","Fish","Insect","Mollusca","Nematoda","Plant","Rotifera"), N =c(56,79,32,72,70,84,74,41,79,20,73,54), Y =c(44,21,68,28,30,16,26,59,21,80,27,46))
+tax.class<-melt(tax, id.vars='taxa') 
+
+# Data frame for lvl 
+
+lvl_1<-data.frame(lvl1=c("Alimentary/excretory","Behavioral/sense/neuro","Circulatory.respiratory","Community","Fitness","Immune","Metabolism","Microbiome","Stress"), N =c(67,70,70,97,97,67,66,67,62), Y =c(33,30,30,3,3,33,34,33,38))
+lvl1.class<-melt(lvl_1, id.vars='lvl1') 
+
+# Data frame for life stage 
+
+life_1<-data.frame(life=c("Early","Juvenile","Adult"), N =c(74,70,76), Y =c(26,30,24))
+life.class<-melt(life_1, id.vars='life') 
+
+# Data frame for vivo graph
+
+vivo_1<-data.frame(vivo=c("Invitro","Invivo"), N =c(19,72), Y =c(81,28))
+vivo.class<-melt(vivo_1, id.vars='vivo') 
+
+# Data frame for exposure route 
+
+route_1<-data.frame(route=c("Food","Maternal.Transfer","Sediment","Water"), N =c(82,60,79,70), Y =c(18,40,21,30))
+route.class<-melt(route_1, id.vars='route') 
 
 #### Heili Setup ####
 
@@ -133,7 +157,18 @@ ui <- fluidPage(
             p("Measured Effects of Different Polymers"),
             br(), # line break
             plotOutput(outputId = "poly_plot")),
-          
+
+            br(), # line break
+            p("Measured Effects by Taxonomic Group"),
+            br(), # line break
+            plotOutput(outputId = "tax_plot")),
+
+            br(), # line break
+            p("Measured Effects of Life Stages"),
+            br(), # line break
+            plotOutput(outputId = "life_plot"))
+
+            
 #### Heili UI ####
                   tabPanel("Data Exploration", 
                     br(), # line break
@@ -262,6 +297,99 @@ server <- function(input, output) {
     theme(legend.position = "right")+
     labs(fill="Effect")+
     theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+    # Stacked bar for Taxonomic level 
+  
+  output$tax_plot<-renderPlot({ggplot(tax.class, aes(fill=variable, y=value, x=taxa))+ 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_manual(values = cal_palette("dudleya"))+
+      labs(x = "Taxonomic Group",
+           color = "System")+
+      annotate("text", x=1:12,y=12,label=c("44%","21%","68%","28%","30%","16%","26%","59%","21%","80%","27%","46%"),size=4.5,color="darkolivegreen")+
+      geom_text(x=1,y=60,label="56%",size=4.5,color="white")+
+      geom_text(x=2,y=60,label="79%",size=4.5,color="white")+
+      geom_text(x=3,y=85,label="32%",size=4.5,color="white")+
+      geom_text(x=4,y=60,label="72%",size=4.5,color="white")+
+      geom_text(x=5,y=60,label="70%",size=4.5,color="white")+
+      geom_text(x=6,y=60,label="84%",size=4.5,color="white")+
+      geom_text(x=7,y=60,label="74%",size=4.5,color="white")+
+      geom_text(x=8,y=85,label="41%",size=4.5,color="white")+
+      geom_text(x=9,y=60,label="79%",size=4.5,color="white")+
+      geom_text(x=10,y=90,label="20%",size=4.5,color="white")+
+      geom_text(x=11,y=60,label="73%",size=4.5,color="white")+
+      geom_text(x=12,y=60,label="54%",size=4.5,color="white")+
+      annotate("text",x=1:12,y=105,label=c("355","243","84","80","1151","65","1584","45","1011","63","33","80"),size=4.5,color="goldenrod4")+
+      theme_classic()+ 
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+      # Stacked bar chart lvl_1
+  
+  output$lvl1_plot<-renderPlot({ggplot(lvl1.class, aes(fill=variable, y=value, x=lvl1))+ 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_manual(values = cal_palette("vermillion"))+
+      labs(x = "Endpoint Category",
+           color = "System")+
+      annotate("text", x=1:9,y=70,label=c("67%","70%","70%","97%","97%","67%","66%","67%","62%"),size=4.5,color="white")+
+      annotate("text",x=1:3,y=15,label=c("33%","30%","30%"),size=4.5,color="white")+
+      annotate("text",x=4:5,y=5,label=c("3%","3%"),size=4.5,color="white")+
+      annotate("text",x=6:9,y=15,label=c("33%","34%","33%","38%"),size=4.5,color="white")+
+      annotate("text",x=1:9,y=105,label=c("280","448","131","68","2,009","293","1,481","55","107"),size=4.5,color="indianred3")+
+      theme_classic()+ 
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+    
+  
+  # Stacked bar chart for Life Stage 
+  
+  output$life_plot<-renderPlot({ggplot(life.class, aes(fill=variable, y=value, x=life)) + 
+      geom_bar(position="stack", stat="identity")+
+      annotate("text",x= 1:3,y=70, label=c("74%","70%","76%"),size=4.5,color="dodgerblue4")+
+      annotate("text",x= 1:3,y=15, label=c("26%","30%","24%"),size=4.5,color="white")+
+      annotate("text", x=1:3,y=105,label=c("4", "105","2,104"),size=4.5,color="dodgerblue4")+
+      scale_fill_manual(values = cal_palette("sbchannel")) + 
+      labs(x = "Life Stage",
+           color = "System") +
+      theme_classic() +
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+  # Stacked bar for Invitro/Invivo
+  
+  output$vivo_plot<-renderPlot({ggplot(vivo.class, aes(fill=variable, y=value, x=vivo)) + 
+    geom_bar(position="stack", stat="identity")+
+    geom_text(x=1,y=50,label="81%",size=4.5,color="white")+
+    geom_text(x=2,y=15,label="28%",size=4.5,color="white")+
+    geom_text(x=1,y=90,label="19%",size=4.5,color="darkolivegreen3")+
+    geom_text(x=2,y=50,label="72%",size=4.5,color="darkolivegreen3")+
+    annotate("text", x=1:2, y=105, label=c("91","109"),size=4.5,color="darkolivegreen3")+
+    scale_fill_manual(values = cal_palette("arbutus"))+ 
+    labs(x = "Invitro/Invivo",
+         color = "System") +
+    theme_classic() +
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+    
+    #Stacked bar for Exposure Route 
+  
+  output$route_plot<-renderPlot({ggplot(route.class, aes(fill=variable, y=value, x=route))+ 
+    geom_bar(position="stack", stat="identity")+
+    annotate("text",x=1:4,y=60,label=c("82%","60%","79%","70%"),size=4.5,color="darkgoldenrod3")+
+    annotate("text",x=1:4,y=15,label=c("18%","40%","21%","30%"),size=4.5,color="darkgoldenrod3")+
+    annotate("text", x=1:4, y=105, label=c("605","10","488","3643"),size=4.5,color="darkgoldenrod3")+
+    scale_fill_manual(values = cal_palette("desert"))+ 
+    labs(x = "Exposure Route",
+    color = "System") +
+    theme_classic() +
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
   
 #### Heili S ####
   
