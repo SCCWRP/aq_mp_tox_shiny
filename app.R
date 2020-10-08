@@ -240,17 +240,17 @@ ui <- fluidPage(
             br(), # line break
             h3("Measured Effects of Different Polymers", align = "center", style = "color:darkcyan"),
             br(), # line break
-            plotOutput(outputId = "poly_plot")),
+            plotOutput(outputId = "poly_plot"),
 
             br(), # line break
             p("Measured Effects by Taxonomic Group"),
             br(), # line break
-            plotOutput(outputId = "tax_plot")),
+            plotOutput(outputId = "tax_plot"),
 
             br(), # line break
             p("Measured Effects of Life Stages"),
             br(), # line break
-            plotOutput(outputId = "life_plot")),
+            plotOutput(outputId = "life_plot")), #second parenthese closes out tab
 
             
       #### Heili UI ####
@@ -287,12 +287,13 @@ ui <- fluidPage(
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
                     br(), # line break
+                    h3("Species Sensitivity Distribution", align = "center", style = "color:darkcyan"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
                     
                     sidebarPanel("Use the options below to filter the dataset. NOTE: changes may take a long time to appear",
                                  br(), # line break
-                                 
+                                 br(),
                                  checkboxGroupInput(inputId = "env_check_ssd", # environment checklist
                                                     label = "Environment:",
                                                     choices = levels(aoc_z$env_f), 
@@ -345,7 +346,8 @@ ui <- fluidPage(
                     
 
 #following three parentheses close out UI. Do not delete. 
-        ))
+        )))   
+        #))  #comment-out these two parentheses. they must be here, but need to figure out where forward parentheses need to be. 
 
 #### Server ####
 server <- function(input, output) {
