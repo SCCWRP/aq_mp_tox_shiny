@@ -345,7 +345,7 @@ ui <- fluidPage(
                     
 
 #following three parentheses close out UI. Do not delete. 
-        )
+        ))
 
 #### Server ####
 server <- function(input, output) {
