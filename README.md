@@ -17,13 +17,17 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 **Scott**
 
 *Scott* Make app faster (specifically SSD) 
+
 *Scott* Make plots piecewise
 
 **Heili**
 
 *Heili* Help fix "submit button" in SSD 
+
 *Heili* Make sure app works on web app 
+
 *Heili* Add widget for data input 
+
 *Heili* Add button to plot corrected vs ‘raw’ SSDs at will etc.
 
 **Leah**
