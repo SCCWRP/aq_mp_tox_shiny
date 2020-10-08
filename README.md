@@ -27,6 +27,7 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 *Heili* Add button to plot corrected vs ‘raw’ SSDs at will etc.
 
 **Leah**
+
 *Leah* Number to mass conversion. Consider using the average obtained from Koelmans' distributions. Note they are now revising these to make them compartment specific and with higher quality data. Bart will keep us posted.
 
 *Leah* Add a translocation size boundary and slope of the PSD that a user could set- would both affect bioavailability.
