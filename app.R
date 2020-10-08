@@ -48,8 +48,32 @@ size.class<-melt(size_, id.vars='size')
 #Data frame for Polymer 
 
 poly_<-data.frame(poly=c("BIO","EVA","LTX","PA","PC","PE","PET","PI","PLA","PMMA","PP","PS","PUR","PVC"), N =c(4,71,100,76,71,74,88,100,84,64,66,70,0,64), Y =c(96,29,0,24,29,26,12,0,16,36,34,30,100,36))
-poly.class<-melt(poly_, id.vars='poly') 
+poly.class<-melt(poly_, id.vars='poly')
 
+#Data frame for taxonomic group
+
+tax<-data.frame(taxa=c("Algae","Annelida","Bacterium","Cnidaria","Crustacea","Echinoderm","Fish","Insect","Mollusca","Nematoda","Plant","Rotifera"), N =c(56,79,32,72,70,84,74,41,79,20,73,54), Y =c(44,21,68,28,30,16,26,59,21,80,27,46))
+tax.class<-melt(tax, id.vars='taxa') 
+
+# Data frame for lvl 
+
+lvl_1<-data.frame(lvl1=c("Alimentary/excretory","Behavioral/sense/neuro","Circulatory.respiratory","Community","Fitness","Immune","Metabolism","Microbiome","Stress"), N =c(67,70,70,97,97,67,66,67,62), Y =c(33,30,30,3,3,33,34,33,38))
+lvl1.class<-melt(lvl_1, id.vars='lvl1') 
+
+# Data frame for life stage 
+
+life_1<-data.frame(life=c("Early","Juvenile","Adult"), N =c(74,70,76), Y =c(26,30,24))
+life.class<-melt(life_1, id.vars='life') 
+
+# Data frame for vivo graph
+
+vivo_1<-data.frame(vivo=c("Invitro","Invivo"), N =c(19,72), Y =c(81,28))
+vivo.class<-melt(vivo_1, id.vars='vivo') 
+
+# Data frame for exposure route 
+
+route_1<-data.frame(route=c("Food","Maternal.Transfer","Sediment","Water"), N =c(82,60,79,70), Y =c(18,40,21,30))
+route.class<-melt(route_1, id.vars='route') 
 
 #### Heili Setup ####
 
@@ -115,11 +139,11 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ui <- fluidPage(
   
   # App title
-  titlePanel("Aquatic Microplastics Toxicology Review"),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div(
-    "This is a draft website to present the results of the aquatic microplastics toxicology literature review. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
+    "This is a draft website to present the results of the aquatic microplastics toxicology database. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
   
   br(), # line break
   
@@ -131,34 +155,105 @@ ui <- fluidPage(
 
 #### Leah UI ####        
                   tabPanel("Introduction", 
+                    
+                    #Place holder for a cute logo someday? 
+                                  
                     br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
+                    h3("What is the Microplastics Toxicity Database?", align = "center", style = "color:darkcyan"),
+                    
+                    strong(p("The Microplastics Toxicity Database is a repository for microplastics 
+                      toxicity data pertaining to both human and aquatic organism health.")), 
+                    
+                    p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
+                      an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
+                      studies focused on the effects of microplastics are being rapidly published and 
+                      often vary in quality. Because of this, it is challenging to identify sensitive biological 
+                      endpoints and prioritize potential drivers of microplastic toxicity."),
+                    
+                    p("This web application is intended to meet these challenges
+                    by allowing users to explore toxicity 
+                    data using an intuitive interface while retaining the diversity and complexity inherent 
+                    to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
+                    toxicity data pertaining to microplastics and associated chemicals and organized into 5 
+                    main categories:"),
+                    
+                    img(src = "data_categories_image.png", height = 400, width = 400, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    br(),
+                    p("This web application allows users to visualize the data while selecting for specific 
+                      parameters within the data categories above. For instance, a user may want to visualize 
+                      how polymer type impacts the growth of early life stage fish that were exposed to 
+                      microplastics for 7 days or longer."),
+                    
+                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center", style = "color:darkcyan"),
+                    
+                    p("The database and application tools have been created for use by the participants of the ", a(href = "https://www.sccwrp.org/about/
+                      research-areas/additional-research-areas/
+                      trash-pollution/microplastics-health-effects-webinar-series/", 'Microplastics Health Effects Workshop', 
+                      .noWS = "outside"),
+                      ". The purpose of this workshop is to identify the primary pathways by which microplastics affect biota, prioritize 
+                      the microplastics characteristics (e.g., size, shape, polymer) that are of greatest biological concern, and identify 
+                      critical thresholds for each at which those biological effects become pronounced. These findings will 
+                      be used directly by the state of California to fulfill ", a(href = "https://www.sccwrp.org/about/research-areas/
+                      additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
+                      .noWS = "outside")," regarding the
+                      management of microplastics in drinking water and the aquatic environment."),
+                   
+                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center", style = "color:darkcyan"),
+                    
+                    p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
+                      More specific instructions may be found within each section."),
+                  
+                    h3("Contact", align = "center", style = "color:darkcyan"),
+                    
+                    p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    
+                    br(),
+                    
+                    img(src = "sccwrp.png", height = 100, width = 100, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    
+                    br(), 
+                    
                     verbatimTextOutput(outputId = "Leah1")),
-                  tabPanel("Metadata", 
-                    br(), # line break
-                    p("You can add paragraphs of text this way, each using a new p()."),
-                    br(), # line break
+                
+                  tabPanel("Resources", 
+                           
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
+                      br(),
+                      h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+                           
                     verbatimTextOutput(outputId = "Leah2")),
         
 #### Emily UI ####
                   tabPanel("Data Overview", 
                     br(), # line break
-                    p("Measured Effects of Different Plastic Shapes"),
+                    h3("Measured Effects of Different Shapes", align = "center", style = "color:darkcyan"),
                     br(), # line break
                     plotOutput(outputId = "shape_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Plastic Sizes"),
+            h3("Measured Effects of Different Size Categories", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "size_plot"),
 
             br(), # line break
-            p("Measured Effects of Different Polymers"),
+            h3("Measured Effects of Different Polymers", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "poly_plot")),
-          
-#### Heili UI ####
+
+            br(), # line break
+            p("Measured Effects by Taxonomic Group"),
+            br(), # line break
+            plotOutput(outputId = "tax_plot")),
+
+            br(), # line break
+            p("Measured Effects of Life Stages"),
+            br(), # line break
+            plotOutput(outputId = "life_plot")),
+
+            
+      #### Heili UI ####
                   tabPanel("Data Exploration", 
                     br(), # line break
                     p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
@@ -251,20 +346,17 @@ ui <- fluidPage(
 
 #following three parentheses close out UI. Do not delete. 
         )
-  )
-  
-  )
 
 #### Server ####
 server <- function(input, output) {
   
 #### Leah S ####
   output$Leah1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
   })
   
   output$Leah2 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
+  
   })
   
 #### Emily S ####
@@ -341,6 +433,99 @@ server <- function(input, output) {
     theme(legend.position = "right")+
     labs(fill="Effect")+
     theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+    # Stacked bar for Taxonomic level 
+  
+  output$tax_plot<-renderPlot({ggplot(tax.class, aes(fill=variable, y=value, x=taxa))+ 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_manual(values = cal_palette("dudleya"))+
+      labs(x = "Taxonomic Group",
+           color = "System")+
+      annotate("text", x=1:12,y=12,label=c("44%","21%","68%","28%","30%","16%","26%","59%","21%","80%","27%","46%"),size=4.5,color="darkolivegreen")+
+      geom_text(x=1,y=60,label="56%",size=4.5,color="white")+
+      geom_text(x=2,y=60,label="79%",size=4.5,color="white")+
+      geom_text(x=3,y=85,label="32%",size=4.5,color="white")+
+      geom_text(x=4,y=60,label="72%",size=4.5,color="white")+
+      geom_text(x=5,y=60,label="70%",size=4.5,color="white")+
+      geom_text(x=6,y=60,label="84%",size=4.5,color="white")+
+      geom_text(x=7,y=60,label="74%",size=4.5,color="white")+
+      geom_text(x=8,y=85,label="41%",size=4.5,color="white")+
+      geom_text(x=9,y=60,label="79%",size=4.5,color="white")+
+      geom_text(x=10,y=90,label="20%",size=4.5,color="white")+
+      geom_text(x=11,y=60,label="73%",size=4.5,color="white")+
+      geom_text(x=12,y=60,label="54%",size=4.5,color="white")+
+      annotate("text",x=1:12,y=105,label=c("355","243","84","80","1151","65","1584","45","1011","63","33","80"),size=4.5,color="goldenrod4")+
+      theme_classic()+ 
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+      # Stacked bar chart lvl_1
+  
+  output$lvl1_plot<-renderPlot({ggplot(lvl1.class, aes(fill=variable, y=value, x=lvl1))+ 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_manual(values = cal_palette("vermillion"))+
+      labs(x = "Endpoint Category",
+           color = "System")+
+      annotate("text", x=1:9,y=70,label=c("67%","70%","70%","97%","97%","67%","66%","67%","62%"),size=4.5,color="white")+
+      annotate("text",x=1:3,y=15,label=c("33%","30%","30%"),size=4.5,color="white")+
+      annotate("text",x=4:5,y=5,label=c("3%","3%"),size=4.5,color="white")+
+      annotate("text",x=6:9,y=15,label=c("33%","34%","33%","38%"),size=4.5,color="white")+
+      annotate("text",x=1:9,y=105,label=c("280","448","131","68","2,009","293","1,481","55","107"),size=4.5,color="indianred3")+
+      theme_classic()+ 
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+    
+  
+  # Stacked bar chart for Life Stage 
+  
+  output$life_plot<-renderPlot({ggplot(life.class, aes(fill=variable, y=value, x=life)) + 
+      geom_bar(position="stack", stat="identity")+
+      annotate("text",x= 1:3,y=70, label=c("74%","70%","76%"),size=4.5,color="dodgerblue4")+
+      annotate("text",x= 1:3,y=15, label=c("26%","30%","24%"),size=4.5,color="white")+
+      annotate("text", x=1:3,y=105,label=c("4", "105","2,104"),size=4.5,color="dodgerblue4")+
+      scale_fill_manual(values = cal_palette("sbchannel")) + 
+      labs(x = "Life Stage",
+           color = "System") +
+      theme_classic() +
+      theme(legend.position = "right")+
+      labs(fill="Effect")+
+      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+  # Stacked bar for Invitro/Invivo
+  
+  output$vivo_plot<-renderPlot({ggplot(vivo.class, aes(fill=variable, y=value, x=vivo)) + 
+    geom_bar(position="stack", stat="identity")+
+    geom_text(x=1,y=50,label="81%",size=4.5,color="white")+
+    geom_text(x=2,y=15,label="28%",size=4.5,color="white")+
+    geom_text(x=1,y=90,label="19%",size=4.5,color="darkolivegreen3")+
+    geom_text(x=2,y=50,label="72%",size=4.5,color="darkolivegreen3")+
+    annotate("text", x=1:2, y=105, label=c("91","109"),size=4.5,color="darkolivegreen3")+
+    scale_fill_manual(values = cal_palette("arbutus"))+ 
+    labs(x = "Invitro/Invivo",
+         color = "System") +
+    theme_classic() +
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
+    
+    #Stacked bar for Exposure Route 
+  
+  output$route_plot<-renderPlot({ggplot(route.class, aes(fill=variable, y=value, x=route))+ 
+    geom_bar(position="stack", stat="identity")+
+    annotate("text",x=1:4,y=60,label=c("82%","60%","79%","70%"),size=4.5,color="darkgoldenrod3")+
+    annotate("text",x=1:4,y=15,label=c("18%","40%","21%","30%"),size=4.5,color="darkgoldenrod3")+
+    annotate("text", x=1:4, y=105, label=c("605","10","488","3643"),size=4.5,color="darkgoldenrod3")+
+    scale_fill_manual(values = cal_palette("desert"))+ 
+    labs(x = "Exposure Route",
+    color = "System") +
+    theme_classic() +
+    theme(legend.position = "right")+
+    labs(fill="Effect")+
+    theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
+  
   
 #### Heili S ####
   
