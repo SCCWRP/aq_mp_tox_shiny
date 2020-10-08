@@ -1,5 +1,6 @@
 # aq_mp_tox_shiny
-Repository for Shiny application for Aquatic Microplastics Toxicology Review project
+
+**Repository for Shiny application for Aquatic Microplastics Toxicology Review project**
 
 *Southern California Coastal Water Research Project*
 
@@ -11,7 +12,7 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 
 
 
-**To-do List**
+##To-do List
 
 Add widget for data input
 
