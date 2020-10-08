@@ -13,6 +13,8 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 
 To-do List:
 
+Add widget for data input
+
 Make app faster (specifically SSD)
 
 Number to mass conversion. Consider using the average obtained from Koelmans' distributions. Note they are now revising these to make them compartment specific and with higher quality data. Bart will keep us posted.
