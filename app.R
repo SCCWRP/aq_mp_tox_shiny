@@ -261,7 +261,7 @@ ui <- fluidPage(
                     p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
                     br(), # line break
                     
-                    sidebarPanel("Use the options below to filter the dataset.",
+                    sidebarPanel("Available Filters",
                       br(), # line break
                       
                       checkboxGroupInput(inputId = "organism_check", # organismal checklist
@@ -545,24 +545,31 @@ server <- function(input, output) {
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(width=.35, alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (mg/L)",
         y = "Size")
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+        labels = trans_format("log10", math_format(10^.x))) +
+      geom_boxplot(width=.35, alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -575,24 +582,31 @@ server <- function(input, output) {
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(width=.3, alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (mg/L)",
         y = "Shape")
     
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+        labels = trans_format("log10", math_format(10^.x))) +
+      geom_boxplot(width=.3, alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -610,19 +624,26 @@ server <- function(input, output) {
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (mg/L)",
         y = "Polymer")
     
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+        labels = trans_format("log10", math_format(10^.x))) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
+      theme(legend.position="none",
+        axis.title.x = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
