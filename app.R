@@ -136,7 +136,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
-ui <- fluidPage(
+ui <- fluidPage(theme = "bootstrap.css",
   
   # App title
   titlePanel(h1("Microplastics Toxicity Database")),
@@ -177,7 +177,7 @@ ui <- fluidPage(
                     toxicity data pertaining to microplastics and associated chemicals and organized into 5 
                     main categories:"),
                     
-                    img(src = "data_categories_image.png", height = 400, width = 400, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    img(src = "data_categories_image.png", height = 200, width = 200, style = "display:block;margin-left: auto; margin-right: auto;"),
                     br(),
                     p("This web application allows users to visualize the data while selecting for specific 
                       parameters within the data categories above. For instance, a user may want to visualize 
@@ -203,6 +203,12 @@ ui <- fluidPage(
                     p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
                   
+                    h3("Microplastics Toxicity Database Team", align = "center", style = "color:darkcyan"),
+                    br(),
+                    img(src = "contributors.png", height = "80%", width = "80%", style = "display:block;margin-left: auto; margin-right: auto;"),
+                    
+                    br(),
+                    
                     h3("Contact", align = "center", style = "color:darkcyan"),
                     
                     p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
@@ -216,7 +222,7 @@ ui <- fluidPage(
                     verbatimTextOutput(outputId = "Leah1")),
                 
                   tabPanel("Resources", 
-                           
+                      br(),     
                       h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
                       br(),
                       h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
@@ -261,7 +267,7 @@ ui <- fluidPage(
                     p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
                     br(), # line break
                     
-                    sidebarPanel("Available Filters",
+                    sidebarPanel("Use the options below to filter the dataset.",
                       br(), # line break
                       
                       checkboxGroupInput(inputId = "organism_check", # organismal checklist
@@ -545,31 +551,24 @@ server <- function(input, output) {
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(width=.35, alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (mg/L)",
         y = "Size")
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = trans_format("log10", math_format(10^.x))) +
-      geom_boxplot(width=.35, alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -582,31 +581,24 @@ server <- function(input, output) {
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(width=.3, alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (mg/L)",
         y = "Shape")
     
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = trans_format("log10", math_format(10^.x))) +
-      geom_boxplot(width=.3, alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -624,26 +616,19 @@ server <- function(input, output) {
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (mg/L)",
         y = "Polymer")
     
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = trans_format("log10", math_format(10^.x))) +
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none",
-        axis.title.x = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.text.y = element_text(size = 12)) +
+      theme(legend.position="none") +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
