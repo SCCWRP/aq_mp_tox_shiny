@@ -279,33 +279,33 @@ ui <- fluidPage(theme = "bootstrap.css",
                     p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
                     br(), # line break
                     
-                    sidebarPanel("Use the options below to filter the dataset.",
-                      
-                      br(), # line break
-                      
+                    # widgets
+                    column(width = 12,
+                      column(width = 3,
                       # alternative to fully listed checklists
                       # requires shinyWidgets package
                       pickerInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:", 
                         choices = levels(aoc_y$org_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE), # allows for multiple inputs
+                        multiple = TRUE)), # allows for multiple inputs
                       
+                      column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Endpoint Examined:", 
                         choices = levels(aoc_y$lvl1_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE), # allows for multiple inputs
+                        multiple = TRUE))), # allows for multiple inputs
                       
-                      br()), # line break
+                      br(), # line break
                     
-                    mainPanel(
+                    #mainPanel(
                       br(), # line break
                       plotOutput(outputId = "size_plot_react"),
                       br(), # line break
                       plotOutput(outputId = "shape_plot_react"),
                       br(), # line break
-                      plotOutput(outputId = "poly_plot_react"))), 
+                      plotOutput(outputId = "poly_plot_react")), 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
