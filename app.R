@@ -177,7 +177,7 @@ ui <- fluidPage(theme = "bootstrap.css",
                     toxicity data pertaining to microplastics and associated chemicals and organized into 5 
                     main categories:"),
                     
-                    img(src = "data_categories_image.png", height = 200, width = 200, style = "display:block;margin-left: auto; margin-right: auto;"),
+                    img(src = "data_categories_image.png", height = "90%", width = "90%", style = "display:block;margin-left: auto; margin-right: auto;"),
                     br(),
                     p("This web application allows users to visualize the data while selecting for specific 
                       parameters within the data categories above. For instance, a user may want to visualize 
