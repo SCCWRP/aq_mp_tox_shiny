@@ -365,9 +365,30 @@ ui <- fluidPage(theme = "bootstrap.css",
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
                               br(),
                               p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
-                              ))
-                    
+                              )),
+        
+        # dummy tab entered by Heili
+        tabPanel("File Upload", 
+          
+          br(), # line break
+          
+          h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
+          
+          p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
+          
+          sidebarLayout(
+            
+          sidebarPanel(
 
+            fileInput("file1", "Drag and drop data file here:", # .csv file input
+              multiple = FALSE,
+              accept = c(".csv"))),
+
+          mainPanel(p("Region's top costumes:"),
+            plotOutput(outputId = "costume_graph"))
+            )
+        )
+          
 #following three parentheses close out UI. Do not delete. 
         )))   
         #))  #comment-out these two parentheses. they must be here, but need to figure out where forward parentheses need to be. 
@@ -709,6 +730,27 @@ server <- function(input, output) {
       scale_colour_viridis_d() + #make colors more differentiable 
       expand_limits(x = 5000) + # to ensure the species labels fit
             ggtitle("Species Sensitivity for Microplastics")
+      })
+  
+  # server-side for dummy file input tab
+  # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
+    output$costume_graph <- renderPlot({
+    
+    req(input$file1) # Using user-supplied dataset
+    
+    spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
+      
+    region_costume <- spooky %>%
+      group_by(region_us_census) %>%
+      count(costume, rank) # Creates a new dataset
+    
+    ggplot(region_costume, aes(x = costume, y = n)) +
+      geom_col(aes(fill = rank)) +
+      coord_flip() +
+      scale_fill_manual(values = c("black", "purple", "orange")) +
+      facet_grid(region_us_census~.) +
+      theme_minimal() # plots the data
+    
       })
   
   } #Server end
