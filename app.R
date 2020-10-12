@@ -12,6 +12,7 @@ library(patchwork)
 library(calecopal)
 library(shiny)
 library(shinythemes)
+library(shinyWidgets)
 library(scales)
 library(reshape2)
 library(ssdtools) #for species sensitivity distributions
@@ -271,28 +272,34 @@ ui <- fluidPage(theme = "bootstrap.css",
             
       #### Heili UI ####
                   tabPanel("Data Exploration", 
+                    h3("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects", align = "center", style = "color:darkcyan"),
                     br(), # line break
                     p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
                     br(), # line break
-                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
+                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
                     br(), # line break
                     
                     sidebarPanel("Use the options below to filter the dataset.",
+                      
                       br(), # line break
                       
-                      checkboxGroupInput(inputId = "organism_check", # organismal checklist
-                        label = "Organisms:",
-                        choices = levels(aoc_y$org_f), 
-                        selected = levels(aoc_y$org_f)), # Default is to have everything selected.
-                      br(),
+                      # alternative to fully listed checklists
+                      # requires shinyWidgets package
+                      pickerInput(inputId = "organism_check", # organismal checklist
+                        label = "Organisms:", 
+                        choices = levels(aoc_y$org_f),
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE), # allows for multiple inputs
                       
-                      checkboxGroupInput(inputId = "lvl1_check", # endpoint checklist
-                        label = "Endpoint Examined:",
-                        choices = levels(aoc_y$lvl1_f), 
-                        selected = levels(aoc_y$lvl1_f)), # Default is to have everything selected.
+                      pickerInput(inputId = "lvl1_check", # endpoint checklist
+                        label = "Endpoint Examined:", 
+                        choices = levels(aoc_y$lvl1_f),
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE), # allows for multiple inputs
+                      
                       br()), # line break
                     
-                    mainPanel("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects",
+                    mainPanel(
                       br(), # line break
                       plotOutput(outputId = "size_plot_react"),
                       br(), # line break
