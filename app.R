@@ -249,14 +249,24 @@ ui <- fluidPage(theme = "bootstrap.css",
             plotOutput(outputId = "poly_plot"),
 
             br(), # line break
-            p("Measured Effects by Taxonomic Group"),
+            p("Measured Effects by Taxonomic Group", align = "center", style = "color:darkcyan"),
             br(), # line break
             plotOutput(outputId = "tax_plot"),
 
             br(), # line break
-            p("Measured Effects of Life Stages"),
+            p("Measured Effects by Life Stage", align = "center", style = "color:darkcyan"),
             br(), # line break
-            plotOutput(outputId = "life_plot")), #second parenthese closes out tab
+            plotOutput(outputId = "life_plot"), #second parenthese closes out tab
+
+            br(), # line break
+            p("Measured Effects of Invitro or Vitro", align = "center", style = "color:darkcyan"),
+            br(), # line break
+            plotOutput(outputId = "vivo_plot"),
+
+            br(), # line break
+            p("Measured Effects by Exposure Route", align = "center", style = "color:darkcyan"),
+            br(), # line break
+            plotOutput(outputId = "route_plot")),
 
             
       #### Heili UI ####
