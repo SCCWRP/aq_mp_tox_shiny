@@ -598,8 +598,8 @@ server <- function(input, output) {
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Size",
-        y = "Concentration (mg/L)") +
+      xlab("Size") +
+      ylab("Concentration (mg/L)") +
       coord_flip()  # plotly is not as smart as ggplot, so we need to pass the categorical variable to the x axis and then flip it
     
     size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f)) +
@@ -611,7 +611,7 @@ server <- function(input, output) {
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = " ",
+      labs(x = "  ",
         y = "Concentration (particles/mL)") +
       coord_flip()
     
@@ -620,75 +620,80 @@ server <- function(input, output) {
     size1ly <- ggplotly(size1)
     size2ly <- ggplotly(size2)
     # combines them in a single row
-    subplot(size1ly, size2ly)
+    # need to specify that axis titles are unique
+    subplot(size1ly, size2ly, titleY = TRUE, titleX = TRUE)
     
   })
   
   output$shape_plot_react <- renderPlotly({
     
-    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    shape1 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.mg.L)) +
+      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (mg/L)",
-        y = "Shape")
+      labs(x = "Shape",
+        y = "Concentration (mg/L)") +
+      coord_flip()
     
-    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    shape2 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.particles.mL)) +
+      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ")
+      labs(x = " ",
+        y = "Concentration (particles/mL)") +
+      coord_flip()
     
     # makes figures interactive
     shape1ly <- ggplotly(shape1)
     shape2ly <- ggplotly(shape2)
     # combines them in a single row
-    subplot(shape1ly, shape2ly)
+    subplot(shape1ly, shape2ly, titleY = TRUE, titleX = TRUE)
     
   })
   
   output$poly_plot_react <- renderPlotly({
     
-    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    poly1 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.mg.L)) +
+      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (mg/L)",
-        y = "Polymer")
+      labs(x = "Polymer",
+        y = "Concentration (mg/L)") +
+      coord_flip()
     
-    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    poly2 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.particles.mL)) +
+      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ")
+      labs(x = " ",
+        y = "Concentration (particles/mL)") +
+      coord_flip()
     
     # makes figures interactive
     poly1ly <- ggplotly(poly1)
     poly2ly <- ggplotly(poly2)
     # combines them in a single row
-    subplot(poly1ly, poly2ly)
+    subplot(poly1ly, poly2ly, titleY = TRUE, titleX = TRUE)
     
   })
 
