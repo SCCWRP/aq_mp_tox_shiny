@@ -287,6 +287,7 @@ ui <- fluidPage(theme = "bootstrap.css",
                       pickerInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:", 
                         choices = levels(aoc_y$org_f),
+                        selected = levels(aoc_y$org_f),   
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
@@ -294,18 +295,20 @@ ui <- fluidPage(theme = "bootstrap.css",
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Endpoint Examined:", 
                         choices = levels(aoc_y$lvl1_f),
+                        selected = levels(aoc_y$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE))), # allows for multiple inputs
                       
                       br(), # line break
+                      hr(), # adds divider
                     
                     #mainPanel(
                       br(), # line break
-                      plotOutput(outputId = "size_plot_react"),
+                      plotlyOutput(outputId = "size_plot_react"),
                       br(), # line break
-                      plotOutput(outputId = "shape_plot_react"),
+                      plotlyOutput(outputId = "shape_plot_react"),
                       br(), # line break
-                      plotOutput(outputId = "poly_plot_react")), 
+                      plotlyOutput(outputId = "poly_plot_react")), 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -582,39 +585,46 @@ server <- function(input, output) {
       filter(lvl1_f %in% input$lvl1_check)
   })
   
-  # Use newly created dataset from above to generate patchwork plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
+  # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
-  output$size_plot_react <- renderPlot({
+  output$size_plot_react <- renderPlotly({
      
-    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    size1 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.mg.L, color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7) +
+      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (mg/L)",
-        y = "Size")
+      labs(x = "Size",
+        y = "Concentration (mg/L)") +
+      coord_flip()  # plotly is not as smart as ggplot, so we need to pass the categorical variable to the x axis and then flip it
     
-    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7) +
+      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
       theme(legend.position="none") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ")
+      labs(x = " ",
+        y = "Concentration (particles/mL)") +
+      coord_flip()
     
-    (size1 + size2)
+    # cannot use patchwork alongside plotly currently, so switching to plotly's subplot structure
+    # makes figures interactive
+    size1ly <- ggplotly(size1)
+    size2ly <- ggplotly(size2)
+    # combines them in a single row
+    subplot(size1ly, size2ly)
     
   })
   
-  output$shape_plot_react <- renderPlot({
+  output$shape_plot_react <- renderPlotly({
     
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
@@ -640,11 +650,15 @@ server <- function(input, output) {
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
-    (shape1 + shape2)
+    # makes figures interactive
+    shape1ly <- ggplotly(shape1)
+    shape2ly <- ggplotly(shape2)
+    # combines them in a single row
+    subplot(shape1ly, shape2ly)
     
   })
   
-  output$poly_plot_react <- renderPlot({
+  output$poly_plot_react <- renderPlotly({
     
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
@@ -670,7 +684,11 @@ server <- function(input, output) {
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
-    (poly1 + poly2)
+    # makes figures interactive
+    poly1ly <- ggplotly(poly1)
+    poly2ly <- ggplotly(poly2)
+    # combines them in a single row
+    subplot(poly1ly, poly2ly)
     
   })
 
