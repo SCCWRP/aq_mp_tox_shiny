@@ -26,8 +26,8 @@ library(plotly) #to make plots interactive
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
 # Add log transformed concentration columns for easier plotting below.
-aoc$log_dose.mg.L <- log10(aoc$dose.mg.L)
-aoc$log_dose.particles.mL <- log10(aoc$dose.particles.mL)
+#aoc$log_dose.mg.L <- log10(aoc$dose.mg.L)
+#aoc$log_dose.particles.mL <- log10(aoc$dose.particles.mL)
 
 # Add factor and releved effects column.
 aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
@@ -204,19 +204,40 @@ ui <- fluidPage(theme = "bootstrap.css",
                     p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
                   
-                    h3("Microplastics Toxicity Database Team", align = "center", style = "color:darkcyan"),
+                    h3("Contributors", align = "center", style = "color:darkcyan"),
                     br(),
-                    img(src = "contributors.png", height = "80%", width = "80%", style = "display:block;margin-left: auto; margin-right: auto;"),
+                    
+                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
+                      tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/heili-lowman/", 'Dr. Heili Lowman'),", Southern California Coastal Water Research Project ",
+                      tags$a(href="https://twitter.com/heili_lowman", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/hlowman", tags$img(src="github.png", width="2%", height="2%"))), 
+                    p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
+                      tags$a(href="https://twitter.com/DrScottCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", San Francisco Estuary Institute"),
+                    p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
+                      tags$a(href="https://github.com/EmilyDarin", tags$img(src="github.png", width="2%", height="2%"))),
+                    p(align = "center", "Syd Kotar, Southern California Coastal Water Research Project"),
+                    p(align = "center", "Sarah Khan, Southern California Coastal Water Research Project"),
+                    p(align = "center", a(href = "https://www.wur.nl/en/Persons/Bart-prof.dr.-AA-Bart-Koelmans.htm", 'Dr. Bart Koelmans'),", Wageningen University",
+                     tags$a(href="https://twitter.com/MicroplasticLab", tags$img(src="twitter.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://twitter.com/ChelseaRochman", 'Dr. Chelsea Rochman'),", University of Toronto",
+                      tags$a(href="https://twitter.com/MicroplasticLab", tags$img(src="twitter.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
+                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
                     br(),
                     
                     h3("Contact", align = "center", style = "color:darkcyan"),
                     
-                    p("For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
                     
                     br(),
                     
-                    img(src = "sccwrp.png", height = 100, width = 100, style = "display:block;margin-left: auto; margin-right: auto;"),
+                  splitLayout(align = "center", 
+                  tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
+                  tags$a(href="https://www.swccrp.org", tags$img(src="sccwrp.png", width = "100%", height = "100%")),
+                  tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%"))),
+                  
                     
                     br(), 
                     
