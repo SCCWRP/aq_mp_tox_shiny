@@ -588,8 +588,8 @@ server <- function(input, output) {
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
   output$size_plot_react <- renderPlotly({
-     
-    size1 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.mg.L, color = size_f, fill = size_f)) +
+    
+    size1 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.mg.L, color = size_f, fill = size_f, text = paste(size_f))) +
       geom_boxplot(alpha = 0.7) +
       scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
@@ -602,7 +602,7 @@ server <- function(input, output) {
       ylab("Concentration (mg/L)") +
       coord_flip()  # plotly is not as smart as ggplot, so we need to pass the categorical variable to the x axis and then flip it
     
-    size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f)) +
+    size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f, text = paste(size_f))) +
       geom_boxplot(alpha = 0.7) +
       scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
@@ -617,8 +617,8 @@ server <- function(input, output) {
     
     # cannot use patchwork alongside plotly currently, so switching to plotly's subplot structure
     # makes figures interactive
-    size1ly <- ggplotly(size1)
-    size2ly <- ggplotly(size2)
+    size1ly <- ggplotly(size1, tooltip = c("text"))
+    size2ly <- ggplotly(size2, tooltip = c("text"))
     # combines them in a single row
     # need to specify that axis titles are unique
     subplot(size1ly, size2ly, titleY = TRUE, titleX = TRUE)
