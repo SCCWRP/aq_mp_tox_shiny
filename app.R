@@ -108,9 +108,51 @@ Final_effect_dataset<-rbind(G,routef)
 Final_effect_dataset<-Final_effect_dataset%>%
   mutate(plot_f=factor(plot))
 
-
-
 Final_effect_dataset
+
+# Adding function for multiple graph output.
+# Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
+
+# Creates function called "get_plot_output_list" where the input variable is "input_n".
+get_plot_output_list <- function(input_n) {
+  
+  # For every value in "input_n", insert it as "i" into the function below and then save the full output into "plot_output_list":
+  plot_output_list <- lapply(input_n, function(i) {
+    
+    # Commenting out these lines because don't *exactly* know what they're doing.
+    #plotname <- paste("plot", i, sep="")
+    #plot_output_object <- plotOutput(plotname)
+    #plot_output_object <- 
+    
+    # Render the individual plots      
+    renderPlot({
+      
+      # use the original dataset
+      Final_effect_dataset %>%
+        
+        # filter by input
+        filter(plot_f==i) %>%
+        
+        # generate plot
+        ggplot(aes(fill=effect, y=Freq, x=type)) +
+        geom_bar(position="stack", stat="identity") +
+        geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2") +
+        scale_fill_manual(values = cal_palette("wetland")) +
+        theme_classic() +
+        labs(fill="Effect") +
+        theme(legend.position = "right",
+          axis.ticks=element_blank(),
+          axis.text.y=element_blank(),
+          axis.title.y = element_blank())
+      
+    })
+    
+  })
+  
+  do.call(tagList, plot_output_list) # Need to call it as a list to display properly.
+  
+  return(plot_output_list) # Returns the full list of stored plots.
+}
 
 #### Heili Setup ####
 
@@ -298,14 +340,12 @@ tabPanel("Data Overview",
         
     
 pickerInput(inputId = "Emily_check", # effect checklist
-            label = "Effects:", 
-            choices = levels(Final_effect_dataset$plot_f),
-            multiple = FALSE), 
+            label = "Effects:", # checklist label
+            choices = levels(Final_effect_dataset$plot_f), # options for user
+            selected = "Polymer", # default selected
+            multiple = TRUE), # allows for multiple selections at once
             br(),
-plotOutput(outputId= "Emily_plot")),
-      
-            
-            
+uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
                   tabPanel("Data Exploration", 
@@ -437,34 +477,20 @@ plotOutput(outputId= "Emily_plot")),
 server <- function(input, output) {
   
 #### Leah S ####
-  output$Leah1 <- renderText({
-    #paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
-  })
-  
-  output$Leah2 <- renderText({
-  
-  })
+
+  # Leah does not have any reactive features.
   
 #### Emily S ####
   
-  output$Emily1 <- renderText({
-    paste0("You can also add outputs like this. Every output (text, plot, table) has a render function equivalent (renderText, renderPlot, renderTable).")
-  })
-
   # Effect plot code for check box 
   
-  output$Emily_plot<-renderPlot({
-    Final_effect_dataset%>%
-    filter(plot_f==input$Emily_check)%>%
-    ggplot(aes(fill=effect, y=Freq, x=type)) + 
-      geom_bar(position="stack", stat="identity")+
-      geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2")+
-      scale_fill_manual(values = cal_palette("wetland")) + 
-      theme_classic()+
-      theme(legend.position = "right")+
-      labs(fill="Effect")+
-      theme(axis.ticks=element_blank(),axis.text.y=element_blank(),axis.title.y = element_blank())})
-  
+  # Insert the right number of plot output objects into the page using the function from the setup section.
+  output$Emily_plot <- renderUI({ 
+    
+    # Using user-provided selections.
+    get_plot_output_list(input$Emily_check) 
+    
+    })
   
 #### Heili S ####
   
