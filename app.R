@@ -42,7 +42,10 @@ polydf<-rowPerc(xtabs( ~polymer +effect, aoc))
 polyf<-as.data.frame(polydf)%>% 
   filter(effect %in% c("Y","N"))%>%
   rename(type= "polymer")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Polymer")
+
+polyf
 
 sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
 sizef<-as.data.frame(sizedf)%>%
@@ -55,18 +58,21 @@ sizef<-as.data.frame(sizedf)%>%
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "unavailable"))%>%
   rename(type= "size.category")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Size")
 
 shapedf<-rowPerc(xtabs(~shape + effect, aoc))
 shapef<-as.data.frame(shapedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type="shape")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Shape")
 
 taxdf<-rowPerc(xtabs(~organism.group +effect, aoc))
 taxf<-as.data.frame(taxdf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "organism.group")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Organism")
 
 
@@ -74,6 +80,7 @@ lvl1df<-rowPerc(xtabs(~lvl1 +effect, aoc))
 lvl1f<-as.data.frame(lvl1df)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "lvl1")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Lvl1")
 
 
@@ -81,6 +88,7 @@ lifedf<-rowPerc(xtabs(~life.stage +effect, aoc))
 lifef<-as.data.frame(lifedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "life.stage")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Life.stage")
 
 
@@ -88,6 +96,7 @@ vivodf<-rowPerc(xtabs(~invitro.invivo +effect, aoc))
 vivof<-as.data.frame(vivodf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "invitro.invivo")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Invivo.invivo")
 
 
@@ -95,6 +104,7 @@ routedf<-rowPerc(xtabs(~exposure.route +effect, aoc))
 routef<-as.data.frame(routedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "exposure.route")%>%
+  mutate_if(is.numeric, round,0)%>%
   mutate(plot="Exposure.route")
 
 A<-rbind(polyf,shapef)
@@ -107,10 +117,6 @@ Final_effect_dataset<-rbind(G,routef)
 
 Final_effect_dataset<-Final_effect_dataset%>%
   mutate(plot_f=factor(plot))
-
-
-
-Final_effect_dataset
 
 #### Heili Setup ####
 
@@ -291,15 +297,15 @@ ui <- fluidPage( theme= "classic",
         
 #### Emily UI ####
 
-tabPanel("Data Overview",
+tabPanel("Data Overview", #tab opening
          br(), # line break
          h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
          br(), # line break
         
     
 pickerInput(inputId = "Emily_check", # effect checklist
-            label = "Effects:", 
-            choices = levels(Final_effect_dataset$plot_f),
+            label = "Effects:", #labeled the checklist effects 
+            choices = levels(Final_effect_dataset$plot_f), #connects to graphs 
             multiple = FALSE), 
             br(),
 plotOutput(outputId= "Emily_plot")),
