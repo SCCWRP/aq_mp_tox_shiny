@@ -532,6 +532,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Size")
     
@@ -542,6 +543,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -558,6 +560,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Shape")
     
@@ -568,6 +571,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
@@ -584,6 +588,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Polymer")
     
@@ -594,6 +599,7 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       theme_classic() +
+      theme(text = element_text(size=16)) +
       labs(x = "Concentration (particles/mL)",
         y = " ")
     
