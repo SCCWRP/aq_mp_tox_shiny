@@ -81,7 +81,7 @@ lvl1f<-as.data.frame(lvl1df)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "lvl1")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Lvl1")
+  mutate(plot="Endpoints")
 
 
 lifedf<-rowPerc(xtabs(~life.stage +effect, aoc))
@@ -89,7 +89,7 @@ lifef<-as.data.frame(lifedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "life.stage")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Life.stage")
+  mutate(plot="Life Stages")
 
 
 vivodf<-rowPerc(xtabs(~invitro.invivo +effect, aoc))
@@ -97,7 +97,7 @@ vivof<-as.data.frame(vivodf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "invitro.invivo")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Invivo.invivo")
+  mutate(plot="Invitro/Invivo")
 
 
 routedf<-rowPerc(xtabs(~exposure.route +effect, aoc))
@@ -105,7 +105,7 @@ routef<-as.data.frame(routedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(type= "exposure.route")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Exposure.route")
+  mutate(plot="Exposure Route")
 
 A<-rbind(polyf,shapef)
 B<-rbind(A,sizef)
