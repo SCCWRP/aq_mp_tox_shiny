@@ -382,7 +382,10 @@ uiOutput(outputId= "Emily_plot")),
                         choices = levels(aoc_y$lvl1_f),
                         selected = levels(aoc_y$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE))), # allows for multiple inputs
+                        multiple = TRUE)), # allows for multiple inputs
+                      
+                      column(width = 3,
+                        actionButton("go", "Update"))), # adds action button 
                       
                       br(), # line break
                       hr(), # adds divider
@@ -502,11 +505,15 @@ server <- function(input, output) {
   
 #### Heili S ####
   
-  # Create new dataset based on widget filtering.
-  aoc_filter <- reactive({
+  # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
+  aoc_filter <- eventReactive(list(input$go),{
+    
+    org_c <- input$organism_check
+    lvl1_c <- input$lvl1_check
+    
     aoc_y %>%
-      filter(org_f %in% input$organism_check) %>%
-      filter(lvl1_f %in% input$lvl1_check)
+      filter(org_f %in% org_c) %>%
+      filter(lvl1_f %in% lvl1_c)
   })
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
