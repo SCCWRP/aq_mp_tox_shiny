@@ -389,11 +389,11 @@ uiOutput(outputId= "Emily_plot")),
                     
                     #mainPanel(
                       br(), # line break
-                      plotlyOutput(outputId = "size_plot_react"),
+                      plotOutput(outputId = "size_plot_react"),
                       br(), # line break
-                      plotlyOutput(outputId = "shape_plot_react"),
+                      plotOutput(outputId = "shape_plot_react"),
                       br(), # line break
-                      plotlyOutput(outputId = "poly_plot_react")), 
+                      plotOutput(outputId = "poly_plot_react")), 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -511,113 +511,81 @@ server <- function(input, output) {
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
-  output$size_plot_react <- renderPlotly({
+  output$size_plot_react <- renderPlot({
     
-    size1 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.mg.L, color = size_f, fill = size_f, text = paste(size_f))) +
-      geom_boxplot(alpha = 0.7) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      xlab("Size") +
-      ylab("Concentration (mg/L)") +
-      coord_flip()  # plotly is not as smart as ggplot, so we need to pass the categorical variable to the x axis and then flip it
+      labs(x = "Concentration (mg/L)",
+        y = "Size")
     
-    size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f, text = paste(size_f))) +
-      geom_boxplot(alpha = 0.7) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "  ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # cannot use patchwork alongside plotly currently, so switching to plotly's subplot structure
-    # makes figures interactive
-    size1ly <- ggplotly(size1, tooltip = c("text"))
-    size2ly <- ggplotly(size2, tooltip = c("text"))
-    # combines them in a single row
-    # need to specify that axis titles are unique
-    subplot(size1ly, size2ly, titleY = TRUE, titleX = TRUE)
+    (size1 + size2) # using patchwork to combine figures
     
   })
   
-  output$shape_plot_react <- renderPlotly({
+  output$shape_plot_react <- renderPlot({
     
-    shape1 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.mg.L)) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "Shape",
-        y = "Concentration (mg/L)") +
-      coord_flip()
+      labs(x = "Concentration (mg/L)",
+        y = "Shape")
     
-    shape2 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.particles.mL)) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = " ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # makes figures interactive
-    shape1ly <- ggplotly(shape1)
-    shape2ly <- ggplotly(shape2)
-    # combines them in a single row
-    subplot(shape1ly, shape2ly, titleY = TRUE, titleX = TRUE)
+    (shape1 + shape2) # patchwork combining plots
     
   })
   
-  output$poly_plot_react <- renderPlotly({
+  output$poly_plot_react <- renderPlot({
     
-    poly1 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.mg.L)) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "Polymer",
-        y = "Concentration (mg/L)") +
-      coord_flip()
+      labs(x = "Concentration (mg/L)",
+        y = "Polymer")
     
-    poly2 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.particles.mL)) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = " ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # makes figures interactive
-    poly1ly <- ggplotly(poly1)
-    poly2ly <- ggplotly(poly2)
-    # combines them in a single row
-    subplot(poly1ly, poly2ly, titleY = TRUE, titleX = TRUE)
+    (poly1 + poly2) # join plots together using patchwork
     
   })
 
