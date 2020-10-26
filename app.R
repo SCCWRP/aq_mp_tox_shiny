@@ -118,10 +118,6 @@ Final_effect_dataset<-rbind(G,routef)
 Final_effect_dataset<-Final_effect_dataset%>%
   mutate(plot_f=factor(plot))
 
-<<<<<<< HEAD
-=======
-Final_effect_dataset
-
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
 
@@ -166,7 +162,6 @@ get_plot_output_list <- function(input_n) {
   return(plot_output_list) # Returns the full list of stored plots.
 }
 
->>>>>>> 47967c7659d08e4061ac2300a09ab9c85db0ad7b
 #### Heili Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
@@ -353,16 +348,10 @@ tabPanel("Data Overview", #tab opening
         
     
 pickerInput(inputId = "Emily_check", # effect checklist
-<<<<<<< HEAD
-            label = "Effects:", #labeled the checklist effects 
-            choices = levels(Final_effect_dataset$plot_f), #connects to graphs 
-            multiple = FALSE), 
-=======
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer", # default selected
             multiple = TRUE), # allows for multiple selections at once
->>>>>>> 47967c7659d08e4061ac2300a09ab9c85db0ad7b
             br(),
 uiOutput(outputId= "Emily_plot")),
 
