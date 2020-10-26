@@ -382,18 +382,23 @@ uiOutput(outputId= "Emily_plot")),
                         choices = levels(aoc_y$lvl1_f),
                         selected = levels(aoc_y$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE))), # allows for multiple inputs
+                        multiple = TRUE)), # allows for multiple inputs
+                      
+                      column(width = 3,
+                        actionButton("go", "Update"))), # adds action button 
+                    # "go" is the internal name to refer to the button
+                    # "Update" is the title that appears on the app
                       
                       br(), # line break
                       hr(), # adds divider
                     
                     #mainPanel(
                       br(), # line break
-                      plotlyOutput(outputId = "size_plot_react"),
+                      plotOutput(outputId = "size_plot_react"),
                       br(), # line break
-                      plotlyOutput(outputId = "shape_plot_react"),
+                      plotOutput(outputId = "shape_plot_react"),
                       br(), # line break
-                      plotlyOutput(outputId = "poly_plot_react")), 
+                      plotOutput(outputId = "poly_plot_react")), 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -453,29 +458,30 @@ uiOutput(outputId= "Emily_plot")),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
                               br(),
                               p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
-                              )),
+                              ))#,
         
         # dummy tab entered by Heili
-        tabPanel("File Upload", 
-          
-          br(), # line break
-          
-          h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
-          
-          p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
-          
-          sidebarLayout(
-            
-          sidebarPanel(
-
-            fileInput("file1", "Drag and drop data file here:", # .csv file input
-              multiple = FALSE,
-              accept = c(".csv"))),
-
-          mainPanel(p("Region's top costumes:"),
-            plotOutput(outputId = "costume_graph"))
-            )
-        )
+        # commented out for the time being
+        # tabPanel("File Upload", 
+        #   
+        #   br(), # line break
+        #   
+        #   h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
+        #   
+        #   p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
+        #   
+        #   sidebarLayout(
+        #     
+        #   sidebarPanel(
+        # 
+        #     fileInput("file1", "Drag and drop data file here:", # .csv file input
+        #       multiple = FALSE,
+        #       accept = c(".csv"))),
+        # 
+        #   mainPanel(p("Region's top costumes:"),
+        #     plotOutput(outputId = "costume_graph"))
+        #     )
+        # )
           
 #following three parentheses close out UI. Do not delete. 
         )))   
@@ -502,122 +508,102 @@ server <- function(input, output) {
   
 #### Heili S ####
   
-  # Create new dataset based on widget filtering.
-  aoc_filter <- reactive({
-    aoc_y %>%
-      filter(org_f %in% input$organism_check) %>%
-      filter(lvl1_f %in% input$lvl1_check)
+  # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
+  aoc_filter <- eventReactive(list(input$go),{
+    # eventReactive explicitly delays activity until you press the button
+    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
+    
+    org_c <- input$organism_check # assign organism input values to "org_c"
+    lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
+    
+    aoc_y %>% # take original dataset
+      filter(org_f %in% org_c) %>% # filter by organism inputs
+      filter(lvl1_f %in% lvl1_c) # filter by level inputs
   })
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
-  output$size_plot_react <- renderPlotly({
+  output$size_plot_react <- renderPlot({
     
-    size1 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.mg.L, color = size_f, fill = size_f, text = paste(size_f))) +
-      geom_boxplot(alpha = 0.7) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      xlab("Size") +
-      ylab("Concentration (mg/L)") +
-      coord_flip()  # plotly is not as smart as ggplot, so we need to pass the categorical variable to the x axis and then flip it
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (mg/L)",
+        y = "Size")
     
-    size2 <- ggplot(aoc_filter(), aes(x = size_f, y = dose.particles.mL, color = size_f, fill = size_f, text = paste(size_f))) +
-      geom_boxplot(alpha = 0.7) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "  ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # cannot use patchwork alongside plotly currently, so switching to plotly's subplot structure
-    # makes figures interactive
-    size1ly <- ggplotly(size1, tooltip = c("text"))
-    size2ly <- ggplotly(size2, tooltip = c("text"))
-    # combines them in a single row
-    # need to specify that axis titles are unique
-    subplot(size1ly, size2ly, titleY = TRUE, titleX = TRUE)
+    (size1 + size2) # using patchwork to combine figures
     
   })
   
-  output$shape_plot_react <- renderPlotly({
+  output$shape_plot_react <- renderPlot({
     
-    shape1 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.mg.L)) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "Shape",
-        y = "Concentration (mg/L)") +
-      coord_flip()
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (mg/L)",
+        y = "Shape")
     
-    shape2 <- ggplot(aoc_filter(), aes(x = shape_f, y = dose.particles.mL)) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = shape_f, fill = shape_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = " ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # makes figures interactive
-    shape1ly <- ggplotly(shape1)
-    shape2ly <- ggplotly(shape2)
-    # combines them in a single row
-    subplot(shape1ly, shape2ly, titleY = TRUE, titleX = TRUE)
+    (shape1 + shape2) # patchwork combining plots
     
   })
   
-  output$poly_plot_react <- renderPlotly({
+  output$poly_plot_react <- renderPlot({
     
-    poly1 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.mg.L)) +
-      scale_y_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = "Polymer",
-        y = "Concentration (mg/L)") +
-      coord_flip()
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (mg/L)",
+        y = "Polymer")
     
-    poly2 <- ggplot(aoc_filter(), aes(x = poly_f, y = dose.particles.mL)) +
-      scale_y_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = poly_f, fill = poly_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
-      #geom_jitter(size = 3, alpha = 0.2, height = 0.1, color = "grey80") +
       theme_classic() +
-      theme(legend.position="none") +
-      labs(x = " ",
-        y = "Concentration (particles/mL)") +
-      coord_flip()
+      theme(text = element_text(size=16)) +
+      labs(x = "Concentration (particles/mL)",
+        y = " ")
     
-    # makes figures interactive
-    poly1ly <- ggplotly(poly1)
-    poly2ly <- ggplotly(poly2)
-    # combines them in a single row
-    subplot(poly1ly, poly2ly, titleY = TRUE, titleX = TRUE)
+    (poly1 + poly2) # join plots together using patchwork
     
   })
 
