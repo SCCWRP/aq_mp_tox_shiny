@@ -458,29 +458,30 @@ uiOutput(outputId= "Emily_plot")),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
                               br(),
                               p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
-                              )),
+                              ))#,
         
         # dummy tab entered by Heili
-        tabPanel("File Upload", 
-          
-          br(), # line break
-          
-          h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
-          
-          p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
-          
-          sidebarLayout(
-            
-          sidebarPanel(
-
-            fileInput("file1", "Drag and drop data file here:", # .csv file input
-              multiple = FALSE,
-              accept = c(".csv"))),
-
-          mainPanel(p("Region's top costumes:"),
-            plotOutput(outputId = "costume_graph"))
-            )
-        )
+        # commented out for the time being
+        # tabPanel("File Upload", 
+        #   
+        #   br(), # line break
+        #   
+        #   h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
+        #   
+        #   p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
+        #   
+        #   sidebarLayout(
+        #     
+        #   sidebarPanel(
+        # 
+        #     fileInput("file1", "Drag and drop data file here:", # .csv file input
+        #       multiple = FALSE,
+        #       accept = c(".csv"))),
+        # 
+        #   mainPanel(p("Region's top costumes:"),
+        #     plotOutput(outputId = "costume_graph"))
+        #     )
+        # )
           
 #following three parentheses close out UI. Do not delete. 
         )))   
