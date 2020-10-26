@@ -386,6 +386,8 @@ uiOutput(outputId= "Emily_plot")),
                       
                       column(width = 3,
                         actionButton("go", "Update"))), # adds action button 
+                    # "go" is the internal name to refer to the button
+                    # "Update" is the title that appears on the app
                       
                       br(), # line break
                       hr(), # adds divider
@@ -507,13 +509,15 @@ server <- function(input, output) {
   
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
+    # eventReactive explicitly delays activity until you press the button
+    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
-    org_c <- input$organism_check
-    lvl1_c <- input$lvl1_check
+    org_c <- input$organism_check # assign organism input values to "org_c"
+    lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
     
-    aoc_y %>%
-      filter(org_f %in% org_c) %>%
-      filter(lvl1_f %in% lvl1_c)
+    aoc_y %>% # take original dataset
+      filter(org_f %in% org_c) %>% # filter by organism inputs
+      filter(lvl1_f %in% lvl1_c) # filter by level inputs
   })
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
