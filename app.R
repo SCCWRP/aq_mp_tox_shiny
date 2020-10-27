@@ -39,7 +39,8 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Emily Setup ####
 
-Final_effect_dataset <- read_csv("Final_effect_dataset.csv")
+Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
+  mutate(plot_f = factor(plot_f))
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -284,7 +285,9 @@ uiOutput(outputId= "Emily_plot")),
                     br(), # line break
                     p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
                     br(), # line break
-                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the selection widgets on the left-hand side of the window."),
+                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the drop-down menus located below."),
+                    br(), # line break
+                    p("To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
                     br(), # line break
                     
                     # widgets
@@ -452,7 +455,7 @@ server <- function(input, output) {
     aoc_size1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
       group_by(size_f) %>% # need to include so there's a recognized "y"
-      summarize(dose.mg.L = median(dose.mg.L), # need for recognized "x"
+      summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
         measurements = n(),
         studies = n_distinct(article))
 
@@ -463,7 +466,10 @@ server <- function(input, output) {
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       geom_text_repel(data = aoc_size1, 
-        aes(label = paste("(",measurements,",",studies,")"))) +
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
@@ -473,14 +479,17 @@ server <- function(input, output) {
     aoc_size2 <- aoc_filter() %>%
       group_by(size_f) %>%
       drop_na(dose.particles.mL) %>%
-      summarize(dose.particles.mL = median(dose.particles.mL), 
+      summarize(dose.particles.mL = quantile(dose.particles.mL, .1), 
         measurements = n(),
         studies = n_distinct(article))
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
-      geom_text(data = aoc_size2, 
-        aes(label = paste("(",measurements,",",studies,")"))) +
+      geom_text_repel(data = aoc_size2, 
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
