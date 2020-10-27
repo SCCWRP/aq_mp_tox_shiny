@@ -11,6 +11,7 @@ library(tidyverse)
 library(patchwork)
 library(tigerstats)
 library(ggplot2)
+library(ggrepel)
 library(calecopal)
 library(shiny)
 library(shinythemes)
@@ -525,19 +526,39 @@ server <- function(input, output) {
   
   output$size_plot_react <- renderPlot({
     
+    # Creating dataset to output counts.
+    aoc_size1 <- aoc_filter() %>%
+      drop_na(dose.mg.L) %>%
+      group_by(size_f) %>% # need to include so there's a recognized "y"
+      summarize(dose.mg.L = median(dose.mg.L), # need for recognized "x"
+        measurements = n(),
+        studies = n_distinct(article))
+
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      geom_text_repel(data = aoc_size1, 
+        aes(label = paste("(",measurements,",",studies,")"))) +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Size")
     
+    # Creating dataset to output counts.
+    aoc_size2 <- aoc_filter() %>%
+      group_by(size_f) %>%
+      drop_na(dose.particles.mL) %>%
+      summarize(dose.particles.mL = median(dose.particles.mL), 
+        measurements = n(),
+        studies = n_distinct(article))
+    
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_text(data = aoc_size2, 
+        aes(label = paste("(",measurements,",",studies,")"))) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
