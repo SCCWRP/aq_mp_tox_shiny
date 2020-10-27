@@ -39,7 +39,7 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Emily Setup ####
 
-read_csv("Final_effect_dataset.csv")
+Final_effect_dataset <- read_csv("Final_effect_dataset.csv")
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
