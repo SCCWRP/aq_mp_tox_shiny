@@ -57,7 +57,7 @@ get_plot_output_list <- function(input_n) {
     #plot_output_object <- 
     
     # Render the individual plots      
-    renderPlot({
+    renderPlotly({
       
       # use the original dataset
       Final_effect_dataset %>%
@@ -66,7 +66,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y=Freq, x=type)) +
+        ggplot(aes(fill=effect, y=Freq, x=type, study=study)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2") +
         scale_fill_manual(values = cal_palette("wetland")) +
@@ -77,6 +77,7 @@ get_plot_output_list <- function(input_n) {
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
       
+        ggplotly(tooltip="study")
       
     })
     
