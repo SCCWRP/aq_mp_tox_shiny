@@ -136,14 +136,17 @@ aoc_z <- aoc_x %>% # start with Heili's altered dataset (no filtration for terre
   mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
   #must drop NAs or else nothing will work 
-  drop_na(dose.mg.L) 
+  drop_na(dose.mg.L) %>% 
+  #SSD package depends on specific naming conventions. Prep factors accordingly below
+  mutate(Conc = dose.mg.L)   #must make value named 'Conc' for this package
 
-#SSD package depends on specific naming conventions. Prep factors accordingly below
-aoc_z$Conc <- aoc_z$dose.mg.L #must make value named 'Conc' for this package
-aoc_z$Species <-paste(aoc_z$genus,aoc_z$species) #must make value 'Species" (uppercase)
+# final cleanup and factoring  
+aoc_z$species <- str_replace(aoc_z$species,"franciscana�","franciscana") #fix <?> unicode symbol in francisca species
+aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
+#mutate(species_f = factor(Species, levels = c("Daphnia magna","Mytilus galloprovincialis","Arenicola marina","Scenedesmus obliquus","Chlorella NA","Raphidocelis subcapitata","Dunaliella salina","Cyprinodon variegatus","Daphnia galeata","Paracentrotus lividus","Amphibalanus amphitrite","Artemia franciscana�","Pinctada margaritifera","Multiple NA","Pimephales promelas","Brachionus koreanus","Paracyclopina nana","Danio rerio","Lemna minor","Chlamydomas reinhardtii","Tigriopus japonicus","Chlorella pyrenoidosa","Hydra attenuata","Pomatoschistus microps","Mytilus NA","Acropora muricata","Heliopora coerulea","Pocillopora verrucosa","Mytilus spp","Scrobicularia plana","Perna viridis","Oryzias latipes","Barbodes gonionotus","Chaetoceros neogracile","Halomonas alkaliphila","Crassostrea gigas","Pocillopora damicornis","Mytilus edulis","Artemia parthenogenetica","Microcystis flos-aquae","Sebastes schlegelii","Eriocheir sinensis","Seletonema costatum","Karenia mikimotoi","Ceriodaphnia dubia","Dicentrachus labrax","Brachionus plicatilis","Tigriopus fulvus","Oryzias melastigma","Oryzias sinensis","Zacco temminckii","Oreochromis niloticus","Clarias gariepinus","Carassius carassius", "Cyprinus carpio")))# order our different species.
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
@@ -223,7 +226,7 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/heili-lowman/", 'Dr. Heili Lowman'),", Southern California Coastal Water Research Project ",
                       tags$a(href="https://twitter.com/heili_lowman", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/hlowman", tags$img(src="github.png", width="2%", height="2%"))), 
                     p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
-                      tags$a(href="https://twitter.com/DrScottCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
+                      tags$a(href="https://twitter.com/DrSCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
                     p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
                       tags$a(href="https://github.com/EmilyDarin", tags$img(src="github.png", width="2%", height="2%"))),
@@ -335,37 +338,65 @@ uiOutput(outputId= "Emily_plot")),
                     h3("Species Sensitivity Distribution", align = "center", style = "color:darkcyan"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
+                    p("Use the options below to filter the dataset. NOTE: changes may take a long time to appear"),
                     
-                    sidebarPanel("Use the options below to filter the dataset. NOTE: changes may take a long time to appear",
-                                 br(), # line break
-                                 br(),
-                                 checkboxGroupInput(inputId = "env_check_ssd", # environment checklist
-                                                    label = "Environment:",
-                                                    choices = levels(aoc_z$env_f), 
-                                                    selected = levels(aoc_z$env_f)), # Default is to have everything selected.
-                                 br(),
-                                 
-                                 checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
-                                                    label = "Sizes:",
-                                                    choices = levels(aoc_z$size_f), 
-                                                    selected = levels(aoc_z$size_f)), # Default is to have everything selected.
-                                 br(),
-                                 
-                                 checkboxGroupInput(inputId = "lvl1_check_ssd", # endpoint checklist
-                                                    label = "Endpoint Examined:",
-                                                    choices = levels(aoc_z$lvl1_f), 
-                                                    selected = levels(aoc_z$lvl1_f)), # Default is to have everything selected.
-                                 br(), # line break 
-                                 
-                                 checkboxGroupInput(inputId = "polyf_check_ssd", # endpoint checklist
-                                       label = "Polymers Examined:",
-                                       choices = levels(aoc_z$poly_f), 
-                                       selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
-                                 br(), #line break
-                                 
-                                 actionButton("SSDButton", "Submit"),
+                    # widget 1
+                    column(width = 12,
+                           column(width = 3,
+                                  # alternative to fully listed checklists
+                                  # requires shinyWidgets package
+                                  pickerInput(inputId = "env_check_ssd", # environment checklist
+                                              label = "Environment:", 
+                                              choices = levels(aoc_z$env_f),
+                                              selected = levels(aoc_z$env_f),   
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                           # Organism widget
+                           column(width = 12,
+                                         pickerInput(inputId = "Group_check_ssd", # organism checklist
+                                              label = "Organism Groups:", 
+                                              choices = levels(aoc_z$Group),
+                                              selected = levels(aoc_z$Group),   
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                           #Species widget
+                           column(width = 12,
+                                  pickerInput(inputId = "Species_check_ssd", # organism checklist
+                                              label = "Species:",
+                                              choices = levels(aoc_z$Species),
+                                              selected = levels(aoc_z$Species),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+
+                           column(width = 3,
+                                  actionButton("SSDgo", "Update"))), # adds action button 
+                    # "SSDgo" is the internal name to refer to the button
+                    # "Update" is the title that appears on the app
+                                       
+                                 #  comment out for now
+                                 #  br(),
+                                 # 
+                                 # checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
+                                 #                    label = "Sizes:",
+                                 #                    choices = levels(aoc_z$size_f), 
+                                 #                    selected = levels(aoc_z$size_f)), # Default is to have everything selected.
+                                 # br(),
+                                 # 
+                                 # checkboxGroupInput(inputId = "lvl1_check_ssd", # endpoint checklist
+                                 #                    label = "Endpoint Examined:",
+                                 #                    choices = levels(aoc_z$lvl1_f), 
+                                 #                    selected = levels(aoc_z$lvl1_f)), # Default is to have everything selected.
+                                 # br(), # line break 
+                                 # 
+                                 # checkboxGroupInput(inputId = "polyf_check_ssd", # endpoint checklist
+                                 #       label = "Polymers Examined:",
+                                 #       choices = levels(aoc_z$poly_f), 
+                                 #       selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
+                                 # br(), #line break
+                                 # 
+                                 # actionButton("SSDButton", "Submit"),
                     
-                    br()), # line break
+                    br(), # line break
 
                     
                     mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
@@ -387,9 +418,11 @@ uiOutput(outputId= "Emily_plot")),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
                               br(),
                               p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
-                              ))#,
+                              ) #closes out scott's main panel
+                    ) #closes out Scott's tab panel
         
-        # dummy tab entered by Heili
+
+        ##### dummy tab entered by Heili ####
         # commented out for the time being
         # tabPanel("File Upload", 
         #   
@@ -612,24 +645,26 @@ server <- function(input, output) {
   })
 
 #### Scott S ####
-  
-  
-  # Create new dataset based on widget filtering. Note: copied from Heili
-  # dependency on input$SSDButton
-  
-  #eventReactive(input$SSDButton, {
-               
-  aoc_filter_ssd <- reactive({
+
+  # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
+  aoc_filter_ssd <- eventReactive(list(input$SSDgo),{
+    # eventReactive explicitly delays activity until you press the button
+    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
-    aoc_z %>%
-      filter(env_f %in% input$env_check_ssd) %>%
-      filter(size_f %in% input$size_check_ssd) %>%
-      filter(lvl1_f %in% input$lvl1_check_ssd) %>%
-      filter(poly_f %in% input$polyf_check_ssd) %>%
-    group_by(Species, Group) %>% 
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    
+    aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      #filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      #filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      #filter(poly_f %in% polyf_c_ssd) %>% #filter by polymer inputs
+      group_by(Species, Group) %>% 
       summarise(Conc = min(Conc)) #set concentration to minimum observed effect
-    })
-  #})
+  })
   
   # Use newly created dataset from above to generate SSD
   
