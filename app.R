@@ -57,7 +57,7 @@ get_plot_output_list <- function(input_n) {
     #plot_output_object <- 
     
     # Render the individual plots      
-    renderPlot({
+    renderPlotly({
       
       # use the original dataset
       Final_effect_dataset %>%
@@ -66,7 +66,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y=Freq, x=type)) +
+        ggplot(aes(fill=effect, y=Freq, x=type, study=study)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2") +
         scale_fill_manual(values = cal_palette("wetland")) +
@@ -76,6 +76,8 @@ get_plot_output_list <- function(input_n) {
           axis.ticks=element_blank(),
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
+      
+        ggplotly(tooltip="study")
       
     })
     
@@ -272,13 +274,15 @@ tabPanel("Data Overview", #tab opening
          br(), # line break
          h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
          br(), # line break
+         h3( "The figures below represent the percentage of studies that showed and did not show effects by different categories. These graphs are interactive, feel free to hover over each bar and click on the legend."),
+         br(), # final line break 
         
     
-pickerInput(inputId = "Emily_check", # effect checklist
+awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer", # default selected
-            multiple = TRUE), # allows for multiple selections at once
+            inline = TRUE), # allows for multiple selections at once
             br(),
 uiOutput(outputId= "Emily_plot")),
 
