@@ -505,16 +505,35 @@ server <- function(input, output) {
   
   output$shape_plot_react <- renderPlot({
     
+    aoc_shape1 <- aoc_filter() %>%
+      drop_na(dose.mg.L) %>%
+      group_by(shape_f) %>% 
+      summarize(dose.mg.L = quantile(dose.mg.L, .1),
+        measurements = n(),
+        studies = n_distinct(article))
+    
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
+      geom_text_repel(data = aoc_shape1, 
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Shape")
+    
+    aoc_shape2 <- aoc_filter() %>%
+      drop_na(dose.particles.mL) %>%
+      group_by(shape_f) %>% 
+      summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
+        measurements = n(),
+        studies = n_distinct(article))
     
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
@@ -522,6 +541,12 @@ server <- function(input, output) {
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
       scale_color_manual(values = cal_palette("chaparral3")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
+      geom_text_repel(data = aoc_shape2, 
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
+      theme_classic() +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (particles/mL)",
@@ -533,16 +558,35 @@ server <- function(input, output) {
   
   output$poly_plot_react <- renderPlot({
     
+    aoc_poly1 <- aoc_filter() %>%
+      drop_na(dose.mg.L) %>%
+      group_by(poly_f) %>% 
+      summarize(dose.mg.L = quantile(dose.mg.L, .1),
+        measurements = n(),
+        studies = n_distinct(article))
+    
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_text_repel(data = aoc_poly1, 
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (mg/L)",
         y = "Polymer")
+    
+    aoc_poly2 <- aoc_filter() %>%
+      drop_na(dose.particles.mL) %>%
+      group_by(poly_f) %>% 
+      summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
+        measurements = n(),
+        studies = n_distinct(article))
     
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
@@ -550,6 +594,11 @@ server <- function(input, output) {
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
       scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_text_repel(data = aoc_poly2, 
+        aes(label = paste("(",measurements,",",studies,")")),
+        nudge_x = -1,
+        nudge_y = -0.25,
+        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16)) +
       labs(x = "Concentration (particles/mL)",
