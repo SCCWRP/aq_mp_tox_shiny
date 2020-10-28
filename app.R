@@ -77,6 +77,7 @@ get_plot_output_list <- function(input_n) {
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
       
+      
     })
     
   })
@@ -269,6 +270,8 @@ tabPanel("Data Overview", #tab opening
          br(), # line break
          h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
          br(), # line break
+         h3( "The figures below represent the percentage of studies that showed and did not show effects by different categories. These graphs are interactive, feel free to hover over each bar and click on the legend.", align = "center", style = "color:darkcyan"),
+         br(), # final line break 
         
     
 pickerInput(inputId = "Emily_check", # effect checklist
