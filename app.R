@@ -57,7 +57,7 @@ get_plot_output_list <- function(input_n) {
     #plot_output_object <- 
     
     # Render the individual plots      
-    renderPlotly({
+    renderPlot({
       
       # use the original dataset
       Final_effect_dataset %>%
@@ -66,7 +66,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y=Freq, x=type, study=study)) +
+        ggplot(aes(fill=effect, y=Freq, x=type)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2") +
         scale_fill_manual(values = cal_palette("wetland")) +
@@ -76,8 +76,6 @@ get_plot_output_list <- function(input_n) {
           axis.ticks=element_blank(),
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
-      
-        ggplotly(tooltip="study")
       
     })
     
@@ -274,15 +272,13 @@ tabPanel("Data Overview", #tab opening
          br(), # line break
          h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
          br(), # line break
-         h3( "The figures below represent the percentage of studies that showed and did not show effects by different categories. These graphs are interactive, feel free to hover over each bar and click on the legend."),
-         br(), # final line break 
         
     
-awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
+pickerInput(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer", # default selected
-            inline = TRUE), # allows for multiple selections at once
+            multiple = TRUE), # allows for multiple selections at once
             br(),
 uiOutput(outputId= "Emily_plot")),
 
@@ -441,18 +437,26 @@ uiOutput(outputId= "Emily_plot")),
                                      pickerInput(inputId = "pred_ave_ssd", # prediction model averaging checklist
                                                  label = "Averaging:",
                                                  choices = c("TRUE", "FALSE"), #tells the model to average or not
-                                                 selected = "TRUE",
+                                                 selected = NULL,
                                                  options = list(`actions-box` = FALSE), # option to de/select all
                                                  multiple = FALSE)),
                               br(),
-                              actionButton("SSDpred", "Predict"), # adds action button 
-# "SSDpred" is the internal name to refer to the button
-# "Predict" is the title that appears on the app
+                              p("Choose the hazard concentration (% of species affected)"),
+                              numericInput(inputId = "pred_hc_ssd", #hazard concentration input
+                                           label = "Hazard Concentration (%)",
+                                           value = 5,
+                                           min = 0.1,
+                                           step = 1,
+                                           max = 0.99),
+                              br(),
+                              actionButton("ssdPred", "Predict"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
+                              br(),
+                              p("Please be patient as maximum likelihood estimations are calculated. This may take several minutes."),
                               br(),
                               p("Species Sensitivity Distribution"),
                               plotOutput(outputId = "SSD_plot_react"),
                               br(),
-                              p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged 5% Hazard Concentration (HC5) by the dotted line."),
+                              p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
                               p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
                               ) #closes out scott's main panel
@@ -761,15 +765,16 @@ server <- function(input, output) {
   })
   
   #SLOW STEP: Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
-    aoc_pred <- eventReactive(list(input$SSDpred),{
+    aoc_pred <- eventReactive(list(input$ssdPred),{
       # eventReactive explicitly delays activity until you press the button
       # here we'll use the inputs to create a new dataset that will be fed into the prediction below
       
-    pred_c_ave_ssd <- input$pred_ave_ssd #assign prediction averaging choice
+    pred_c_ave_ssd <- as.logical(input$pred_ave_ssd) #assign prediction averaging choice
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
-      
+    
     set.seed(99)
     predict(fit_dists(), #object
+            nboot = 10,
             average = pred_c_ave_ssd, #tells whether or not the average models
             ic = pred_c_ic_ssd, #tells which information criteria to use
             ci= TRUE) #estimates confidence intervals
@@ -778,13 +783,46 @@ server <- function(input, output) {
 
 #Create the plot for species sensitivity distribution
   output$SSD_plot_react <- renderPlot({
-    ssd_plot(aoc_filter_ssd(), aoc_pred(), #native ggplot with SSD package
-                   color = "Group", label = "Species",
-                   xlab = "Concentration (mg/L)", ribbon = TRUE) +
+    req(input$ssdPred) #won't start until button is pressed for prediction
+    
+    pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
+    
+    ## create progress bar ##
+    # Create 0-row data frame which will be used to store data
+    dat <- data.frame(x = numeric(0), y = numeric(0))
+    
+    withProgress(message = 'Predicting MLE and Generating Plot', value = 0, {
+      # Number of times we'll go through the loop
+      n <- 26
+      
+      for (i in 1:n) {
+        # Each time through the loop, add another row of data. This is
+        # a stand-in for a long-running computation.
+        dat <- rbind(dat, data.frame(x = rnorm(1), y = rnorm(1)))
+        
+        # Increment the progress bar, and update the detail text.
+        incProgress(1/n, detail = "This may take several minutes")
+        
+        # Pause for 10 seconds to simulate a long computation.
+        Sys.sleep(3)
+      }
+    })
+    
+    ## generate plot from prediction ##
+    ssdplot <- ssd_plot(aoc_filter_ssd(), #data
+                        aoc_pred(), #prediction
+                        color = "Group",
+                        label = "Species",
+                        xlab = "Concentration (mg/L)",
+                        ci = TRUE, #confidence interval
+                        hc = pred_c_hc_ssd) #percent hazard concentration
+                        +
       scale_fill_viridis_d() + #make colors more differentiable 
-      scale_colour_viridis_d() + #make colors more differentiable 
+      scale_colour_viridis_d() +  #make colors more differentiable 
       expand_limits(x = 5000) + # to ensure the species labels fit
-            ggtitle("Species Sensitivity for Microplastics")
+      ggtitle("Species Sensitivity for Microplastics")
+    
+    ssdplot #print
       })
   
   # server-side for dummy file input tab
