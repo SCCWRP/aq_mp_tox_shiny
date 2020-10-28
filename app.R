@@ -273,15 +273,15 @@ tabPanel("Data Overview", #tab opening
          br(), # line break
          h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
          br(), # line break
-         h3( "The figures below represent the percentage of studies that showed and did not show effects by different categories. These graphs are interactive, feel free to hover over each bar and click on the legend.", align = "center", style = "color:darkcyan"),
+         h3( "The figures below represent the percentage of studies that showed and did not show effects by different categories. These graphs are interactive, feel free to hover over each bar and click on the legend."),
          br(), # final line break 
         
     
-pickerInput(inputId = "Emily_check", # effect checklist
+awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer", # default selected
-            multiple = TRUE), # allows for multiple selections at once
+            inline = TRUE), # allows for multiple selections at once
             br(),
 uiOutput(outputId= "Emily_plot")),
 
