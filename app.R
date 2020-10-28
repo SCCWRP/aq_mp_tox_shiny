@@ -140,7 +140,7 @@ aoc_z <- aoc_x %>% # start with Heili's altered dataset (no filtration for terre
   mutate(Conc = dose.mg.L)   #must make value named 'Conc' for this package
 
 # final cleanup and factoring  
-aoc_z$species <- gsub(" ","",aoc_z$species) #fix <?> unicode symbol in francisca species
+aoc_z$species <- str_replace(aoc_z$species,"franciscana�","franciscana") #fix <?> unicode symbol in francisca species
 aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
@@ -356,14 +356,14 @@ uiOutput(outputId= "Emily_plot")),
                                               selected = levels(aoc_z$Group),   
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
-                           # #Species widget
-                           # column(width = 12,
-                           #        pickerInput(inputId = "Species_check_ssd", # organism checklist
-                           #                    label = "Species:",
-                           #                    choices = levels(aoc_z$Species),
-                           #                    selected = levels(aoc_z$Species),
-                           #                    options = list(`actions-box` = TRUE), # option to de/select all
-                           #                    multiple = TRUE)), # allows for multiple inputs
+                           #Species widget
+                           column(width = 12,
+                                  pickerInput(inputId = "Species_check_ssd", # organism checklist
+                                              label = "Species:",
+                                              choices = levels(aoc_z$Species),
+                                              selected = levels(aoc_z$Species),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
 
                            column(width = 3,
                                   actionButton("SSDgo", "Update"))), # adds action button 
@@ -650,12 +650,12 @@ server <- function(input, output) {
     
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
-  #  Species_c_ssd <- input$Species_check_ssd #assign species input
+    Species_c_ssd <- input$Species_check_ssd #assign species input
     
     aoc_z %>% # take original dataset
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
-    #  filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       #filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       #filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
       #filter(poly_f %in% polyf_c_ssd) %>% #filter by polymer inputs
