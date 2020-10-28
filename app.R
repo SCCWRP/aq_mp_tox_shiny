@@ -335,7 +335,7 @@ uiOutput(outputId= "Emily_plot")),
                     h3("Species Sensitivity Distribution", align = "center", style = "color:darkcyan"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
-                    p("Use the options below to filter the dataset. NOTE: changes may take a long time to appear"),
+                    p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     
                     # widget 1
                     column(width = 12,
@@ -349,7 +349,7 @@ uiOutput(outputId= "Emily_plot")),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
                            # Organism widget
-                           column(width = 12,
+                           column(width = 3,
                                          pickerInput(inputId = "Group_check_ssd", # organism checklist
                                               label = "Organism Groups:", 
                                               choices = levels(aoc_z$Group),
@@ -357,57 +357,93 @@ uiOutput(outputId= "Emily_plot")),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
                            #Species widget
-                           column(width = 12,
+                           column(width = 3,
                                   pickerInput(inputId = "Species_check_ssd", # organism checklist
                                               label = "Species:",
                                               choices = levels(aoc_z$Species),
                                               selected = levels(aoc_z$Species),
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)), # allows for multiple inputs
-
+                                              multiple = TRUE))), # allows for multiple inputs
+                           br(),
+                           p("Advanced options. Suggest using defaults."),
+                           br(),
+                    
+                           column(width = 12,
+                           #Size widget
                            column(width = 3,
-                                  actionButton("SSDgo", "Update"))), # adds action button 
+                                  pickerInput(inputId = "size_check_ssd", # organism checklist
+                                              label = "Sizes:",
+                                              choices = levels(aoc_z$size_f),
+                                              selected = levels(aoc_z$size_f),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                          
+                            #Endpoint widget
+                           column(width = 3,
+                                  pickerInput(inputId = "lvl1_check_ssd", # organism checklist
+                                              label = "Endpoints:",
+                                              choices = levels(aoc_z$lvl1_f),
+                                              selected = levels(aoc_z$lvl1_f),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                           
+                           #Polymer widget
+                           column(width = 3,
+                                  pickerInput(inputId = "poly_check_ssd", # organism checklist
+                                              label = "Polymers:",
+                                              choices = levels(aoc_z$poly_f),
+                                              selected = levels(aoc_z$poly_f),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                           
+                           
+                            column(width = 3,
+                                  actionButton("SSDgo", "Submit"))), # adds action button 
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
-                                       
-                                 #  comment out for now
-                                 #  br(),
-                                 # 
-                                 # checkboxGroupInput(inputId = "size_check_ssd", # organismal checklist
-                                 #                    label = "Sizes:",
-                                 #                    choices = levels(aoc_z$size_f), 
-                                 #                    selected = levels(aoc_z$size_f)), # Default is to have everything selected.
-                                 # br(),
-                                 # 
-                                 # checkboxGroupInput(inputId = "lvl1_check_ssd", # endpoint checklist
-                                 #                    label = "Endpoint Examined:",
-                                 #                    choices = levels(aoc_z$lvl1_f), 
-                                 #                    selected = levels(aoc_z$lvl1_f)), # Default is to have everything selected.
-                                 # br(), # line break 
-                                 # 
-                                 # checkboxGroupInput(inputId = "polyf_check_ssd", # endpoint checklist
-                                 #       label = "Polymers Examined:",
-                                 #       choices = levels(aoc_z$poly_f), 
-                                 #       selected = levels(aoc_z$poly_f)), # Default is to have everything selected.
-                                 # br(), #line break
-                                 # 
-                                 # actionButton("SSDButton", "Submit"),
-                    
+                           
                     br(), # line break
+                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices."),
+                    br(),
 
                     
                     mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
                               br(), # line break
                               br(),
+                              DT::dataTableOutput(outputId = "aoc_filter_ssd_table"),
                               p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
                               br(),
                               plotOutput(outputId = "autoplot_dists_react"),
-                              p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal). Given multiple distributions, choose the best fitting distribution."),
+                              p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel)."),
+                              br(),
                               p("Goodness of Fit Table"),
                               DT::dataTableOutput(outputId = "table_gof_react"), #using DT package provides better functionality
-                              p("KEY:"),
-                              p("ad = Anderson-Darling statistic; ks = Kolmogorov-Smirnov statistic; cvm = Cramer-von Mises statistic; aic = Akaike's Information Criterion; aicc = Akaike's Information Criterion corrected for sample size; bic = Bayesian Information Criterion"),
-                              p("Following Burnham and Anderson (2002) we recommend the aicc for model selection. The best fitting model is that with the lowest aicc (indicated by the model with a delta value in the goodness of fit table). For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
+                              br(),
+                              p("The best fitting model is that with the smallest Information Criteria value. Note that several informaiton criteria are listed. Burnham and Anderson (2002) recommend using Akiak'es Information Criteria (Corrected for sample size) [aicc] for model selection. The model with the smallest aicc is indicated by the smallest delta value in the goodness of fit table. For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
+                              br(),
+                              p("Following Burnham and Anderson (2002), the aicc is recommended for model selection (for which the lowest value is the best fitting model), and is the default information criteria used to predict confidence intervals (unless otherwise specified below). Options inlcude aicc (Akaike's Information Criteria Corrected for sample size; default), aic (Akaike's Information Criteria), or bic (Bayseian Information Criteria)"),
+                              br(),
+                              column(width = 12,
+                                     pickerInput(inputId = "pred_ic_ssd", # prediction model averaging checklist
+                                                 label = "Information Criteria:",
+                                                 choices = c("aicc", "aic", "bic"), #tells the model which information criteria to use to select best fit
+                                                 selected = "aicc",
+                                                 options = list(`actions-box` = FALSE), # option to de/select all
+                                                 multiple = FALSE)),
+                              br(),
+                              p("Understanding that other distributions may fit the data almost as well as the 'best' distribution (as evidenced by delta values <2), it is recommended to average such fits based on the relative aicc weights of the distributions (indicated by the weight column in the goodness of fit table) (Burnham and Anderson 2002). Below, choose whether or not multiple distributions should be averaged (delta <2) or if a single distribution (chosen by lowest information criteria selected above) should be used."),
+                              br(),
+                              column(width = 12,
+                                     pickerInput(inputId = "pred_ave_ssd", # prediction model averaging checklist
+                                                 label = "Averaging:",
+                                                 choices = c("TRUE", "FALSE"), #tells the model to average or not
+                                                 selected = "TRUE",
+                                                 options = list(`actions-box` = FALSE), # option to de/select all
+                                                 multiple = FALSE)),
+                              br(),
+                              actionButton("SSDpred", "Predict"), # adds action button 
+# "SSDpred" is the internal name to refer to the button
+# "Predict" is the title that appears on the app
                               br(),
                               p("Species Sensitivity Distribution"),
                               plotOutput(outputId = "SSD_plot_react"),
@@ -651,44 +687,90 @@ server <- function(input, output) {
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
+    poly_c_ssd <- input$poly_check_ssd #assign polymers
     
     aoc_z %>% # take original dataset
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
-      #filter(size_f %in% size_c_ssd) %>% #filter by size inputs
-      #filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
-      #filter(poly_f %in% polyf_c_ssd) %>% #filter by polymer inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       group_by(Species, Group) %>% 
       summarise(Conc = min(Conc)) #set concentration to minimum observed effect
+  })
+  
+  #print summarize filtered data in data table
+  output$aoc_filter_ssd_table <- DT::renderDataTable({
+    req(input$SSDgo)
+    
+    datatable(aoc_filter_ssd(),
+              options = list(), #only display the table and nothing else
+              class = "compact",
+              colnames = c("Species", "Group", "Sensitive Concentration (mg/L)"),
+              caption = "Filtered Data"
+    )
   })
   
   # Use newly created dataset from above to generate SSD
   
   #create distribution based on newly created dataset
   fit_dists <- reactive({
-    ssd_fit_dists(aoc_filter_ssd())
+    req(input$SSDgo) #won't run unless submit button is pressed
+    
+    ssd_fit_dists(aoc_filter_ssd(), #data frame
+                  left = "Conc", #string of the column in data with the concentrations
+                  # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
+                 dists = c("weibull", "llogis", "lnorm", "gamma", "lgumbel"), #char vector of distribution anmes
+                 computable = FALSE, #flag specifying whether to only return fits with numerically computable standard errors
+                silent = FALSE) #flag indicating whether fits should fail silently
   }) 
+  
   
   #create an autoplot of the distributions
   output$autoplot_dists_react <- renderPlot({
+    req(input$SSDgo) #won't run unless submit button is pressed
+    
     autoplot(fit_dists())
   })
   
-  #Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
-    aoc_pred <- reactive({
-    set.seed(99)
-    predict(fit_dists(), ci= TRUE) #estimates model-averaged estimates based on aicc
-  }) 
- 
-  #Render table for goodness of fit
-  output$table_gof_react <- DT::renderDataTable({
-    req(fit_dists())
-    gof <- ssd_gof(fit_dists()) %>%
+  #back end create goodness of fit table
+  gof <- reactive({
+    req(input$SSDgo) #won't run unless submit button is pressed
+    
+    ssd_gof(fit_dists()) %>%
       mutate_if(is.numeric, ~ signif(., 3)) %>%
       arrange(delta) #orders by delta of fit
-    gof
+  }) 
+  
+  #Render table for goodness of fit
+  output$table_gof_react <- DT::renderDataTable({
+    datatable(gof(),
+              options = list(dom = 't'), #only display the table and nothing else
+              class = "compact",
+              colnames = c("Distribution", "Anderson-Darling","Kolmogorv Smirnov", "Cramer-Von Mises", "Akaike's Information Criteria", "Akaike's Information Criteria (Corrected for sample size)", "Bayesian Information Criteria", "delta", "weight"),
+              caption = "Distributions and their according fit paramaters are displayed",
+              selection = list(c(6), target = 'column')
+              )
   })
+  
+  #SLOW STEP: Make a dataframe (aoc_pred) of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
+    aoc_pred <- eventReactive(list(input$SSDpred),{
+      # eventReactive explicitly delays activity until you press the button
+      # here we'll use the inputs to create a new dataset that will be fed into the prediction below
+      
+    pred_c_ave_ssd <- input$pred_ave_ssd #assign prediction averaging choice
+    pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
+      
+    set.seed(99)
+    predict(fit_dists(), #object
+            average = pred_c_ave_ssd, #tells whether or not the average models
+            ic = pred_c_ic_ssd, #tells which information criteria to use
+            ci= TRUE) #estimates confidence intervals
+  }) 
+ 
 
 #Create the plot for species sensitivity distribution
   output$SSD_plot_react <- renderPlot({
