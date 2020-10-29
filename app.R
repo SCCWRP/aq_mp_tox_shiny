@@ -865,15 +865,19 @@ server <- function(input, output) {
     )
   })
 
-##define hazard concentration value for figure  
+# #define hazard concentration value for figure
 #   aoc_hc_sub <- eventReactive(list(input$ssdPred),{
-#     hc <- subset(aoc_hc(), est) #defining estimation from above calculation
+#    
 #   return(hc)
-# })  
+# })
   
 #Plot SSD data with ggplot
   output$aoc_ssd_ggplot <- renderPlot({
    # req(input$ssdPred)
+    
+    hc <- aoc_hc() %>% 
+      select(est) #defining estimation from above calculation
+    hc <- as.numeric(hc)
     
    #Plot species sensitivity data with ggplot
 
@@ -890,7 +894,7 @@ server <- function(input, output) {
       scale_x_continuous(
         breaks = scales::trans_breaks("log10", function(x) 10^x),
         labels = comma_signif) +
-      geom_hcintersect(xintercept = 2, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
+      geom_hcintersect(xintercept = hc, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
    })
 
   
