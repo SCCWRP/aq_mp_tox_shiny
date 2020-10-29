@@ -458,7 +458,15 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
-                              p("This app is built from the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
+                              p("Below you will find an estimate of the hazard concentration at the user-specified level with assocaited 95% confidence interval."),
+                              br(),
+                              DT::dataTableOutput(outputId = "aoc_hc_table"), #print hazard concentration table
+                              br(),
+                              p("If the plot above is not working, you may find it below as a ggplot."),
+                              br(),
+                              plotOutput(outputId = "aoc_ssd_ggplot"),
+                              br(),
+                              p("This app is built using the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
                               ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
         
@@ -774,9 +782,9 @@ server <- function(input, output) {
     
     set.seed(99)
     predict(fit_dists(), #object
-            nboot = 10,
             average = pred_c_ave_ssd, #tells whether or not the average models
             ic = pred_c_ic_ssd, #tells which information criteria to use
+            nboot = 10,
             ci= TRUE) #estimates confidence intervals
   }) 
  
@@ -791,7 +799,7 @@ server <- function(input, output) {
     # Create 0-row data frame which will be used to store data
     dat <- data.frame(x = numeric(0), y = numeric(0))
     
-    withProgress(message = 'Predicting MLE and Generating Plot', value = 0, {
+    withProgress(message = 'Predicting Maximum Likelihood Estimation from Selected Model', value = 0, {
       # Number of times we'll go through the loop
       n <- 26
       
@@ -809,21 +817,84 @@ server <- function(input, output) {
     })
     
     ## generate plot from prediction ##
-    ssdplot <- ssd_plot(aoc_filter_ssd(), #data
-                        aoc_pred(), #prediction
-                        color = "Group",
-                        label = "Species",
-                        xlab = "Concentration (mg/L)",
-                        ci = TRUE, #confidence interval
-                        hc = pred_c_hc_ssd) #percent hazard concentration
-                        +
-      scale_fill_viridis_d() + #make colors more differentiable 
-      scale_colour_viridis_d() +  #make colors more differentiable 
-      expand_limits(x = 5000) + # to ensure the species labels fit
-      ggtitle("Species Sensitivity for Microplastics")
-    
-    ssdplot #print
+   ssd_plot(
+     aoc_filter_ssd(), #data
+     aoc_pred(), #prediction
+     color = "Group",
+     label = "Species",
+     xlab = "Concentration (mg/L)",
+     ci = TRUE, #confidence interval
+     ribbon = TRUE,
+     hc = pred_c_hc_ssd) + #percent hazard concentration
+     scale_fill_viridis_d() + #make colors more differentiable 
+     scale_colour_viridis_d() +  #make colors more differentiable 
+     expand_limits(x = 5000) + # to ensure the species labels fit
+     ggtitle("Species Sensitivity for Microplastics")
       })
+  
+  
+  ## Sub-plots ##
+  #Determine Hazard Concentration
+  
+  #Estimate hazard concentration
+  aoc_hc <- eventReactive(list(input$ssdPred),{
+    
+    #user inputs
+    pred_c_ave_ssd <- as.logical(input$pred_ave_ssd) #assign prediction averaging choice
+    pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
+    pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
+    
+    set.seed(99)
+    ssd_hc(fit_dists(),
+           percent = pred_c_hc_ssd,
+           nboot = 10,
+           average = pred_c_ave_ssd, #tells whether or not the average models
+           ic = pred_c_ic_ssd, #tells which information criteria to use
+           ci = TRUE)
+  })
+  
+#Print table of hazard concentration data  
+  output$aoc_hc_table <- DT::renderDataTable({
+    req(input$ssdPred)
+    
+    datatable(aoc_hc(),
+              options = list(dom = 't'), #only display the table and nothing else
+              class = "compact",
+              colnames = c("Percent", "Estimated Concentration (mg/L)", "Standard Error", "Lower Confidence Limit", "Upper Confidence Limit","Distribution Type"),
+              caption = "Hazard Concentration from Filtered Data"
+    )
+  })
+
+##define hazard concentration value for figure  
+#   aoc_hc_sub <- eventReactive(list(input$ssdPred),{
+#     hc <- subset(aoc_hc(), est) #defining estimation from above calculation
+#   return(hc)
+# })  
+  
+#Plot SSD data with ggplot
+  output$aoc_ssd_ggplot <- renderPlot({
+   # req(input$ssdPred)
+    
+   #Plot species sensitivity data with ggplot
+
+    ggplot(aoc_pred(),
+           aes_string(x = "est")) +
+      geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
+      geom_line(aes_string(y = "percent/100")) +
+      geom_ssd(data = aoc_filter_ssd(),
+               aes_string(x = "Conc")) +
+      scale_y_continuous("Species Affected (%)", labels = scales::percent) +
+      expand_limits(y = c(0, 1)) +
+      xlab("Concentration (mg/L)")+
+      coord_trans(x = "log10") +
+      scale_x_continuous(
+        breaks = scales::trans_breaks("log10", function(x) 10^x),
+        labels = comma_signif) +
+      geom_hcintersect(xintercept = 2, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
+   })
+
+  
+  
   
   # server-side for dummy file input tab
   # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
