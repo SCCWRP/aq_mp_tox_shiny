@@ -278,8 +278,9 @@ pickerInput(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer",
-            multiple = TRUE,# default selected# allows for multiple selections at once
+            multiple = TRUE),# default selected# allows for multiple selections at once
             br(),
+            
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
