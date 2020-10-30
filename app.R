@@ -274,11 +274,11 @@ tabPanel("Data Overview", #tab opening
          br(), # line break
         
     
-pickerInput(inputId = "Emily_check", # effect checklist
+awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
-            selected = "Polymer",
-            multiple = TRUE),# default selected# allows for multiple selections at once
+            selected = "Polymer",# default selected
+            inline = TRUE), #allows for multiple selections at once
             br(),
             
 uiOutput(outputId= "Emily_plot")),
