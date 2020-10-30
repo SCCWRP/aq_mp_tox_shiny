@@ -69,7 +69,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=type)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="orange2") +
-        scale_fill_manual(values = cal_palette("wetland")) +
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Lvl1"~"lake",i=="Life.stage"~"conifer",i=="exposure.route"~"coastaldune1",i=="Invivo.invivo"~"sbchannel")))+
         theme_classic() +
         labs(fill="Effect") +
         theme(legend.position = "right",
@@ -277,8 +277,8 @@ tabPanel("Data Overview", #tab opening
 pickerInput(inputId = "Emily_check", # effect checklist
             label = "Effects:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
-            selected = "Polymer", # default selected
-            multiple = TRUE), # allows for multiple selections at once
+            selected = "Polymer",
+            multiple = TRUE,# default selected# allows for multiple selections at once
             br(),
 uiOutput(outputId= "Emily_plot")),
 
