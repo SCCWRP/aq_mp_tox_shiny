@@ -123,11 +123,60 @@ aoc_x <- aoc %>% # start with original dataset
     lvl1 == "metabolism" ~ "Metabolism",
     lvl1 == "microbiome" ~ "Microbiome",
     lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
-  mutate(lvl1_f = factor(lvl1_cat)) # order different endpoints.
-
+  mutate(lvl1_f = factor(lvl1_cat))%>%# order different endpoints.
+  # Level 2 Data tidying
+  mutate(lvl2_cat = case_when(
+    lvl2 == "abundance"~"Abundance",
+    lvl2 == "agressivity"~"Agressivity",
+    lvl2 == "bacteriodetes"~ "Bacteriodetes",
+    lvl2 == "actinobacteria"~"Actinobacteria",
+    lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
+    lvl2 == "blood"~"Blood",
+    lvl2 == "boldness"~"Boldness",
+    lvl2 == "body.condition"~"Body Condition",
+    lvl2 == "brainhisto"~"Brain Histological Abnormalities",
+    lvl2 == "burrowing"~"Burrowing",
+    lvl2 == "carb.metabolism"~"Carb Metabolism",
+    lvl2 == "chemokines.cytokines"~"Chemokines",
+    lvl2 == "circulatory"~"Circulatory",
+    lvl2 == "detoxification"~"Detoxification",
+    lvl2 == "developement"~"Developement",
+    lvl2 == "digestion"~"Digestion",
+    lvl2 == "digestive enzymes"~"Digestive Enzymes",
+    lvl2 == "digestive.tract.histo"~"Digestive Tract Histological Abnormalities",
+    lvl2 == "diversity"~ "Diversity",
+    lvl2 == "feeding"~ "Feeding",
+    lvl2 == "firmicutes"~ "Firmicutes",
+    lvl2 == "gall.bladder.histo" ~ "Gall Bladder Histological Abnormalities",
+    lvl2 == "gen.metabolism"~ "General Metabolism",
+    lvl2 == "gill.histo"~ "Gill Histological Abnormalities",
+    lvl2 == "gonad.histo"~"Gonad Histological Abnormalities",
+    lvl2 == "growth"~ "Growth",
+    lvl2 == "immune.cells"~"Immune Cells",
+    lvl2 == "immune.other"~"Immune Other ",
+    lvl2 == "intestinal.permeability"~"Intestinal Permeability",
+    lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
+    lvl2 == "lipid.metabolism"~"Lipid Metabolism",
+    lvl2 == "liver.histo"~"Liver Histological Abnormalities",
+    lvl2 == "liver.kidney.products" ~" Liver and Kidney Products",
+    lvl2 == "locomotion"~"Locomotion",
+    lvl2 == "mortality"~"Mortality",
+    lvl2 == "nervous.system"~"Nervous System",
+    lvl2 == "oxidative.stress"~"Oxidative Stress",
+    lvl2 == "photosynthesis"~ "Photosynthesis",
+    lvl2 == "proteobacteria"~"Protebacteria",
+    lvl2 == "reproduction"~"Reproduction",
+    lvl2 == "respiration"~"Respiration",
+    lvl2 == "sexhormones"~"Sex Hormones",
+    lvl2 == "shoaling"~"Shoaling",
+    lvl2 == "stress"~"Stress",
+    lvl2 == "vision.system"~"Vision System"))%>% #Renames for widget
+  mutate(lvl2_f = factor(lvl2_cat)) #order different endpoint categories
+    
 #filter out terrestrial data
 aoc_y <- aoc_x %>% 
 filter(environment != "Terrestrial") # removes terrestrial data.
+
 
 #### Scott Setup ####
 
@@ -313,6 +362,16 @@ uiOutput(outputId= "Emily_plot")),
                         label = "Endpoint Examined:", 
                         choices = levels(aoc_y$lvl1_f),
                         selected = levels(aoc_y$lvl1_f), 
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)), # allows for multiple inputs
+                      
+                      #level 2 widget 
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "lvl2_check", # endpoint checklist
+                        label = "Endpoint Category:", 
+                        choices = levels(aoc_y$lvl2_f),
+                        selected = levels(aoc_y$lvl2_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
@@ -530,11 +589,12 @@ server <- function(input, output) {
     # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
+    lvl2_c<-input$lvl2_check
     
     aoc_y %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
-      filter(lvl1_f %in% lvl1_c) # filter by level inputs
-    # every filter line represents a new selection button
+      filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
+      filter(lvl2_f %in% lvl2_c) #filter by level 2 inputs 
   })
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
