@@ -40,6 +40,15 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 #### Emily Setup ####
 
 Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
+  mutate(plot_f = case_when(
+    plot_f == "Polymer" ~ "Polymer",
+    plot_f == "Size" ~ "Size",
+    plot_f == "Shape" ~ "Shape",
+    plot_f == "Organism" ~ "Organism",
+    plot_f == "Lvl1" ~ "Endpoints",
+    plot_f == "Life.stage" ~ "Life Stage",
+    plot_f == "Invivo.invivo" ~ "Invivo or Invitro",
+    plot_f == "Exposure.route" ~ "Exposure route"))%>%
   mutate(plot_f = factor(plot_f))
 
 # Adding function for multiple graph output.
@@ -69,7 +78,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=type, study=study)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
-        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Lvl1"~"lake",i=="Life.stage"~"conifer",i=="Exposure.route"~"coastaldune1",i=="Invivo.invivo"~"sbchannel")))+
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Endpoints"~"lake",i=="Life Stage"~"conifer",i=="Exposure Route"~"coastaldune1",i=="Invivo or Invitro"~"sbchannel")))+
         theme_classic() +
         labs(fill="Effect") +
         theme(legend.position = "right",
@@ -171,7 +180,15 @@ aoc_x <- aoc %>% # start with original dataset
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
     lvl2 == "vision.system"~"Vision System"))%>% #Renames for widget
-  mutate(lvl2_f = factor(lvl2_cat)) #order different endpoint categories
+  mutate(lvl2_f = factor(lvl2_cat))%>%#order different endpoint categories
+  mutate(bio_cat = case_when(           #Bio Organization Data Tidying
+    bio.org == "cell"~"Cell",
+    bio.org == "organism"~"Organism",
+    bio.org == "population"~ "Population",
+    bio.org == "subcell"~"Subcell",
+    bio.org == "tissue" ~ "Tissue"))%>%
+  mutate(bio_f = factor(bio_cat)) #order different bio organization categories for bio organization widget
+
     
 #filter out terrestrial data
 aoc_y <- aoc_x %>% 
@@ -375,6 +392,18 @@ uiOutput(outputId= "Emily_plot")),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
+                      #Bio organization widget
+                      
+                      column(width = 3,
+                             pickerInput(inputId = "bio_check", # endpoint checklist
+                              label = "Level of Biological Organization", 
+                              choices = levels(aoc_y$bio_f),
+                              selected = levels(aoc_y$bio_f), 
+                              options = list(`actions-box` = TRUE), # option to de/select all
+                              multiple = TRUE)), # allows for multiple inputs
+                      
+                      
+                    
                       column(width = 3,
                         actionButton("go", "Update"))), # adds action button 
                     # "go" is the internal name to refer to the button
@@ -588,12 +617,14 @@ server <- function(input, output) {
     
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-    lvl2_c<-input$lvl2_check
+    lvl2_c<-input$lvl2_check 
+    bio_c<-input$bio_check# assign bio values to bio_c
     
     aoc_y %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
-      filter(lvl2_f %in% lvl2_c) #filter by level 2 inputs 
+      filter(lvl2_f %in% lvl2_c)%>%#filter by level 2 inputs 
+      filter(bio_f %in% bio_c) #filter by bio organization
   })
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
