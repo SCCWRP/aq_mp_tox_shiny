@@ -39,7 +39,7 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Emily Setup ####
 
-Final_effect_dataset <- read_csv("Final_effect_dataset2.0.csv")%>%
+Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
   mutate(plot_f = case_when(
     plot_f == "Polymer" ~ "Polymer",
     plot_f == "Size" ~ "Size",
@@ -78,7 +78,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
-        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Endpoints"~"lake",i=="Life Stage"~"conifer",i=="Exposure Route"~"coastaldune1",i=="In Vivo or In Vitro"~"sbchannel")))+
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoints"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         labs(fill="Effect") +
         theme(legend.position = "right",
