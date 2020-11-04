@@ -615,6 +615,7 @@ server <- function(input, output) {
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
+    # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
     lvl2_c<-input$lvl2_check 
