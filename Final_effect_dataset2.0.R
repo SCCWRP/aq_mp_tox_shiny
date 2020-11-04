@@ -103,7 +103,10 @@ vivof<-as.data.frame(vivodf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(Type= "invitro.invivo")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Invivo.invivo")
+  mutate(plot="Invivo.invivo")%>%
+  mutate(Type = case_when(
+    Type=="invivo"~"In Vivo",
+    Type=="invitro"~"In Vitro"))
 study_v<-xtabs(~invitro.invivo +effect,aoc)
 vivofinal<- data.frame(cbind(vivof, study_v))%>% 
   rename(Endpoints='Freq.1')%>%
@@ -139,4 +142,4 @@ Final_effect_dataset2.0<-Final_effect_dataset%>%
 
 Final_effect_dataset2.0
 
-write.csv(Final_effect_dataset2.0, "Final_effect_dataset.csv")
+write.csv(Final_effect_dataset2.0, "Final_effect_dataset2.0.csv")

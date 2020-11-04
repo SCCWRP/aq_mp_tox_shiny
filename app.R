@@ -39,7 +39,7 @@ aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Emily Setup ####
 
-Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
+Final_effect_dataset <- read_csv("Final_effect_dataset2.0.csv")%>%
   mutate(plot_f = case_when(
     plot_f == "Polymer" ~ "Polymer",
     plot_f == "Size" ~ "Size",
@@ -47,8 +47,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Organism" ~ "Organism",
     plot_f == "Lvl1" ~ "Endpoints",
     plot_f == "Life.stage" ~ "Life Stage",
-    plot_f == "Invivo.invivo" ~ "Invivo or Invitro",
-    plot_f == "Exposure.route" ~ "Exposure route"))%>%
+    plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
+    plot_f == "Exposure.route" ~ "Exposure Route"))%>%
   mutate(plot_f = factor(plot_f))
 
 # Adding function for multiple graph output.
@@ -78,7 +78,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
-        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Endpoints"~"lake",i=="Life Stage"~"conifer",i=="Exposure Route"~"coastaldune1",i=="Invivo or Invitro"~"sbchannel")))+
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Endpoints"~"lake",i=="Life Stage"~"conifer",i=="Exposure Route"~"coastaldune1",i=="In Vivo or In Vitro"~"sbchannel")))+
         theme_classic() +
         labs(fill="Effect") +
         theme(legend.position = "right",
