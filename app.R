@@ -75,7 +75,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y=Freq, x=type, study=study)) +
+        ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"oak", i=="Size"~"bigsur2",i=="Shape"~"sierra2",i=="Endpoints"~"lake",i=="Life Stage"~"conifer",i=="Exposure Route"~"coastaldune1",i=="Invivo or Invitro"~"sbchannel")))+
@@ -86,7 +86,7 @@ get_plot_output_list <- function(input_n) {
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
       
-      ggplotly(tooltip = 'study')
+      ggplotly(tooltip = 'Endpoints')
       
     })
     

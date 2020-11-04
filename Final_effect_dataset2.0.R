@@ -65,7 +65,18 @@ lvl1f<-as.data.frame(lvl1df)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(Type= "lvl1")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Lvl1")
+  mutate(plot="Lvl1")%>%
+  mutate(Type = case_when(
+    Type == "alimentary.excretory" ~ "Alimentary, Excretory",
+    Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    Type == "community" ~ "Community",
+    Type == "fitness" ~ "Fitness",
+    Type == "immune" ~ "Immune",
+    Type == "metabolism" ~ "Metabolism",
+    Type == "microbiome" ~ "Microbiome",
+    Type == "stress" ~ "Stress")) 
+    
 study_l<-xtabs(~lvl1 +effect,aoc)
 lvl1final<- data.frame(cbind(lvl1f, study_l))%>% 
   rename(Endpoints='Freq.1')%>%
@@ -128,4 +139,4 @@ Final_effect_dataset2.0<-Final_effect_dataset%>%
 
 Final_effect_dataset2.0
 
-write.csv(Final_effect_dataset2.0, "Final_effect_dataset3.0.csv")
+write.csv(Final_effect_dataset2.0, "Final_effect_dataset.csv")
