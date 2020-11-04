@@ -37,13 +37,18 @@ sizefinal
 shapedf<-rowPerc(xtabs(~shape + effect, aoc))
 shapef<-as.data.frame(shapedf)%>%
   filter(effect %in% c("Y","N"))%>%
-  rename(Type="Shape")%>%
+  rename(Type="shape")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Shape")
+  mutate(plot="Shape")%>%
+  mutate(Type = case_when(
+    Type == "cube" ~ "Cube",
+    Type == "sphere" ~ "Sphere",
+    Type == "fragment" ~ "Fragment",
+    Type == "fiber" ~ "Fiber"))
 study_sh<-xtabs(~shape + effect,aoc)
 shapefinal<- data.frame(cbind(shapef, study_sh))%>% 
   rename(Endpoints='Freq.1')%>%
-  rename(category='Shape')
+  rename(category='shape')
 shapefinal
 
 
@@ -119,7 +124,12 @@ routef<-as.data.frame(routedf)%>%
   filter(effect %in% c("Y","N"))%>%
   rename(Type= "exposure.route")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Exposure.route")
+  mutate(plot="Exposure.route")%>%
+  mutate(Type = case_when(
+    Type == "maternal.transfer" ~ "Maternal Transfer",
+    Type == "food" ~ "Food",
+    Type == "water" ~ "Water",
+    Type == "sediment" ~ "Sediment"))
 study_r<-xtabs(~exposure.route +effect,aoc)
 routefinal<- data.frame(cbind(routef, study_r))%>% 
   rename(Endpoints='Freq.1')%>%
@@ -142,4 +152,4 @@ Final_effect_dataset2.0<-Final_effect_dataset%>%
 
 Final_effect_dataset2.0
 
-write.csv(Final_effect_dataset2.0, "Final_effect_dataset2.0.csv")
+write.csv(Final_effect_dataset2.0, "Final_effect_dataset.csv")
