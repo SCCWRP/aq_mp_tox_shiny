@@ -18,10 +18,10 @@ sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
 sizef<-as.data.frame(sizedf)%>%
   filter(effect %in% c("Y","N"))%>%
   mutate(size.category = case_when(
-    size.category == 1 ~ "<1µ",
-    size.category == 2 ~ "1µ < 10µ",
-    size.category == 3 ~ "10µ < 100µ",
-    size.category == 4 ~ "100µ < 1mm",
+    size.category == 1 ~ "<1µm",
+    size.category == 2 ~ "1µm < 10µm",
+    size.category == 3 ~ "10µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "unavailable"))%>%
   rename(Type = "size.category")%>%
@@ -37,13 +37,13 @@ sizefinal
 shapedf<-rowPerc(xtabs(~shape + effect, aoc))
 shapef<-as.data.frame(shapedf)%>%
   filter(effect %in% c("Y","N"))%>%
-  rename(Type="shape")%>%
+  rename(Type="Shape")%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Shape")
 study_sh<-xtabs(~shape + effect,aoc)
 shapefinal<- data.frame(cbind(shapef, study_sh))%>% 
   rename(Endpoints='Freq.1')%>%
-  rename(category='shape')
+  rename(category='Shape')
 shapefinal
 
 
@@ -128,4 +128,4 @@ Final_effect_dataset2.0<-Final_effect_dataset%>%
 
 Final_effect_dataset2.0
 
-write.csv(Final_effect_dataset2.0, "Final_effect_dataset2.0.csv")
+write.csv(Final_effect_dataset2.0, "Final_effect_dataset3.0.csv")
