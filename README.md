@@ -18,7 +18,7 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 
 *Scott* Make app faster (specifically SSD) 
 
-*Scott* Make plots piecewise
+*Scott* Make plots interactive (plotly or RBokeh)
 
 **Heili**
 
