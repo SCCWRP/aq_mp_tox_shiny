@@ -45,7 +45,7 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Size" ~ "Size",
     plot_f == "Shape" ~ "Shape",
     plot_f == "Organism" ~ "Organism",
-    plot_f == "Lvl1" ~ "Endpoints",
+    plot_f == "Lvl1" ~ "Endpoint Category",
     plot_f == "Life.stage" ~ "Life Stage",
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
@@ -78,7 +78,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
-        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoints"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         labs(fill="Effect") +
         theme(legend.position = "right",
@@ -285,9 +285,14 @@ ui <- fluidPage( theme= "classic",
                     p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
                   
-                    h3("Contributors", align = "center", style = "color:darkcyan"),
-                    br(),
+                    h3("What if I want to analyze or visualize the data in a way that is not available on the Web Application?", align = "center", style = "color:darkcyan"),
                     
+                    p("We are happy to conduct specific analyses or generate custom visualizations for workshop participants. If you have a specific request, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    br(),
+                    p("Workshop participants also have access to the complete, raw database as a .csv file, and are welcome to conduct their own analyses if they wish. Access to the database is provided under the Resources tab."),
+                    
+                    h3("Contributors", align = "center", style = "color:darkcyan"),
+                 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/heili-lowman/", 'Dr. Heili Lowman'),", Southern California Coastal Water Research Project ",
@@ -295,6 +300,10 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
                       tags$a(href="https://twitter.com/DrSCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
+                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
+                      tags$a(href="https://twitter.com/HermabessiereL", tags$img(src="twitter.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Hannah De Frond'),", University of Toronto", 
+                        tags$a(href="https://twitter.com/HanDefrond", tags$img(src="twitter.png", width="2%", height="2%"))),
                     p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
                       tags$a(href="https://github.com/EmilyDarin", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", "Syd Kotar, Southern California Coastal Water Research Project"),
@@ -306,8 +315,6 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
-                    br(),
-                    
                     h3("Contact", align = "center", style = "color:darkcyan"),
                     
                     p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
@@ -317,6 +324,7 @@ ui <- fluidPage( theme= "classic",
                   splitLayout(align = "center", 
                   tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.swccrp.org", tags$img(src="sccwrp.png", width = "100%", height = "100%")),
+                  tags$a(href="https://www.utoronto.ca", tags$img(src="toronto.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%"))),
                   
                     
@@ -336,14 +344,19 @@ ui <- fluidPage( theme= "classic",
         
 #### Emily UI ####
 
-tabPanel("Data Overview", #tab opening
-         br(), # line break
-         h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
-         br(), # line break
+tabPanel("Data Overview", 
+         br(), 
+         h3("Microplastics in Aquatic Environments: Data Overview of Toxicological Effects", align = "center", style = "color:darkcyan"),
+         br(),
+         p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms grouped by key categories relevant to microplastics and biota.
+           Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected."), 
+         br(),
+         p("Use the checkboxes at the top of the page to visualize different figures. Hovering the cursor over each stacked bar will display the number of endpoints that are currently included in the database. Detailed descriptions of data categories including keys for abbrevations may be found under the Resources tab."),
+         br(), 
         
     
 awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
-            label = "Effects:", # checklist label
+            label = "Data Categories:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer",# default selected
             inline = TRUE), #allows for multiple selections at once
