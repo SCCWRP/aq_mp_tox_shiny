@@ -21,6 +21,7 @@ library(reshape2)
 library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
+library(viridis) #colors
 #library(htmlwidgets) #to animate time-series. May not be necessary
 
 #options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
@@ -528,6 +529,10 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               plotOutput(outputId = "aoc_ssd_ggplot"),
                               br(),
+                              p("EXPERIMENTAL PLOTLY"),
+                              br(),
+                              plotlyOutput(outputId = "aoc_ssd_ggplotly"),
+                              br(),
                               p("This app is built using the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
                               ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
@@ -962,7 +967,37 @@ server <- function(input, output) {
       geom_hcintersect(xintercept = hc, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
    })
 
-  
+  ## SSD plot as plotly
+  output$aoc_ssd_ggplotly <- renderPlotly({
+    
+    # calculate fraction
+    aoc_ssd <- aoc_filter_ssd() %>% 
+      arrange(Conc)
+    
+    aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
+    
+    #convert hazard concentration to sig digits
+    aochc <- aoc_hc()
+    
+    aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
+    
+    ggplotly(aoc_pred(),aes_string(x = "est")) +
+      #geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
+      geom_line(aes_string(y = "percent/100")) +
+      geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
+      geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), hjust = 1.1, size = 4) + #species labels
+      scale_y_continuous("Species Affected (%)", labels = scales::percent) +
+      expand_limits(y = c(0, 1)) +
+      xlab("Concentration (mg/L)")+
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
+      geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red") + #hazard conc line vertical
+      geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red") + #hazard conc line horizontal
+      geom_text(data = aochc, aes(x = est, y = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 4) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
+      scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
+      scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+    })
   
   
   # server-side for dummy file input tab
