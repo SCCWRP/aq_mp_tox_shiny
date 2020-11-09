@@ -683,16 +683,16 @@ server <- function(input, output) {
     # Creating dataset to output counts.
     aoc_size1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(size_f) %>% # need to include so there's a recognized "y"
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
       summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
         measurements = n(),
         studies = n_distinct(article))
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       geom_text_repel(data = aoc_size1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -706,14 +706,14 @@ server <- function(input, output) {
     
     # Creating dataset to output counts.
     aoc_size2 <- aoc_filter() %>%
-      group_by(size_f) %>%
+      group_by(size_f, effect_f) %>%
       drop_na(dose.particles.mL) %>%
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1), 
         measurements = n(),
         studies = n_distinct(article))
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
       geom_text_repel(data = aoc_size2, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
@@ -721,7 +721,7 @@ server <- function(input, output) {
         segment.colour = NA) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       theme_classic() +
       theme(text = element_text(size=16)) +
@@ -736,7 +736,7 @@ server <- function(input, output) {
     
     aoc_shape1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(shape_f) %>% 
+      group_by(shape_f, effect_f) %>% 
       summarize(dose.mg.L = quantile(dose.mg.L, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -744,8 +744,8 @@ server <- function(input, output) {
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
-      scale_color_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       geom_text_repel(data = aoc_shape1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -759,7 +759,7 @@ server <- function(input, output) {
     
     aoc_shape2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
-      group_by(shape_f) %>% 
+      group_by(shape_f, effect_f) %>% 
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -767,8 +767,8 @@ server <- function(input, output) {
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
-      scale_color_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       geom_text_repel(data = aoc_shape2, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -789,7 +789,7 @@ server <- function(input, output) {
     
     aoc_poly1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(poly_f) %>% 
+      group_by(poly_f, effect_f) %>% 
       summarize(dose.mg.L = quantile(dose.mg.L, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -797,8 +797,8 @@ server <- function(input, output) {
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
-      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       geom_text_repel(data = aoc_poly1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -812,7 +812,7 @@ server <- function(input, output) {
     
     aoc_poly2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
-      group_by(poly_f) %>% 
+      group_by(poly_f, effect_f) %>% 
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -820,8 +820,8 @@ server <- function(input, output) {
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
-      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       geom_text_repel(data = aoc_poly2, 
         aes(label = paste("(",measurements,",",studies,")")),
