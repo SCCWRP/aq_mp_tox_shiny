@@ -360,14 +360,16 @@ awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
-                  tabPanel("Data Exploration", 
+                  tabPanel("Data Exploration & Download", 
                     h3("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects", align = "center", style = "color:darkcyan"),
                     br(), # line break
-                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
+                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics. "),
                     br(), # line break
-                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the drop-down menus located below."),
+                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
                     br(), # line break
-                    p("To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
+                    p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
+                    br(), # line break
+                    p("Download the data: To download the data being displayed according to your selections, click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), # line break
                     
                     # widgets
@@ -419,11 +421,20 @@ uiOutput(outputId= "Emily_plot")),
                                   selected = levels(aoc_y$vivo_f),   
                                   options = list(`actions-box` = TRUE), # option to de/select all
                                   multiple = TRUE)), # allows for multiple inputs
+                      
+                      # "Update" button widget
                     
                       column(width = 3,
-                        actionButton("go", "Update"))), # adds action button 
+                        actionButton("go", "Update Filters")), # adds action button 
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
+                    
+                      # "Download" button widget
+                    
+                      column(width = 3,
+                        downloadButton("downloadData", "Download Data"))),
+                    # "downloadData" is the internal name
+                    # "Download" is the title that appears on the button
                       
                       br(), # line break
                       hr(), # adds divider
@@ -641,7 +652,6 @@ server <- function(input, output) {
     bio_c<-input$bio_check # assign bio values to bio_c
     vivo_c<-input$vivo_check 
     
-    
     aoc_y %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
@@ -811,6 +821,16 @@ server <- function(input, output) {
     (poly1 + poly2) # join plots together using patchwork
     
   })
+  
+  # Create downloadable csv of filtered dataset.
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste('data-', Sys.Date(), '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(aoc_filter(), file, row.names = FALSE)
+    }
+  )
 
 #### Scott S ####
 
