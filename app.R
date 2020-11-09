@@ -106,14 +106,13 @@ aoc_x <- aoc %>% # start with original dataset
   filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
-  mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "1nm < 100nm",
+  mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
     size.category.noNA == 2 ~ "100nm < 1µm",
     size.category.noNA == 3 ~ "1µm < 100µm",
     size.category.noNA == 4 ~ "100µm < 1mm",
     size.category.noNA == 5 ~ "1mm < 5mm",
-    size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+    size.category.noNA == 0 ~ "unavailable"), 
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
@@ -123,8 +122,7 @@ aoc_x <- aoc %>% # start with original dataset
   # taxonomic category data tidying.
   mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
   mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
-  mutate(lvl1_cat = case_when(
-    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+  mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
     lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
     lvl1 == "community" ~ "Community",
@@ -132,11 +130,9 @@ aoc_x <- aoc %>% # start with original dataset
     lvl1 == "immune" ~ "Immune",
     lvl1 == "metabolism" ~ "Metabolism",
     lvl1 == "microbiome" ~ "Microbiome",
-    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
-  mutate(lvl1_f = factor(lvl1_cat))%>%# order different endpoints.
+    lvl1 == "stress" ~ "Stress"))) %>% # creates new column with nicer names.
   # Level 2 Data tidying
-  mutate(lvl2_cat = case_when(
-    lvl2 == "abundance"~"Abundance",
+  mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
     lvl2 == "agressivity"~"Agressivity",
     lvl2 == "bacteriodetes"~ "Bacteriodetes",
     lvl2 == "actinobacteria"~"Actinobacteria",
@@ -180,16 +176,14 @@ aoc_x <- aoc %>% # start with original dataset
     lvl2 == "sexhormones"~"Sex Hormones",
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
-    lvl2 == "vision.system"~"Vision System"))%>% #Renames for widget
-  mutate(lvl2_f = factor(lvl2_cat))%>%#order different endpoint categories
-  mutate(bio_cat = case_when(           #Bio Organization Data Tidying
-    bio.org == "cell"~"Cell",
+    lvl2 == "vision.system"~"Vision System")))%>% #Renames for widget
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Organization Data Tidying
     bio.org == "organism"~"Organism",
     bio.org == "population"~ "Population",
     bio.org == "subcell"~"Subcell",
-    bio.org == "tissue" ~ "Tissue"))%>%
-  mutate(bio_f = factor(bio_cat)) #order different bio organization categories for bio organization widget
-
+    bio.org == "tissue" ~ "Tissue")))%>%
+  mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
+    invitro.invivo == "invitro"~"In Vitro")))#renaming for widget
     
 #filter out terrestrial data
 aoc_y <- aoc_x %>% 
@@ -366,14 +360,16 @@ awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
-                  tabPanel("Data Exploration", 
+                  tabPanel("Data Exploration & Download", 
                     h3("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects", align = "center", style = "color:darkcyan"),
                     br(), # line break
-                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics."),
+                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics. "),
                     br(), # line break
-                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively.The data may be filtered by organism and/or endpoint using the drop-down menus located below."),
+                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
                     br(), # line break
-                    p("To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
+                    p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
+                    br(), # line break
+                    p("Download the data: To download the data being displayed according to your selections, click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), # line break
                     
                     # widgets
@@ -414,21 +410,45 @@ uiOutput(outputId= "Emily_plot")),
                               choices = levels(aoc_y$bio_f),
                               selected = levels(aoc_y$bio_f), 
                               options = list(`actions-box` = TRUE), # option to de/select all
-                              multiple = TRUE)), # allows for multiple inputs
+                              multiple = TRUE))), # allows for multiple inputs
                       
+                    #second selection output
+                    
+                    uiOutput("secondSelection"),
+                    
+                     column(width = 12,
                       
+                #invivo/invitro widget
+                      
+                      column(width = 3,
+                            pickerInput(inputId = "vivo_check", # invitro/invivo checklist
+                                  label = "In Vitro or In Vivo:", 
+                                  choices = levels(aoc_y$vivo_f),
+                                  selected = levels(aoc_y$vivo_f),   
+                                  options = list(`actions-box` = TRUE), # option to de/select all
+                                  multiple = TRUE)), # allows for multiple inputs
+                      
+                      # "Update" button widget
                     
                       column(width = 3,
-                        actionButton("go", "Update"))), # adds action button 
+                        actionButton("go", "Update Filters")), # adds action button 
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
+                    
+                      # "Download" button widget
+                    
+                      column(width = 3,
+                        downloadButton("downloadData", "Download Data"))),
+                    # "downloadData" is the internal name
+                    # "Download" is the title that appears on the button
                       
                       br(), # line break
                       hr(), # adds divider
                     
-                    #mainPanel(
                       br(), # line break
                       plotOutput(outputId = "size_plot_react"),
+                      br(), # line break
+                      hr(), # adds divider
                       br(), # line break
                       plotOutput(outputId = "shape_plot_react"),
                       br(), # line break
@@ -636,15 +656,23 @@ server <- function(input, output) {
     # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-    lvl2_c<-input$lvl2_check 
-    bio_c<-input$bio_check# assign bio values to bio_c
+    lvl2_c<-input$lvl2_check #assign lvl2 values to "lvl2_c"
+    bio_c<-input$bio_check # assign bio values to bio_c
+    vivo_c<-input$vivo_check 
     
     aoc_y %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
       filter(lvl2_f %in% lvl2_c)%>%#filter by level 2 inputs 
-      filter(bio_f %in% bio_c) #filter by bio organization
+      filter(bio_f %in% bio_c)%>%#filter by bio organization
+      filter(vivo_f %in% vivo_c)# filter by invitro or invivo
+      
   })
+  
+  #select lvl2 by bio org
+  
+  output$secondSelection <- renderUI({
+    selectInput("User", "Levels by Endpoint", choices = as.character(aoc_y[aoc_y$lvl2==input$Select,"bio.org"]))})
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
@@ -806,6 +834,16 @@ server <- function(input, output) {
     (poly1 + poly2) # join plots together using patchwork
     
   })
+  
+  # Create downloadable csv of filtered dataset.
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste('data-', Sys.Date(), '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(aoc_filter(), file, row.names = FALSE)
+    }
+  )
 
 #### Scott S ####
 
@@ -1025,7 +1063,7 @@ server <- function(input, output) {
     
     aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
     
-    ggplotly(aoc_pred(),aes_string(x = "est")) +
+    initialplot <- ggplot(aoc_pred(),aes_string(x = "est")) +
       #geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
       geom_line(aes_string(y = "percent/100")) +
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
@@ -1041,29 +1079,31 @@ server <- function(input, output) {
       geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
       scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
       scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+    
+    ggplotly(initialplot) # converts ggplot object to plotly object
     })
   
   
   # server-side for dummy file input tab
   # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
-    output$costume_graph <- renderPlot({
-    
-    req(input$file1) # Using user-supplied dataset
-    
-    spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
-      
-    region_costume <- spooky %>%
-      group_by(region_us_census) %>%
-      count(costume, rank) # Creates a new dataset
-    
-    ggplot(region_costume, aes(x = costume, y = n)) +
-      geom_col(aes(fill = rank)) +
-      coord_flip() +
-      scale_fill_manual(values = c("black", "purple", "orange")) +
-      facet_grid(region_us_census~.) +
-      theme_minimal() # plots the data
-    
-      })
+    # output$costume_graph <- renderPlot({
+    # 
+    # req(input$file1) # Using user-supplied dataset
+    # 
+    # spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
+    #   
+    # region_costume <- spooky %>%
+    #   group_by(region_us_census) %>%
+    #   count(costume, rank) # Creates a new dataset
+    # 
+    # ggplot(region_costume, aes(x = costume, y = n)) +
+    #   geom_col(aes(fill = rank)) +
+    #   coord_flip() +
+    #   scale_fill_manual(values = c("black", "purple", "orange")) +
+    #   facet_grid(region_us_census~.) +
+    #   theme_minimal() # plots the data
+    # 
+    #   })
   
   } #Server end
 
