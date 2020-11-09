@@ -384,12 +384,7 @@ uiOutput(outputId= "Emily_plot")),
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                      pickerInput(inputId = "lvl2_check", # level 2 endpoint checklist
-                        label = "Endpoint Category:", 
-                        choices = levels(aoc_setup$lvl2_f),
-                        selected = levels(aoc_setup$lvl2_f), 
-                        options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE)), # allows for multiple inputs
+                        htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
                              pickerInput(inputId = "bio_check", # bio organization checklist
@@ -403,11 +398,11 @@ uiOutput(outputId= "Emily_plot")),
                       column(width = 12,
                         column(width = 3,
                             pickerInput(inputId = "vivo_check", # invitro/invivo checklist
-                                  label = "In Vitro or In Vivo:", 
-                                  choices = levels(aoc_setup$vivo_f),
-                                  selected = levels(aoc_setup$vivo_f),   
-                                  options = list(`actions-box` = TRUE), # option to de/select all
-                                  multiple = TRUE))
+                              label = "In Vitro or In Vivo:", 
+                              choices = levels(aoc_setup$vivo_f),
+                              selected = levels(aoc_setup$vivo_f),   
+                              options = list(`actions-box` = TRUE), # option to de/select all
+                              multiple = TRUE))
                         
                     # EMILY ADD YOUR WIDGETS HERE    
                         
@@ -640,6 +635,23 @@ server <- function(input, output) {
   
 #### Heili S ####
   
+  #select lvl2 by lvl1
+  
+  output$secondSelection <- renderUI({
+    
+    lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
+    
+    aoc_new <- aoc_setup %>% # take original dataset
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # make a new subset of factors
+      
+    pickerInput(inputId = "lvl2_check", 
+      label = "Levels by Endpoint:", 
+      choices = levels(aoc_new$lvl2_f_new),
+      selected = levels(aoc_new$lvl2_f_new),
+      options = list(`actions-box` = TRUE),
+      multiple = TRUE)})
+  
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
@@ -653,7 +665,7 @@ server <- function(input, output) {
     vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
     
-    aoc_y %>% # take original dataset
+    aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
@@ -662,7 +674,8 @@ server <- function(input, output) {
       filter(effect_f %in% effect_c) # filter by effect
       
   })
-  
+
+
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
   output$size_plot_react <- renderPlot({
