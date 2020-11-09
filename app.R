@@ -106,14 +106,13 @@ aoc_x <- aoc %>% # start with original dataset
   filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
-  mutate(size_cat = case_when(
-    size.category.noNA == 1 ~ "1nm < 100nm",
+  mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
     size.category.noNA == 2 ~ "100nm < 1µm",
     size.category.noNA == 3 ~ "1µm < 100µm",
     size.category.noNA == 4 ~ "100µm < 1mm",
     size.category.noNA == 5 ~ "1mm < 5mm",
-    size.category.noNA == 0 ~ "unavailable")) %>% # creates new column with nicer names.
-  mutate(size_f = factor(size_cat, levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # order our different size levels.
+    size.category.noNA == 0 ~ "unavailable"), 
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
@@ -123,8 +122,7 @@ aoc_x <- aoc %>% # start with original dataset
   # taxonomic category data tidying.
   mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
   mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
-  mutate(lvl1_cat = case_when(
-    lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+  mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
     lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
     lvl1 == "community" ~ "Community",
@@ -132,11 +130,9 @@ aoc_x <- aoc %>% # start with original dataset
     lvl1 == "immune" ~ "Immune",
     lvl1 == "metabolism" ~ "Metabolism",
     lvl1 == "microbiome" ~ "Microbiome",
-    lvl1 == "stress" ~ "Stress")) %>% # creates new column with nicer names.
-  mutate(lvl1_f = factor(lvl1_cat))%>%# order different endpoints.
+    lvl1 == "stress" ~ "Stress"))) %>% # creates new column with nicer names.
   # Level 2 Data tidying
-  mutate(lvl2_cat = case_when(
-    lvl2 == "abundance"~"Abundance",
+  mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
     lvl2 == "agressivity"~"Agressivity",
     lvl2 == "bacteriodetes"~ "Bacteriodetes",
     lvl2 == "actinobacteria"~"Actinobacteria",
@@ -180,20 +176,14 @@ aoc_x <- aoc %>% # start with original dataset
     lvl2 == "sexhormones"~"Sex Hormones",
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
-    lvl2 == "vision.system"~"Vision System"))%>% #Renames for widget
-  mutate(lvl2_f = factor(lvl2_cat))%>%#order different endpoint categories
-  mutate(bio_cat = case_when(           #Bio Organization Data Tidying
-    bio.org == "cell"~"Cell",
+    lvl2 == "vision.system"~"Vision System")))%>% #Renames for widget
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Organization Data Tidying
     bio.org == "organism"~"Organism",
     bio.org == "population"~ "Population",
     bio.org == "subcell"~"Subcell",
-    bio.org == "tissue" ~ "Tissue"))%>%
-  mutate(bio_f = factor(bio_cat))%>% #order different bio organization categories for bio organization widget
-  mutate(vivo_cat = case_when(
-    invitro.invivo == "invivo"~"In Vivo",
-    invitro.invivo == "invitro"~"In Vitro"))%>%#renaming for widget
-  mutate(vivo_f==factor(vivo_cat))#orders both for widget
-
+    bio.org == "tissue" ~ "Tissue")))%>%
+  mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
+    invitro.invivo == "invitro"~"In Vitro")))#renaming for widget
     
 #filter out terrestrial data
 aoc_y <- aoc_x %>% 
@@ -422,13 +412,13 @@ uiOutput(outputId= "Emily_plot")),
                       
                       #invivo/invitro widget
                       
-                      pickerInput(inputId = "vivo_check", # invitro/invivo checklist
+                      column(width = 3,
+                            pickerInput(inputId = "vivo_check", # invitro/invivo checklist
                                   label = "In Vitro or In Vivo:", 
                                   choices = levels(aoc_y$vivo_f),
                                   selected = levels(aoc_y$vivo_f),   
                                   options = list(`actions-box` = TRUE), # option to de/select all
                                   multiple = TRUE)), # allows for multiple inputs
-                    
                     
                       column(width = 3,
                         actionButton("go", "Update"))), # adds action button 
@@ -438,7 +428,6 @@ uiOutput(outputId= "Emily_plot")),
                       br(), # line break
                       hr(), # adds divider
                     
-                    #mainPanel(
                       br(), # line break
                       plotOutput(outputId = "size_plot_react"),
                       br(), # line break
