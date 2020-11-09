@@ -412,8 +412,13 @@ uiOutput(outputId= "Emily_plot")),
                               options = list(`actions-box` = TRUE), # option to de/select all
                               multiple = TRUE))), # allows for multiple inputs
                       
-                      column(width = 12,
-                      #invivo/invitro widget
+                    #second selection output
+                    
+                    uiOutput("secondSelection"),
+                    
+                     column(width = 12,
+                      
+                #invivo/invitro widget
                       
                       column(width = 3,
                             pickerInput(inputId = "vivo_check", # invitro/invivo checklist
@@ -663,6 +668,9 @@ server <- function(input, output) {
       filter(vivo_f %in% vivo_c)# filter by invitro or invivo
       
   })
+  
+  output$secondSelection <- renderUI({
+    selectInput("User", "Levels by Endpoint", choices = as.character(aoc_y[aoc_y$lvl2==input$Select,"bio.org"]))})
   
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
