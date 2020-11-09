@@ -81,6 +81,7 @@ get_plot_output_list <- function(input_n) {
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoints"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         labs(fill="Effect") +
+        scale_x_discrete(guide = guide_axis(n.dodge = 2))+
         theme(legend.position = "right",
           axis.ticks=element_blank(),
           axis.text.y=element_blank(),
