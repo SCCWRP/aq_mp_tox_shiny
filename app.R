@@ -1030,7 +1030,7 @@ server <- function(input, output) {
     
     aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
     
-    ggplotly(aoc_pred(),aes_string(x = "est")) +
+    initialplot <- ggplot(aoc_pred(),aes_string(x = "est")) +
       #geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
       geom_line(aes_string(y = "percent/100")) +
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
@@ -1046,29 +1046,31 @@ server <- function(input, output) {
       geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
       scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
       scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+    
+    ggplotly(initialplot) # converts ggplot object to plotly object
     })
   
   
   # server-side for dummy file input tab
   # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
-    output$costume_graph <- renderPlot({
-    
-    req(input$file1) # Using user-supplied dataset
-    
-    spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
-      
-    region_costume <- spooky %>%
-      group_by(region_us_census) %>%
-      count(costume, rank) # Creates a new dataset
-    
-    ggplot(region_costume, aes(x = costume, y = n)) +
-      geom_col(aes(fill = rank)) +
-      coord_flip() +
-      scale_fill_manual(values = c("black", "purple", "orange")) +
-      facet_grid(region_us_census~.) +
-      theme_minimal() # plots the data
-    
-      })
+    # output$costume_graph <- renderPlot({
+    # 
+    # req(input$file1) # Using user-supplied dataset
+    # 
+    # spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
+    #   
+    # region_costume <- spooky %>%
+    #   group_by(region_us_census) %>%
+    #   count(costume, rank) # Creates a new dataset
+    # 
+    # ggplot(region_costume, aes(x = costume, y = n)) +
+    #   geom_col(aes(fill = rank)) +
+    #   coord_flip() +
+    #   scale_fill_manual(values = c("black", "purple", "orange")) +
+    #   facet_grid(region_us_census~.) +
+    #   theme_minimal() # plots the data
+    # 
+    #   })
   
   } #Server end
 
