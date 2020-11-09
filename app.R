@@ -410,8 +410,9 @@ uiOutput(outputId= "Emily_plot")),
                               choices = levels(aoc_y$bio_f),
                               selected = levels(aoc_y$bio_f), 
                               options = list(`actions-box` = TRUE), # option to de/select all
-                              multiple = TRUE)), # allows for multiple inputs
+                              multiple = TRUE))), # allows for multiple inputs
                       
+                      column(width = 12,
                       #invivo/invitro widget
                       
                       column(width = 3,
@@ -441,6 +442,8 @@ uiOutput(outputId= "Emily_plot")),
                     
                       br(), # line break
                       plotOutput(outputId = "size_plot_react"),
+                      br(), # line break
+                      hr(), # adds divider
                       br(), # line break
                       plotOutput(outputId = "shape_plot_react"),
                       br(), # line break
