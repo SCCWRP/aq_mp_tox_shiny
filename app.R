@@ -895,10 +895,10 @@ server <- function(input, output) {
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
     
     set.seed(99)
-    predict(fit_dists(), #object
-            average = pred_c_ave_ssd, #tells whether or not the average models
-            ic = pred_c_ic_ssd, #tells which information criteria to use
-            nboot = 10,
+    predict(fit_dists(), #Predict fitdist. 
+            average = pred_c_ave_ssd, #flad tells whether or not the average models from user input
+            ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+            nboot = 10, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
   }) 
  
@@ -937,7 +937,7 @@ server <- function(input, output) {
      color = "Group",
      label = "Species",
      xlab = "Concentration (mg/L)",
-     ci = TRUE, #confidence interval
+     ci = TRUE, #confidence interval plotting
      ribbon = TRUE,
      hc = pred_c_hc_ssd) + #percent hazard concentration
      scale_fill_viridis_d() + #make colors more differentiable 
@@ -959,12 +959,12 @@ server <- function(input, output) {
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
     
     set.seed(99)
-    ssd_hc(fit_dists(),
-           percent = pred_c_hc_ssd,
-           nboot = 10,
+    ssd_hc(fit_dists(), #dataset
+           percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+           nboot = 10, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
            average = pred_c_ave_ssd, #tells whether or not the average models
            ic = pred_c_ic_ssd, #tells which information criteria to use
-           ci = TRUE)
+           ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
   })
   
 #Print table of hazard concentration data  
