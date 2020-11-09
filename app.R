@@ -21,6 +21,7 @@ library(reshape2)
 library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
+library(viridis) #colors
 #library(htmlwidgets) #to animate time-series. May not be necessary
 
 #options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
@@ -45,7 +46,7 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Size" ~ "Size",
     plot_f == "Shape" ~ "Shape",
     plot_f == "Organism" ~ "Organism",
-    plot_f == "Lvl1" ~ "Endpoints",
+    plot_f == "Lvl1" ~ "Endpoint Category",
     plot_f == "Life.stage" ~ "Life Stage",
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
@@ -78,7 +79,7 @@ get_plot_output_list <- function(input_n) {
         ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
-        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoints"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
+        scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         labs(fill="Effect") +
         scale_x_discrete(guide = guide_axis(n.dodge = 2))+
@@ -286,9 +287,14 @@ ui <- fluidPage( theme= "classic",
                     p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
                   
-                    h3("Contributors", align = "center", style = "color:darkcyan"),
-                    br(),
+                    h3("What if I want to analyze or visualize the data in a way that is not available on the Web Application?", align = "center", style = "color:darkcyan"),
                     
+                    p("We are happy to conduct specific analyses or generate custom visualizations for workshop participants. If you have a specific request, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    br(),
+                    p("Workshop participants also have access to the complete, raw database as a .csv file, and are welcome to conduct their own analyses if they wish. Access to the database is provided under the Resources tab."),
+                    
+                    h3("Contributors", align = "center", style = "color:darkcyan"),
+                 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/heili-lowman/", 'Dr. Heili Lowman'),", Southern California Coastal Water Research Project ",
@@ -296,6 +302,10 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
                       tags$a(href="https://twitter.com/DrSCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
+                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
+                      tags$a(href="https://twitter.com/HermabessiereL", tags$img(src="twitter.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Hannah De Frond'),", University of Toronto", 
+                        tags$a(href="https://twitter.com/HanDefrond", tags$img(src="twitter.png", width="2%", height="2%"))),
                     p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
                       tags$a(href="https://github.com/EmilyDarin", tags$img(src="github.png", width="2%", height="2%"))),
                     p(align = "center", "Syd Kotar, Southern California Coastal Water Research Project"),
@@ -307,8 +317,6 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
-                    br(),
-                    
                     h3("Contact", align = "center", style = "color:darkcyan"),
                     
                     p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
@@ -318,6 +326,7 @@ ui <- fluidPage( theme= "classic",
                   splitLayout(align = "center", 
                   tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.swccrp.org", tags$img(src="sccwrp.png", width = "100%", height = "100%")),
+                  tags$a(href="https://www.utoronto.ca", tags$img(src="toronto.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%"))),
                   
                     
@@ -337,14 +346,19 @@ ui <- fluidPage( theme= "classic",
         
 #### Emily UI ####
 
-tabPanel("Data Overview", #tab opening
-         br(), # line break
-         h3("Measured Effects of Microplastics", align = "center", style = "color:darkcyan"),
-         br(), # line break
+tabPanel("Data Overview", 
+         br(), 
+         h3("Microplastics in Aquatic Environments: Data Overview of Toxicological Effects", align = "center", style = "color:darkcyan"),
+         br(),
+         p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms grouped by key categories relevant to microplastics and biota.
+           Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected."), 
+         br(),
+         p("Use the checkboxes at the top of the page to visualize different figures. Hovering the cursor over each stacked bar will display the number of endpoints that are currently included in the database. Detailed descriptions of data categories including keys for abbrevations may be found under the Resources tab."),
+         br(), 
         
     
 awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
-            label = "Effects:", # checklist label
+            label = "Data Categories:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
             selected = "Polymer",# default selected
             inline = TRUE), #allows for multiple selections at once
@@ -557,6 +571,10 @@ uiOutput(outputId= "Emily_plot")),
                               p("If the plot above is not working, you may find it below as a ggplot."),
                               br(),
                               plotOutput(outputId = "aoc_ssd_ggplot"),
+                              br(),
+                              p("EXPERIMENTAL PLOTLY"),
+                              br(),
+                              plotlyOutput(outputId = "aoc_ssd_ggplotly"),
                               br(),
                               p("This app is built using the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
                               ) #closes out scott's main panel
@@ -994,7 +1012,37 @@ server <- function(input, output) {
       geom_hcintersect(xintercept = hc, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
    })
 
-  
+  ## SSD plot as plotly
+  output$aoc_ssd_ggplotly <- renderPlotly({
+    
+    # calculate fraction
+    aoc_ssd <- aoc_filter_ssd() %>% 
+      arrange(Conc)
+    
+    aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
+    
+    #convert hazard concentration to sig digits
+    aochc <- aoc_hc()
+    
+    aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
+    
+    ggplotly(aoc_pred(),aes_string(x = "est")) +
+      #geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
+      geom_line(aes_string(y = "percent/100")) +
+      geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
+      geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), hjust = 1.1, size = 4) + #species labels
+      scale_y_continuous("Species Affected (%)", labels = scales::percent) +
+      expand_limits(y = c(0, 1)) +
+      xlab("Concentration (mg/L)")+
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
+      geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red") + #hazard conc line vertical
+      geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red") + #hazard conc line horizontal
+      geom_text(data = aochc, aes(x = est, y = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 4) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
+      scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
+      scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+    })
   
   
   # server-side for dummy file input tab
