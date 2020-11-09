@@ -669,6 +669,8 @@ server <- function(input, output) {
       
   })
   
+  #select lvl2 by bio org
+  
   output$secondSelection <- renderUI({
     selectInput("User", "Levels by Endpoint", choices = as.character(aoc_y[aoc_y$lvl2==input$Select,"bio.org"]))})
   
