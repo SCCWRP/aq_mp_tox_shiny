@@ -4,7 +4,7 @@
 
 #### Setup ####
 
-# Anything that should only happen ONCE should be placed in the setup section, prior to the actual shiny structure.
+# Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
 
 # Load packages
 library(tidyverse)
@@ -22,19 +22,9 @@ library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
 library(viridis) #colors
-#library(htmlwidgets) #to animate time-series. May not be necessary
-
-#options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
-
-# Add log transformed concentration columns for easier plotting below.
-#aoc$log_dose.mg.L <- log10(aoc$dose.mg.L)
-#aoc$log_dose.particles.mL <- log10(aoc$dose.particles.mL)
-
-# Add factor and releved effects column.
-aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Leah Setup ####
 
@@ -101,9 +91,11 @@ get_plot_output_list <- function(input_n) {
 #### Heili Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
-aoc_x <- aoc %>% # start with original dataset
+aoc_setup <- aoc %>% # start with original dataset
   # full dataset filters.
-  filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
+  mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
+    effect == "N" ~ "No"),
+    levels = c("Yes", "No"))) %>%
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
@@ -186,14 +178,13 @@ aoc_x <- aoc %>% # start with original dataset
     invitro.invivo == "invitro"~"In Vitro")))#renaming for widget
     
 #filter out terrestrial data
-aoc_y <- aoc_x %>% 
+aoc_y <- aoc_setup %>% 
 filter(environment != "Terrestrial") # removes terrestrial data.
-
 
 #### Scott Setup ####
 
 # Master dataset for SSDs
-aoc_z <- aoc_x %>% # start with Heili's altered dataset (no filtration for terrestrial data)
+aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
   mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
@@ -379,75 +370,81 @@ uiOutput(outputId= "Emily_plot")),
                       # requires shinyWidgets package
                       pickerInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:", 
-                        choices = levels(aoc_y$org_f),
-                        selected = levels(aoc_y$org_f),   
+                        choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),   
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Endpoint Examined:", 
-                        choices = levels(aoc_y$lvl1_f),
-                        selected = levels(aoc_y$lvl1_f), 
+                        choices = levels(aoc_setup$lvl1_f),
+                        selected = levels(aoc_setup$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
-                      #level 2 widget 
-                      
                       column(width = 3,
-                      pickerInput(inputId = "lvl2_check", # endpoint checklist
+                      pickerInput(inputId = "lvl2_check", # level 2 endpoint checklist
                         label = "Endpoint Category:", 
-                        choices = levels(aoc_y$lvl2_f),
-                        selected = levels(aoc_y$lvl2_f), 
+                        choices = levels(aoc_setup$lvl2_f),
+                        selected = levels(aoc_setup$lvl2_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
-                      #Bio organization widget
-                      
                       column(width = 3,
-                             pickerInput(inputId = "bio_check", # endpoint checklist
+                             pickerInput(inputId = "bio_check", # bio organization checklist
                               label = "Level of Biological Organization", 
-                              choices = levels(aoc_y$bio_f),
-                              selected = levels(aoc_y$bio_f), 
+                              choices = levels(aoc_setup$bio_f),
+                              selected = levels(aoc_setup$bio_f), 
                               options = list(`actions-box` = TRUE), # option to de/select all
                               multiple = TRUE))), # allows for multiple inputs
                       
+                    # New row of widgets
                       column(width = 12,
-                      #invivo/invitro widget
-                      
-                      column(width = 3,
+                        column(width = 3,
                             pickerInput(inputId = "vivo_check", # invitro/invivo checklist
                                   label = "In Vitro or In Vivo:", 
-                                  choices = levels(aoc_y$vivo_f),
-                                  selected = levels(aoc_y$vivo_f),   
+                                  choices = levels(aoc_setup$vivo_f),
+                                  selected = levels(aoc_setup$vivo_f),   
                                   options = list(`actions-box` = TRUE), # option to de/select all
-                                  multiple = TRUE)), # allows for multiple inputs
-                      
-                      # "Update" button widget
+                                  multiple = TRUE))
+                        
+                    # EMILY ADD YOUR WIDGETS HERE    
+                        
+                        ), 
                     
+                    # New row of widgets
+                    column(width = 12,
                       column(width = 3,
-                        actionButton("go", "Update Filters")), # adds action button 
+                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                          label = "Effect:", 
+                          choices = levels(aoc_setup$effect_f),
+                          selected = "Yes",   
+                          options = list(`actions-box` = TRUE), # option to de/select all
+                          multiple = TRUE)), # allows for multiple inputs
+                      
+                      column(width = 3,
+                        actionButton("go", "Update Filters")), # adds update action button 
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
-                    
-                      # "Download" button widget
-                    
+
                       column(width = 3,
-                        downloadButton("downloadData", "Download Data"))),
+                        downloadButton("downloadData", "Download Data"))), # adds download button
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
                       
                       br(), # line break
                       hr(), # adds divider
-                    
                       br(), # line break
-                      plotOutput(outputId = "size_plot_react"),
-                      br(), # line break
-                      hr(), # adds divider
-                      br(), # line break
-                      plotOutput(outputId = "shape_plot_react"),
-                      br(), # line break
-                      plotOutput(outputId = "poly_plot_react")), 
+                      column(width = 12,
+                        plotOutput(outputId = "size_plot_react"),
+                        br()), # line break
+                      column(width = 12,
+                        plotOutput(outputId = "shape_plot_react"),
+                        br()), # line break
+                      column(width = 12,
+                        plotOutput(outputId = "poly_plot_react"),
+                        br())), # line break 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -646,21 +643,23 @@ server <- function(input, output) {
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
-    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
+    # use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
     # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-    lvl2_c<-input$lvl2_check #assign lvl2 values to "lvl2_c"
-    bio_c<-input$bio_check # assign bio values to bio_c
-    vivo_c<-input$vivo_check 
+    lvl2_c <- input$lvl2_check # assign lvl2 values to "lvl2_c"
+    bio_c <- input$bio_check # assign bio values to "bio_c"
+    vivo_c <- input$vivo_check # assign in values to "vivo_c"
+    effect_c <- input$effect_check # assign effect values to "effect_c"
     
     aoc_y %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
-      filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
-      filter(lvl2_f %in% lvl2_c)%>%#filter by level 2 inputs 
-      filter(bio_f %in% bio_c)%>%#filter by bio organization
-      filter(vivo_f %in% vivo_c)# filter by invitro or invivo
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
+      filter(bio_f %in% bio_c) %>% #filter by bio organization
+      filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
+      filter(effect_f %in% effect_c) # filter by effect
       
   })
   
