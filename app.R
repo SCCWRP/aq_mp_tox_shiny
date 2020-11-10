@@ -464,7 +464,7 @@ uiOutput(outputId= "Emily_plot")),
                     
                     # widget 1
                     column(width = 12,
-                           column(width = 3,
+                           column(width = 4,
                                   # alternative to fully listed checklists
                                   # requires shinyWidgets package
                                   pickerInput(inputId = "env_check_ssd", # environment checklist
@@ -474,7 +474,7 @@ uiOutput(outputId= "Emily_plot")),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
                            # Organism widget
-                           column(width = 3,
+                           column(width = 4,
                                          pickerInput(inputId = "Group_check_ssd", # organism checklist
                                               label = "Organism Groups:", 
                                               choices = levels(aoc_z$Group),
@@ -482,7 +482,7 @@ uiOutput(outputId= "Emily_plot")),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
                            #Species widget
-                           column(width = 3,
+                           column(width = 4,
                                   pickerInput(inputId = "Species_check_ssd", # organism checklist
                                               label = "Species:",
                                               choices = levels(aoc_z$Species),
@@ -495,7 +495,7 @@ uiOutput(outputId= "Emily_plot")),
                     
                            column(width = 12,
                            #Size widget
-                           column(width = 3,
+                           column(width = 4,
                                   pickerInput(inputId = "size_check_ssd", # organism checklist
                                               label = "Sizes:",
                                               choices = levels(aoc_z$size_f),
@@ -504,7 +504,7 @@ uiOutput(outputId= "Emily_plot")),
                                               multiple = TRUE)), # allows for multiple inputs
                           
                             #Endpoint widget
-                           column(width = 3,
+                           column(width = 4,
                                   pickerInput(inputId = "lvl1_check_ssd", # organism checklist
                                               label = "Endpoints:",
                                               choices = levels(aoc_z$lvl1_f),
@@ -513,17 +513,19 @@ uiOutput(outputId= "Emily_plot")),
                                               multiple = TRUE)), # allows for multiple inputs
                            
                            #Polymer widget
-                           column(width = 3,
+                           column(width = 4,
                                   pickerInput(inputId = "poly_check_ssd", # organism checklist
                                               label = "Polymers:",
                                               choices = levels(aoc_z$poly_f),
                                               selected = levels(aoc_z$poly_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)), # allows for multiple inputs
+                                              multiple = TRUE))# allows for multiple inputs
+                           ), #close out column
                            
-                           
-                            column(width = 3,
-                                  actionButton("SSDgo", "Submit"))), # adds action button 
+                            column(width = 12,
+                                  actionButton("SSDgo", "Submit", 
+                                               style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                  align = "center"), # adds action button 
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
                            
@@ -574,7 +576,9 @@ uiOutput(outputId= "Emily_plot")),
                                            step = 1,
                                            max = 0.99),
                               br(),
-                              actionButton("ssdPred", "Predict"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
+                              column(width = 12,
+                                actionButton("ssdPred", "Predict", style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. This may take several minutes."),
                               br(),
@@ -883,7 +887,7 @@ server <- function(input, output) {
   })
   
   # Use newly created dataset from above to generate SSD
-  
+ # ** Prediction ---- 
   #create distribution based on newly created dataset
   fit_dists <- reactive({
     req(input$SSDgo) #won't run unless submit button is pressed
@@ -933,18 +937,17 @@ server <- function(input, output) {
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
     
     set.seed(99)
-    predict(fit_dists(), #Predict fitdist. 
-            average = pred_c_ave_ssd, #flad tells whether or not the average models from user input
+    stats::predict(fit_dists(), #Predict fitdist. 
+            average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
             ic = pred_c_ic_ssd, #tells which information criteria to use - user input
             nboot = 10, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
   }) 
  
-
+# **SSD Plot ----
 #Create the plot for species sensitivity distribution
   output$SSD_plot_react <- renderPlot({
     req(input$ssdPred) #won't start until button is pressed for prediction
-    
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
     
     ## create progress bar ##
@@ -963,7 +966,7 @@ server <- function(input, output) {
         # Increment the progress bar, and update the detail text.
         incProgress(1/n, detail = "This may take several minutes")
         
-        # Pause for 10 seconds to simulate a long computation.
+        # Pause for 3 seconds to simulate a long computation.
         Sys.sleep(3)
       }
     })
@@ -985,7 +988,7 @@ server <- function(input, output) {
       })
   
   
-  ## Sub-plots ##
+  # ***Sub-plots ----
   #Determine Hazard Concentration
   
   #Estimate hazard concentration
