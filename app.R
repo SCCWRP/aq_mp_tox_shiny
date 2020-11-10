@@ -4,7 +4,7 @@
 
 #### Setup ####
 
-# Anything that should only happen ONCE should be placed in the setup section, prior to the actual shiny structure.
+# Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
 
 # Load packages
 library(tidyverse)
@@ -22,19 +22,9 @@ library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
 library(viridis) #colors
-#library(htmlwidgets) #to animate time-series. May not be necessary
-
-#options(scipen=999) #globally overrides scientific notation so that the x-axis isn't half-scientific
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
-
-# Add log transformed concentration columns for easier plotting below.
-#aoc$log_dose.mg.L <- log10(aoc$dose.mg.L)
-#aoc$log_dose.particles.mL <- log10(aoc$dose.particles.mL)
-
-# Add factor and releved effects column.
-aoc$effect_f <- factor(aoc$effect, levels = c("Y", "N"))
 
 #### Leah Setup ####
 
@@ -101,9 +91,11 @@ get_plot_output_list <- function(input_n) {
 #### Heili Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
-aoc_x <- aoc %>% # start with original dataset
+aoc_setup <- aoc %>% # start with original dataset
   # full dataset filters.
-  filter(effect == "Y") %>% # only includes those datapoints with demonstrated effects.
+  mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
+    effect == "N" ~ "No"),
+    levels = c("Yes", "No"))) %>%
   # size category data tidying.
   mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
   mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
@@ -186,14 +178,13 @@ aoc_x <- aoc %>% # start with original dataset
     invitro.invivo == "invitro"~"In Vitro")))#renaming for widget
     
 #filter out terrestrial data
-aoc_y <- aoc_x %>% 
+aoc_y <- aoc_setup %>% 
 filter(environment != "Terrestrial") # removes terrestrial data.
-
 
 #### Scott Setup ####
 
 # Master dataset for SSDs
-aoc_z <- aoc_x %>% # start with Heili's altered dataset (no filtration for terrestrial data)
+aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
   mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
@@ -379,80 +370,76 @@ uiOutput(outputId= "Emily_plot")),
                       # requires shinyWidgets package
                       pickerInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:", 
-                        choices = levels(aoc_y$org_f),
-                        selected = levels(aoc_y$org_f),   
+                        choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),   
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Endpoint Examined:", 
-                        choices = levels(aoc_y$lvl1_f),
-                        selected = levels(aoc_y$lvl1_f), 
+                        choices = levels(aoc_setup$lvl1_f),
+                        selected = levels(aoc_setup$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
-                      #level 2 widget 
+                      column(width = 3,
+                        htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
-                      pickerInput(inputId = "lvl2_check", # endpoint checklist
-                        label = "Endpoint Category:", 
-                        choices = levels(aoc_y$lvl2_f),
-                        selected = levels(aoc_y$lvl2_f), 
-                        options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE)), # allows for multiple inputs
-                      
-                      #Bio organization widget
-                      
-                      column(width = 3,
-                             pickerInput(inputId = "bio_check", # endpoint checklist
+                             pickerInput(inputId = "bio_check", # bio organization checklist
                               label = "Level of Biological Organization", 
-                              choices = levels(aoc_y$bio_f),
-                              selected = levels(aoc_y$bio_f), 
+                              choices = levels(aoc_setup$bio_f),
+                              selected = levels(aoc_setup$bio_f), 
                               options = list(`actions-box` = TRUE), # option to de/select all
                               multiple = TRUE))), # allows for multiple inputs
                       
-                    #second selection output
-                    
-                    uiOutput("secondSelection"),
-                    
-                     column(width = 12,
-                      
-                #invivo/invitro widget
-                      
-                      column(width = 3,
+                    # New row of widgets
+                      column(width = 12,
+                        column(width = 3,
                             pickerInput(inputId = "vivo_check", # invitro/invivo checklist
-                                  label = "In Vitro or In Vivo:", 
-                                  choices = levels(aoc_y$vivo_f),
-                                  selected = levels(aoc_y$vivo_f),   
-                                  options = list(`actions-box` = TRUE), # option to de/select all
-                                  multiple = TRUE)), # allows for multiple inputs
-                      
-                      # "Update" button widget
+                              label = "In Vitro or In Vivo:", 
+                              choices = levels(aoc_setup$vivo_f),
+                              selected = levels(aoc_setup$vivo_f),   
+                              options = list(`actions-box` = TRUE), # option to de/select all
+                              multiple = TRUE))
+                        
+                    # EMILY ADD YOUR WIDGETS HERE    
+                        
+                        ), 
                     
+                    # New row of widgets
+                    column(width = 12,
                       column(width = 3,
-                        actionButton("go", "Update Filters")), # adds action button 
+                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                          label = "Effect:", 
+                          choices = levels(aoc_setup$effect_f),
+                          selected = "Yes",   
+                          options = list(`actions-box` = TRUE), # option to de/select all
+                          multiple = TRUE)), # allows for multiple inputs
+                      
+                      column(width = 3,
+                        actionButton("go", "Update Filters")), # adds update action button 
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
-                    
-                      # "Download" button widget
-                    
+
                       column(width = 3,
-                        downloadButton("downloadData", "Download Data"))),
+                        downloadButton("downloadData", "Download Data"))), # adds download button
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
                       
                       br(), # line break
                       hr(), # adds divider
-                    
                       br(), # line break
-                      plotOutput(outputId = "size_plot_react"),
-                      br(), # line break
-                      hr(), # adds divider
-                      br(), # line break
-                      plotOutput(outputId = "shape_plot_react"),
-                      br(), # line break
-                      plotOutput(outputId = "poly_plot_react")), 
+                      column(width = 12,
+                        plotOutput(outputId = "size_plot_react"),
+                        br()), # line break
+                      column(width = 12,
+                        plotOutput(outputId = "shape_plot_react"),
+                        br()), # line break
+                      column(width = 12,
+                        plotOutput(outputId = "poly_plot_react"),
+                        br())), # line break 
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -652,32 +639,47 @@ server <- function(input, output) {
   
 #### Heili S ####
   
+  #select lvl2 by lvl1
+  
+  output$secondSelection <- renderUI({
+    
+    lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
+    
+    aoc_new <- aoc_setup %>% # take original dataset
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # make a new subset of factors
+      
+    pickerInput(inputId = "lvl2_check", 
+      label = "Levels by Endpoint:", 
+      choices = levels(aoc_new$lvl2_f_new),
+      selected = levels(aoc_new$lvl2_f_new),
+      options = list(`actions-box` = TRUE),
+      multiple = TRUE)})
+  
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
-    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
+    # use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
     # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-    lvl2_c<-input$lvl2_check #assign lvl2 values to "lvl2_c"
-    bio_c<-input$bio_check # assign bio values to bio_c
-    vivo_c<-input$vivo_check 
+    lvl2_c <- input$lvl2_check # assign lvl2 values to "lvl2_c"
+    bio_c <- input$bio_check # assign bio values to "bio_c"
+    vivo_c <- input$vivo_check # assign in values to "vivo_c"
+    effect_c <- input$effect_check # assign effect values to "effect_c"
     
-    aoc_y %>% # take original dataset
+    aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
-      filter(lvl1_f %in% lvl1_c)%>% # filter by level inputs
-      filter(lvl2_f %in% lvl2_c)%>%#filter by level 2 inputs 
-      filter(bio_f %in% bio_c)%>%#filter by bio organization
-      filter(vivo_f %in% vivo_c)# filter by invitro or invivo
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
+      filter(bio_f %in% bio_c) %>% #filter by bio organization
+      filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
+      filter(effect_f %in% effect_c) # filter by effect
       
   })
-  
-  #select lvl2 by bio org
-  
-  output$secondSelection <- renderUI({
-    selectInput("User", "Levels by Endpoint", choices = as.character(aoc_y[aoc_y$lvl2==input$Select,"bio.org"]))})
-  
+
+
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
   output$size_plot_react <- renderPlot({
@@ -685,16 +687,16 @@ server <- function(input, output) {
     # Creating dataset to output counts.
     aoc_size1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(size_f) %>% # need to include so there's a recognized "y"
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
       summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
         measurements = n(),
         studies = n_distinct(article))
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       geom_text_repel(data = aoc_size1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -708,14 +710,14 @@ server <- function(input, output) {
     
     # Creating dataset to output counts.
     aoc_size2 <- aoc_filter() %>%
-      group_by(size_f) %>%
+      group_by(size_f, effect_f) %>%
       drop_na(dose.particles.mL) %>%
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1), 
         measurements = n(),
         studies = n_distinct(article))
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = size_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
       geom_text_repel(data = aoc_size2, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
@@ -723,7 +725,7 @@ server <- function(input, output) {
         segment.colour = NA) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      scale_color_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
       theme_classic() +
       theme(text = element_text(size=16)) +
@@ -738,7 +740,7 @@ server <- function(input, output) {
     
     aoc_shape1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(shape_f) %>% 
+      group_by(shape_f, effect_f) %>% 
       summarize(dose.mg.L = quantile(dose.mg.L, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -746,8 +748,8 @@ server <- function(input, output) {
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
-      scale_color_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       geom_text_repel(data = aoc_shape1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -761,7 +763,7 @@ server <- function(input, output) {
     
     aoc_shape2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
-      group_by(shape_f) %>% 
+      group_by(shape_f, effect_f) %>% 
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -769,8 +771,8 @@ server <- function(input, output) {
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = shape_f, fill = shape_f)) +
-      scale_color_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("chaparral3")) +
       geom_text_repel(data = aoc_shape2, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -791,7 +793,7 @@ server <- function(input, output) {
     
     aoc_poly1 <- aoc_filter() %>%
       drop_na(dose.mg.L) %>%
-      group_by(poly_f) %>% 
+      group_by(poly_f, effect_f) %>% 
       summarize(dose.mg.L = quantile(dose.mg.L, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -799,8 +801,8 @@ server <- function(input, output) {
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
-      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       geom_text_repel(data = aoc_poly1, 
         aes(label = paste("(",measurements,",",studies,")")),
@@ -814,7 +816,7 @@ server <- function(input, output) {
     
     aoc_poly2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
-      group_by(poly_f) %>% 
+      group_by(poly_f, effect_f) %>% 
       summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
         measurements = n(),
         studies = n_distinct(article))
@@ -822,8 +824,8 @@ server <- function(input, output) {
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = poly_f, fill = poly_f)) +
-      scale_color_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
+      scale_color_manual(values = c("black", "grey80")) +
       scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
       geom_text_repel(data = aoc_poly2, 
         aes(label = paste("(",measurements,",",studies,")")),
