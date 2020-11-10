@@ -176,7 +176,7 @@ aoc_setup <- aoc %>% # start with original dataset
     bio.org == "tissue" ~ "Tissue")))%>%
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
-  mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
+  mutate(life_f == factor(case_when(life.stage == "Early"~"Early",
                                    life.stage == "Juvenile"~"Juvenile",
                                    life.stage == "Adult" ~ "Adult")))#renaming for widget
 
