@@ -177,11 +177,12 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
-                                   life.stage == "Juvenile"~"Juvenile",
-                                   life.stage == "Adult"~"Adult")))
-
-
-
+                                   life.stage == "Juveniles"~"Juvenile",
+                                   life.stage == "Adult"~"Adult")))%>%
+  mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
+                                  environment == "Marine" ~ "Marine",
+                                  environment == "Terrestrial" ~ "Terrestrial")))
+         
 
 #renaming for widget
     
@@ -410,34 +411,43 @@ uiOutput(outputId= "Emily_plot")),
                               choices = levels(aoc_setup$vivo_f),
                               selected = levels(aoc_setup$vivo_f),   
                               options = list(`actions-box` = TRUE), # option to de/select all
-                              multiple = TRUE))
+                              multiple = TRUE)),
                         
-                    # EMILY ADD YOUR WIDGETS HERE    
-                        
-                        ), 
-                    
-                    column(width = 12,
                            column(width = 3,
-                                  pickerInput(inputId = "life_check", # invitro/invivo checklist
+                                  pickerInput(inputId = "life_check", # Life stage checklist checklist
                                               label = "life stages:", 
                                               choices = levels(aoc_setup$life_f),
                                               selected = levels(aoc_setup$life_f),   
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE))),
+                                              multiple = TRUE)),
+                  
+                        column(width = 3,
+                                pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                                              label = "Effect:", 
+                                              choices = levels(aoc_setup$effect_f),
+                                              selected = "Yes",   
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)),
+                      
+                        
+                        column(width = 3,
+                               pickerInput(inputId = "env_check", # Environment checklist
+                                           label = "Environment:", 
+                                           choices = levels(aoc_setup$env_f),
+                                           selected = levels(aoc_setup$env_f),   
+                                           options = list(`actions-box` = TRUE), # option to de/select all
+                                           multiple = TRUE)),
+                        
+                        
+                        
+                        ), # allows for multiple inputs
                     
-                   
-
-
                     
-                    # New row of widgets
-                    column(width = 12,
-                      column(width = 3,
-                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                          label = "Effect:", 
-                          choices = levels(aoc_setup$effect_f),
-                          selected = "Yes",   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                          multiple = TRUE)), # allows for multiple inputs
+                 
+                    
+                    column(width=12,
+                    
+
                       
                       column(width = 3,
                         actionButton("go", "Update Filters")), # adds update action button 
@@ -694,6 +704,7 @@ server <- function(input, output) {
     vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
     life_c <- input$life_check #assign values to life check
+    env_c <- input$env_check #assign values to environment check 
     
     
     
@@ -704,7 +715,8 @@ server <- function(input, output) {
       filter(bio_f %in% bio_c) %>% #filter by bio organization
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c)%>% #filter by effect
-      filter(life_f %in% life_c) #filter by life stage
+      filter(life_f %in% life_c)%>% #filter by life stage
+      filter(env_f %in% env_c) #filter by environment 
      
       
   })
