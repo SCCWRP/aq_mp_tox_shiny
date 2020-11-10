@@ -176,12 +176,8 @@ aoc_setup <- aoc %>% # start with original dataset
     bio.org == "tissue" ~ "Tissue")))%>%
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
-  mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
-                                   life.stage == "Juvenile"~"Juvenile",
-                                   life.stage == "Adult" ~ "Adult")))#renaming for widget
+  mutate(life_f = factor(life.stage))
 
-
- 
 
 
 #renaming for widget
@@ -417,13 +413,7 @@ uiOutput(outputId= "Emily_plot")),
                         
                         ), 
                     
-                    column(width = 3,
-                           pickerInput(inputId = "life_check", # Life stage checklist
-                                       label = "Life Stages", 
-                                       choices = levels(aoc_setup$life_f),
-                                       selected = levels(aoc_setup$life_f), 
-                                       options = list(`actions-box` = TRUE), # option to de/select all
-                                       multiple = TRUE))), # allows for multiple inputs
+                   
 
 
                     
@@ -691,7 +681,7 @@ server <- function(input, output) {
     bio_c <- input$bio_check # assign bio values to "bio_c"
     vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
-    life_c <- input$life_check # assigns life values to life_c
+    
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -699,8 +689,7 @@ server <- function(input, output) {
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
       filter(bio_f %in% bio_c) %>% #filter by bio organization
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
-      filter(effect_f %in% effect_c)%>% # filter by effect
-      filter(life_f %in% life_c) #filter by life stage
+      filter(effect_f %in% effect_c) # filter by effec
       
   })
 
