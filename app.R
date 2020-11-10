@@ -175,8 +175,8 @@ aoc_setup <- aoc %>% # start with original dataset
     bio.org == "subcell"~"Subcell",
     bio.org == "tissue" ~ "Tissue")))%>%
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
-    invitro.invivo == "invitro"~"In Vitro")))%>%
-  mutate(life_f = factor(life.stage))
+    invitro.invivo == "invitro"~"In Vitro")))
+
 
 
 
@@ -412,6 +412,8 @@ uiOutput(outputId= "Emily_plot")),
                     # EMILY ADD YOUR WIDGETS HERE    
                         
                         ), 
+                    
+    
                     
                    
 
@@ -680,7 +682,8 @@ server <- function(input, output) {
     lvl2_c <- input$lvl2_check # assign lvl2 values to "lvl2_c"
     bio_c <- input$bio_check # assign bio values to "bio_c"
     vivo_c <- input$vivo_check # assign in values to "vivo_c"
-    effect_c <- input$effect_check # assign effect values to "effect_c"
+    effect_c <- input$effect_check# assign effect values to "effect_c"
+    
     
     
     aoc_setup %>% # take original dataset
@@ -689,7 +692,8 @@ server <- function(input, output) {
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
       filter(bio_f %in% bio_c) %>% #filter by bio organization
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
-      filter(effect_f %in% effect_c) # filter by effec
+      filter(effect_f %in% effect_c) # filter by effect
+     
       
   })
 
