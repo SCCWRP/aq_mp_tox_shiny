@@ -181,6 +181,9 @@ aoc_setup <- aoc %>% # start with original dataset
                                    life.stage == "Adult" ~ "Adult")))#renaming for widget
 
 
+ 
+
+
 #renaming for widget
     
 #filter out terrestrial data
@@ -413,6 +416,7 @@ uiOutput(outputId= "Emily_plot")),
                     # EMILY ADD YOUR WIDGETS HERE    
                         
                         ), 
+                    
                     column(width = 3,
                            pickerInput(inputId = "life_check", # Life stage checklist
                                        label = "Life Stages", 
@@ -420,6 +424,7 @@ uiOutput(outputId= "Emily_plot")),
                                        selected = levels(aoc_setup$life_f), 
                                        options = list(`actions-box` = TRUE), # option to de/select all
                                        multiple = TRUE))), # allows for multiple inputs
+
 
                     
                     # New row of widgets
@@ -696,6 +701,7 @@ server <- function(input, output) {
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c)%>% # filter by effect
       filter(life_f %in% life_c) #filter by life stage
+      
   })
 
 
