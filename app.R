@@ -423,7 +423,7 @@ uiOutput(outputId= "Emily_plot")),
                                               choices = levels(aoc_setup$life_f),
                                               selected = levels(aoc_setup$life_f),   
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)),
+                                              multiple = TRUE))),
                     
                    
 
