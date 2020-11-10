@@ -586,6 +586,10 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               plotlyOutput(outputId = "aoc_ssd_ggplotly"),
                               br(),
+                              p("Model predictions can also be viewed in tabular format."),
+                              br(),
+                              DT::dataTableOutput(outputId = "ssd_pred_table"),
+                              br(),
                               p("This app is built using the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
                               ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
@@ -1014,7 +1018,11 @@ server <- function(input, output) {
   output$aoc_hc_table <- DT::renderDataTable({
     req(input$ssdPred)
     
-    datatable(aoc_hc(),
+    aoc_hc %>% aoc_hc() 
+      mutate_if(is.numeric, ~ signif(., 3))
+      
+    datatable(aoc_hc,
+              rownames = FALSE,
               options = list(dom = 't'), #only display the table and nothing else
               class = "compact",
               colnames = c("Percent", "Estimated Concentration (mg/L)", "Standard Error", "Lower Confidence Limit", "Upper Confidence Limit","Distribution Type"),
@@ -1088,6 +1096,27 @@ server <- function(input, output) {
     ggplotly(initialplot) # converts ggplot object to plotly object
     })
   
+  # SSD Table
+
+  output$ssd_pred_table <- DT::renderDataTable({
+     req(aoc_pred())
+    aoc_pred <- aoc_pred() %>% 
+      mutate_if(is.numeric, ~ signif(., 3))
+    
+      datatable(aoc_pred,
+                rownames = FALSE,
+                extensions = c('Buttons', 'Scroller'),
+                options = list(
+                  dom = 'Brftip',
+                  scrollY = 400,
+                  scroller = TRUE,
+                  buttons = c('copy', 'csv', 'excel')
+                ), 
+                class = "compact",
+                colnames = c("Percent", "Estimated Mean Concentration", "Standard Error", "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
+                caption = "Predicted species sensitivity distribution concentrations with uncertanties."
+                )
+  })
   
   # server-side for dummy file input tab
   # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
