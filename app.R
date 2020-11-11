@@ -987,7 +987,7 @@ server <- function(input, output) {
         incProgress(1/n, detail = "This may take several minutes")
         
         # Pause for 3 seconds to simulate a long computation.
-        Sys.sleep(3)
+        #Sys.sleep(3)
       }
     })
     
