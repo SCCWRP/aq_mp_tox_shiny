@@ -10,6 +10,8 @@ Primary data contact: Leah Thornton Hampton (leahth@sccwrp.org)
 
 Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 
+Dataset created in the [MPToxReview repository](https://github.com/ScottCoffin/MPToxReview).
+
 
 
 ## To-do List
@@ -19,16 +21,6 @@ Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 *Scott* Make app faster (specifically SSD) 
 
 *Scott* Make plots interactive (plotly or RBokeh)
-
-**Heili**
-
-*Heili* Help fix "submit button" in SSD 
-
-*Heili* Make sure app works on web app 
-
-*Heili* Add widget for data input 
-
-*Heili* Add button to plot corrected vs ‘raw’ SSDs at will etc.
 
 **Leah**
 
