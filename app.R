@@ -22,6 +22,7 @@ library(ssdtools) #for species sensitivity distributions
 library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
 library(viridis) #colors
+library(periscope)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -594,35 +595,51 @@ uiOutput(outputId= "Emily_plot")),
                                            step = 1,
                                            max = 0.99),
                               br(),
+                              p("Choose the number of bootstrap iterations (greater n yields higher confidence, but longer compute time"),
+                              br(),
+                              numericInput(inputId = "nbootInput", #hazard concentration input
+                                           label = "Bootstrap Iterations (n)",
+                                           value = 10,
+                                           min = 10,
+                                           step = 10,
+                                           max = 10000),
+                              br(),
                               column(width = 12,
                                 actionButton("ssdPred", "Predict", style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
-                              p("Please be patient as maximum likelihood estimations are calculated. This may take several minutes."),
+                              p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
                               p("Species Sensitivity Distribution"),
-                              plotOutput(outputId = "SSD_plot_react"),
+                              plotOutput(outputId = "aoc_ssd_ggplot"),
+                              br(),
+                              column(width = 12,
+                                     downloadButton("downloadSsdPlot", "Download Plot", class = "button"), #download ssdplot
+                                     align = "center"),
+                              tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
-                              p("Below you will find an estimate of the hazard concentration at the user-specified level with assocaited 95% confidence interval."),
-                              br(),
-                              DT::dataTableOutput(outputId = "aoc_hc_table"), #print hazard concentration table
-                              br(),
-                              p("If the plot above is not working, you may find it below as a ggplot."),
-                              br(),
-                              plotOutput(outputId = "aoc_ssd_ggplot"),
-                              br(),
-                              p("EXPERIMENTAL PLOTLY"),
-                              br(),
-                              plotlyOutput(outputId = "aoc_ssd_ggplotly"),
-                              br(),
+                              # p("Below you will find an estimate of the hazard concentration at the user-specified level with associated 95% confidence interval."),
+                              # br(),
+                              # DT::dataTableOutput(outputId = "aoc_hc_table"), #print hazard concentration table
+                              # br(),
+                              # p("If the plot above is not working, you may find it below as a ggplot."),
+                              # br(),
+                              # plotOutput(outputId = "aoc_ssd_ggplot"),
+                              # br(),
+                              # p("Below is the same plot in interactive mode. Functionality is still being ironed out..."),
+                              # br(),
+                              # plotlyOutput(outputId = "aoc_ssd_ggplotly"),
+                              # br(),
                               p("Model predictions can also be viewed in tabular format."),
                               br(),
                               DT::dataTableOutput(outputId = "ssd_pred_table"),
                               br(),
-                              p("This app is built using the R package ssdtools version 0.3.2, and share the same functionality. Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit pecies Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082.")
-                              ) #closes out scott's main panel
+                              h4(align = "center", "Credits"),
+                              p(align = "center", style = "font-size: 12px;", "This app is built using the R package ", a(href = "https://github.com/bcgov/ssdtools", 'ssdtools', .noWS = "outside"), " version 0.3.2 and share the same functionality."),
+                              p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
+                          ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
         
 
@@ -979,45 +996,34 @@ server <- function(input, output) {
       
     pred_c_ave_ssd <- as.logical(input$pred_ave_ssd) #assign prediction averaging choice
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
+    nbootNum <- as.numeric(input$nbootInput) #assign  number of bootsrap samples
     
     set.seed(99)
     stats::predict(fit_dists(), #Predict fitdist. 
             average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
             ic = pred_c_ic_ssd, #tells which information criteria to use - user input
-            nboot = 10, #number of bootstrap samples to use to estimate SE and CL
+            nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
   }) 
  
 # **SSD Plot ----
 #Create the plot for species sensitivity distribution
-  output$SSD_plot_react <- renderPlot({
+SSD_plot_react <- reactive({
     req(input$ssdPred) #won't start until button is pressed for prediction
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
+   
+    #reactive -> static data
+    aoc_ssd <- aoc_filter_ssd() %>% 
+      arrange(Conc)
     
-    ## create progress bar ##
-    # Create 0-row data frame which will be used to store data
-    dat <- data.frame(x = numeric(0), y = numeric(0))
-    
-    withProgress(message = 'Predicting Maximum Likelihood Estimation from Selected Model', value = 0, {
-      # Number of times we'll go through the loop
-      n <- 26
-      
-      for (i in 1:n) {
-        # Each time through the loop, add another row of data. This is
-        # a stand-in for a long-running computation.
-        dat <- rbind(dat, data.frame(x = rnorm(1), y = rnorm(1)))
-        
-        # Increment the progress bar, and update the detail text.
-        incProgress(1/n, detail = "This may take several minutes")
-        
-        # Pause for 3 seconds to simulate a long computation.
-        Sys.sleep(3)
-      }
-    })
+    aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
+    #convert hazard concentration to sig digits
+    aochc <- aoc_hc()
+    aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
     
     ## generate plot from prediction ##
-   ssd_plot(
-     aoc_filter_ssd(), #data
+  ssd_plot(
+     aoc_ssd, #data
      aoc_pred(), #prediction
      color = "Group",
      label = "Species",
@@ -1028,10 +1034,30 @@ server <- function(input, output) {
      scale_fill_viridis_d() + #make colors more differentiable 
      scale_colour_viridis_d() +  #make colors more differentiable 
      expand_limits(x = 5000) + # to ensure the species labels fit
+    geom_text(data = aochc, aes(x = est, y = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 4) + #label for hazard conc
+    geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
      ggtitle("Species Sensitivity for Microplastics")
       })
   
-  
+# print the SSD plot    
+output$SSD_plot <- renderPlot({
+  SSD_plot_react()
+  })
+    
+    
+# Create downloadable png of ssd plot
+output$downloadSsdPlot <- downloadHandler(
+  filename = function() {
+    paste('SSD_plot', Sys.Date(), '.png', sep='')
+  },
+  content = function(file) {
+    device <- function(..., width, height) {
+      grDevices::png(..., width = 12, height = 16, res = 600, units = "in")
+    }
+    ggsave(file, plot = ssd_ggplot(), device = device)
+  })
+
+
   # ***Sub-plots ----
   #Determine Hazard Concentration
   
@@ -1052,21 +1078,21 @@ server <- function(input, output) {
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
   })
   
-#Print table of hazard concentration data  
-  output$aoc_hc_table <- DT::renderDataTable({
-    req(input$ssdPred)
-    
-    aoc_hc %>% aoc_hc() 
-      mutate_if(is.numeric, ~ signif(., 3))
-      
-    datatable(aoc_hc,
-              rownames = FALSE,
-              options = list(dom = 't'), #only display the table and nothing else
-              class = "compact",
-              colnames = c("Percent", "Estimated Concentration (mg/L)", "Standard Error", "Lower Confidence Limit", "Upper Confidence Limit","Distribution Type"),
-              caption = "Hazard Concentration from Filtered Data"
-    )
-  })
+# #Print table of hazard concentration data  
+#   output$aoc_hc_table <- DT::renderDataTable({
+#     req(input$ssdPred)
+#     
+#     aoc_hc <- aoc_hc() %>% 
+#       mutate_if(is.numeric, ~ signif(., 3))
+#       
+#     datatable(aoc_hc,
+#               rownames = FALSE,
+#               options = list(dom = 't'), #only display the table and nothing else
+#               class = "compact",
+#               colnames = c("Percent", "Estimated Concentration (mg/L)", "Standard Error", "Lower Confidence Limit", "Upper Confidence Limit","Distribution Type"),
+#               caption = "Hazard Concentration from Filtered Data"
+#     )
+#   })
 
 # #define hazard concentration value for figure
 #   aoc_hc_sub <- eventReactive(list(input$ssdPred),{
@@ -1075,31 +1101,41 @@ server <- function(input, output) {
 # })
   
 #Plot SSD data with ggplot
-  output$aoc_ssd_ggplot <- renderPlot({
-   # req(input$ssdPred)
+   ssd_ggplot <- reactive({
+    # calculate fraction
+    aoc_ssd <- aoc_filter_ssd() %>% 
+      arrange(Conc)
     
-    hc <- aoc_hc() %>% 
-      select(est) #defining estimation from above calculation
-    hc <- as.numeric(hc)
+    aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
     
-   #Plot species sensitivity data with ggplot
-
-    ggplot(aoc_pred(),
-           aes_string(x = "est")) +
+    #convert hazard concentration to sig digits
+    aochc <- aoc_hc()
+    
+    aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
+    
+    ggplot(aoc_pred(),aes_string(x = "est")) +
       geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
       geom_line(aes_string(y = "percent/100")) +
-      geom_ssd(data = aoc_filter_ssd(),
-               aes_string(x = "Conc")) +
+      geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
+      geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), hjust = 1.1, size = 4) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent) +
       expand_limits(y = c(0, 1)) +
       xlab("Concentration (mg/L)")+
       coord_trans(x = "log10") +
-      scale_x_continuous(
-        breaks = scales::trans_breaks("log10", function(x) 10^x),
-        labels = comma_signif) +
-      geom_hcintersect(xintercept = hc, yintercept = 5 / 100) #utilizes hazard conc model predicted estimation
-   })
-
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
+      geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = 1) + #hazard conc line vertical
+      geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = 1) + #hazard conc line horizontal
+      geom_text(data = aochc, aes(x = est, y = -0.02, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red", size = 5) + #label for hazard conc
+      scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
+      scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+  })
+  
+  
+  output$aoc_ssd_ggplot <- renderPlot({
+    ssd_ggplot()
+  })
+  
   ## SSD plot as plotly
   output$aoc_ssd_ggplotly <- renderPlotly({
     
@@ -1145,7 +1181,7 @@ server <- function(input, output) {
                 rownames = FALSE,
                 extensions = c('Buttons', 'Scroller'),
                 options = list(
-                  dom = 'Brftip',
+                  dom = 'Brtip',
                   scrollY = 400,
                   scroller = TRUE,
                   buttons = c('copy', 'csv', 'excel')
