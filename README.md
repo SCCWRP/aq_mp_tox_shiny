@@ -10,7 +10,9 @@ Primary data contact: Leah Thornton Hampton (leahth@sccwrp.org)
 
 Primary coding contact: Heili Lowman (heilil@sccwrp.org)
 
-Dataset created in the [MPToxReview repository](https://github.com/ScottCoffin/MPToxReview).
+Dataset created in the [MPToxReview repository](https://github.com/ScottCoffin/MPToxReview). 
+
+Application deployed at https://sccwrp.shinyapps.io/aq_mp_tox_shiny/.
 
 
 
