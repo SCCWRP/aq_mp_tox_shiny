@@ -616,7 +616,7 @@ uiOutput(outputId= "Emily_plot")),
                     ) #closes out Scott's tab panel
         
 
-        ##### dummy tab entered by Heili ####
+        ##### dummy tab ####
         # commented out for the time being
         # tabPanel("File Upload", 
         #   
@@ -695,8 +695,6 @@ server <- function(input, output) {
     effect_c <- input$effect_check # assign effect values to "effect_c"
     life_c <- input$life_check #assign values to life check
     
-    
-    
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
@@ -706,9 +704,7 @@ server <- function(input, output) {
       filter(effect_f %in% effect_c)%>% #filter by effect
       filter(life_f %in% life_c) #filter by life stage
      
-      
   })
-
 
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
@@ -723,20 +719,23 @@ server <- function(input, output) {
         studies = n_distinct(article))
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
+      scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       geom_text_repel(data = aoc_size1, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
         nudge_y = -0.25,
         segment.colour = NA) +
       theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16), 
+        legend.position = "top") +
       labs(x = "Concentration (mg/L)",
-        y = "Size")
+        y = "Size",
+        color = "Effect?",
+        fill = "Effect?")
     
     # Creating dataset to output counts.
     aoc_size2 <- aoc_filter() %>%
@@ -747,7 +746,7 @@ server <- function(input, output) {
         studies = n_distinct(article))
     
     size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = size_f)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       geom_text_repel(data = aoc_size2, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
@@ -755,12 +754,15 @@ server <- function(input, output) {
         segment.colour = NA) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("sbchannel", n = 6, type = "continuous")) +
+      scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
+      scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16), 
+        legend.position = "top") +
       labs(x = "Concentration (particles/mL)",
-        y = " ")
+        y = " ",
+        color = "Effect?",
+        fill = "Effect?")
     
     (size1 + size2) # using patchwork to combine figures
     
@@ -778,18 +780,21 @@ server <- function(input, output) {
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       geom_text_repel(data = aoc_shape1, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
         nudge_y = -0.25,
         segment.colour = NA) +
       theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16), 
+        legend.position = "top") +
       labs(x = "Concentration (mg/L)",
-        y = "Shape")
+        y = "Shape",
+        color = "Effect?",
+        fill = "Effect?")
     
     aoc_shape2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
@@ -801,19 +806,21 @@ server <- function(input, output) {
     shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = shape_f)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("chaparral3")) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       geom_text_repel(data = aoc_shape2, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
         nudge_y = -0.25,
         segment.colour = NA) +
       theme_classic() +
-      theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
       labs(x = "Concentration (particles/mL)",
-        y = " ")
+        y = " ",
+        color = "Effect?",
+        fill = "Effect?")
     
     (shape1 + shape2) # patchwork combining plots
     
@@ -831,18 +838,21 @@ server <- function(input, output) {
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#FAB455", "#A5683C")) +
+      scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       geom_text_repel(data = aoc_poly1, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
         nudge_y = -0.25,
         segment.colour = NA) +
       theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
       labs(x = "Concentration (mg/L)",
-        y = "Polymer")
+        y = "Polymer",
+        color = "Effect?",
+        fill = "Effect?")
     
     aoc_poly2 <- aoc_filter() %>%
       drop_na(dose.particles.mL) %>%
@@ -854,18 +864,21 @@ server <- function(input, output) {
     poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = poly_f)) +
-      scale_color_manual(values = c("black", "grey80")) +
-      scale_fill_manual(values = cal_palette("canary", n = 15, type = "continuous")) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#FAB455", "#A5683C")) +
+      scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       geom_text_repel(data = aoc_poly2, 
         aes(label = paste("(",measurements,",",studies,")")),
         nudge_x = -1,
         nudge_y = -0.25,
         segment.colour = NA) +
       theme_classic() +
-      theme(text = element_text(size=16)) +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
       labs(x = "Concentration (particles/mL)",
-        y = " ")
+        y = " ",
+        color = "Effect?",
+        fill = "Effect?")
     
     (poly1 + poly2) # join plots together using patchwork
     
