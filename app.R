@@ -183,9 +183,13 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
                                   environment == "Terrestrial" ~ "Terrestrial")))
+ 
+
+ 
+  
          
 
-xtabs(~exposure.duration.d, aoc)
+
 
 #### Scott Setup ####
 
@@ -445,9 +449,29 @@ uiOutput(outputId= "Emily_plot")),
                      column(width=12,
 
 
-                           sliderInput("range", # Allows for two inputs
-                                       label = "Exposure duration by treatment group", #Labels widget
-                                       min = 0, max = 100, value = c(0, 100)),
+                            column(width = 3,
+                                   pickerInput(inputId = "poly_check", # Environment checklist
+                                               label = "Polymer:", 
+                                               choices = levels(aoc_setup$poly_f),
+                                               selected = levels(aoc_setup$poly_f),   
+                                               options = list(`actions-box` = TRUE), # option to de/select all
+                                               multiple = TRUE)),
+                            
+                            column(width = 3,
+                                   pickerInput(inputId = "shape_check", # Environment checklist
+                                               label = "Environment:", 
+                                               choices = levels(aoc_setup$shape_f),
+                                               selected = levels(aoc_setup$shape_f),   
+                                               options = list(`actions-box` = TRUE), # option to de/select all
+                                               multiple = TRUE)),
+                           
+                           column(width = 3,
+                                   pickerInput(inputId = "size_check", # Environment checklist
+                                               label = "size:", 
+                                               choices = levels(aoc_setup$size_f),
+                                               selected = levels(aoc_setup$size_f),   
+                                               options = list(`actions-box` = TRUE), # option to de/select all
+                                               multiple = TRUE)),
                     
                            
                            
@@ -727,7 +751,9 @@ server <- function(input, output) {
     effect_c <- input$effect_check # assign effect values to "effect_c"
     life_c <- input$life_check #assign values to life check
     env_c <- input$env_check #assign values to environment check 
-    exp_c <- input$Exp_slide # assign values to exposure duration
+    poly_c <- input$poly_check # assign values to polymer
+    shape_c <- input$shape_check # assign values to shape 
+    size_c <- input$size_check # assign values to size 
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -737,7 +763,9 @@ server <- function(input, output) {
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c) %>% #filter by effect
       filter(life_f %in% life_c) %>% #filter by life stage
-      filter(exposure.duration.d %in% env_c) #filter by environment 
+      filter(poly_f %in% poly_c)%>% #filter by polymer
+      filter(size_f %in% size_c)%>% #filter by size 
+      filter(shape_f %in% shape_c) #filter by shape 
       
      
   })
