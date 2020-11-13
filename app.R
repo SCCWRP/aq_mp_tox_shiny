@@ -750,14 +750,10 @@ server <- function(input, output) {
      
   })
 
-<<<<<<< HEAD
   #slider 
       
   output$value <- renderPrint({ input$exp_c })
      
-
-=======
->>>>>>> f61cd6434e2e8404deb80c32455e1375e7415a16
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
   output$size_plot_react <- renderPlot({
