@@ -20,8 +20,6 @@ Application deployed at https://sccwrp.shinyapps.io/aq_mp_tox_shiny/.
 
 **Scott**
 
-*Scott* Make app faster (specifically SSD) 
-
 *Scott* Make plots interactive (plotly or RBokeh)
 
 **Leah**
