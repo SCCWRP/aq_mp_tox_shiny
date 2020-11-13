@@ -187,14 +187,6 @@ aoc_setup <- aoc %>% # start with original dataset
 
 xtabs(~exposure.duration.d, aoc)
 
-
-
-#renaming for widget
-    
-#filter out terrestrial data
-aoc_y <- aoc_setup %>% 
-filter(environment != "Terrestrial") # removes terrestrial data.
-
 #### Scott Setup ####
 
 # Master dataset for SSDs
