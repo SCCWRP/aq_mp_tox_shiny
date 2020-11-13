@@ -110,7 +110,7 @@ aoc_setup <- aoc %>% # start with original dataset
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
-  mutate(shape_f = factor(shape.noNA, levels = c("Fiber", "Fragment", "Sphere", "Cube", "Unavailable"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
   mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
@@ -445,7 +445,7 @@ uiOutput(outputId= "Emily_plot")),
                             
                         column(width = 3,
                         pickerInput(inputId = "shape_check", # Environment checklist
-                          label = "Shape:", 
+                          label = "Environment:", 
                           choices = levels(aoc_setup$shape_f),
                           selected = levels(aoc_setup$shape_f),   
                           options = list(`actions-box` = TRUE), # option to de/select all
@@ -460,12 +460,16 @@ uiOutput(outputId= "Emily_plot")),
                                                multiple = TRUE)),
                     
                         column(width = 3,
-                        actionButton("go", "Update Filters")), # adds update action button 
-
-                        sliderInput("sizenum_f", label = h3("Slider"), min = 0, 
-                                    max = 1000, value = 50)),
-                        
-        
+                        sliderInput("range", # Allows for two inputs
+                          label = "Exposure duration by treatment group", #Labels widget
+                          min = 0, max = 100, value = c(0, 100)))),
+                       
+                    # New row of widgets
+                    column(width=12,
+                        column(width = 3,
+                        actionButton("go", "Update Filters")), # adds update action button
+                    # "go" is the internal name to refer to the button
+                    # "Update" is the title that appears on the app
 
                         column(width = 3,
                         downloadButton("downloadData", "Download Data"))), # adds download button
@@ -737,8 +741,7 @@ server <- function(input, output) {
     env_c <- input$env_check #assign values to environment check 
     poly_c <- input$poly_check # assign values to polymer
     shape_c <- input$shape_check # assign values to shape 
-    size_c <- input$size_check# assign values to size 
-    sizenum_c<- input$size.length.um.used.for.conversions #assign values to size slider
+    size_c <- input$size_check # assign values to size 
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -750,9 +753,7 @@ server <- function(input, output) {
       filter(life_f %in% life_c) %>% #filter by life stage
       filter(poly_f %in% poly_c)%>% #filter by polymer
       filter(size_f %in% size_c)%>% #filter by size 
-      filter(shape_f %in% shape_c)%>% #filter by shape 
-      filter(sizenum_f <= sizenum_c)# filter by numerical size
-      
+      filter(shape_f %in% shape_c) #filter by shape 
       
   })
 
