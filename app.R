@@ -725,15 +725,14 @@ server <- function(input, output) {
   
 #### Heili S ####
   
-  #select lvl2 by lvl1
-  
+  #Create dependent dropdown checklists: select lvl2 by lvl1.
   output$secondSelection <- renderUI({
     
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
     
     aoc_new <- aoc_setup %>% # take original dataset
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
-      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # make a new subset of factors
+      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
       
     pickerInput(inputId = "lvl2_check", 
       label = "Levels by Endpoint:", 
@@ -772,14 +771,15 @@ server <- function(input, output) {
       filter(size_f %in% size_c)%>% #filter by size 
       filter(shape_f %in% shape_c) #filter by shape 
       
-     
   })
 
   #slider 
       
   output$value <- renderPrint({ input$exp_c })
      
-  # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
+  # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
+  
+  # Size Plots
   
   output$size_plot_react <- renderPlot({
     
@@ -829,6 +829,8 @@ server <- function(input, output) {
     
   })
   
+  # Shape Plots
+  
   output$shape_plot_react <- renderPlot({
     
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
@@ -863,6 +865,8 @@ server <- function(input, output) {
     
   })
   
+  # Polymer Plots
+  
   output$poly_plot_react <- renderPlot({
     
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
@@ -896,6 +900,8 @@ server <- function(input, output) {
     (poly1 + poly2) # join plots together using patchwork
     
   })
+  
+  # Endpoint Plots
   
   output$lvl_plot_react <- renderPlot({
     
@@ -1250,4 +1256,3 @@ output$downloadSsdPlot <- downloadHandler(
 shinyApp(ui = ui, server = server)
 
 # End of R Shiny app script.
-
