@@ -466,10 +466,7 @@ uiOutput(outputId= "Emily_plot")),
                             label = "Exposure duration by treatment group", #Labels widget
                             min = 0, max = 100, value = c(0, 100)),
                         
-                        column(width = 3,
-                        actionButton("go", "Update Filters")), # adds update action button
-                    # "go" is the internal name to refer to the button
-                    # "Update" is the title that appears on the app
+        
 
                         column(width = 3,
                         downloadButton("downloadData", "Download Data"))), # adds download button
