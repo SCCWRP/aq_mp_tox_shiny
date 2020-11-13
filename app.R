@@ -29,6 +29,8 @@ aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
 #### Leah Setup ####
 
+# All text inputs below.
+
 #### Emily Setup ####
 
 Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
@@ -98,7 +100,7 @@ aoc_setup <- aoc %>% # start with original dataset
     effect == "N" ~ "No"),
     levels = c("Yes", "No"))) %>%
   # size category data tidying.
-  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
+  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0
   mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
     size.category.noNA == 2 ~ "100nm < 1µm",
     size.category.noNA == 3 ~ "1µm < 100µm",
@@ -111,7 +113,7 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
+  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
   # taxonomic category data tidying.
   mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
   mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
@@ -170,7 +172,7 @@ aoc_setup <- aoc %>% # start with original dataset
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
     lvl2 == "vision.system"~"Vision System")))%>% #Renames for widget
-  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Organization Data Tidying
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
     bio.org == "organism"~"Organism",
     bio.org == "population"~ "Population",
     bio.org == "subcell"~"Subcell",
@@ -188,8 +190,6 @@ aoc_setup <- aoc %>% # start with original dataset
  
   
          
-
-
 
 #### Scott Setup ####
 
@@ -397,56 +397,50 @@ uiOutput(outputId= "Emily_plot")),
                         htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
-                             pickerInput(inputId = "bio_check", # bio organization checklist
+                             pickerInput(inputId = "bio_check", # bio org checklist
                               label = "Level of Biological Organization", 
                               choices = levels(aoc_setup$bio_f),
                               selected = levels(aoc_setup$bio_f), 
-                              options = list(`actions-box` = TRUE), # option to de/select all
+                              options = list(`actions-box` = TRUE),
                               multiple = TRUE))), # allows for multiple inputs
                       
                     # New row of widgets
                       column(width = 12,
                         column(width = 3,
-                            pickerInput(inputId = "vivo_check", # invitro/invivo checklist
+                            pickerInput(inputId = "vivo_check", # invitro/vivo checklist
                               label = "In Vitro or In Vivo:", 
                               choices = levels(aoc_setup$vivo_f),
                               selected = levels(aoc_setup$vivo_f),   
-                              options = list(`actions-box` = TRUE), # option to de/select all
+                              options = list(`actions-box` = TRUE), 
                               multiple = TRUE)),
                         
-                           column(width = 3,
-                                  pickerInput(inputId = "life_check", # Life stage checklist checklist
-                                              label = "life stages:", 
-                                              choices = levels(aoc_setup$life_f),
-                                              selected = levels(aoc_setup$life_f),   
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)),
+                        column(width = 3,
+                            pickerInput(inputId = "life_check", # life stage checklist
+                              label = "life stages:", 
+                              choices = levels(aoc_setup$life_f),
+                              selected = levels(aoc_setup$life_f),   
+                              options = list(`actions-box` = TRUE), 
+                              multiple = TRUE)),
                   
                         column(width = 3,
-                                pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                                              label = "Effect:", 
-                                              choices = levels(aoc_setup$effect_f),
-                                              selected = "Yes",   
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)),
+                            pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                              label = "Effect:", 
+                              choices = levels(aoc_setup$effect_f),
+                              selected = "Yes",   
+                              options = list(`actions-box` = TRUE),
+                              multiple = TRUE)),
                       
-                        
                         column(width = 3,
-                               pickerInput(inputId = "env_check", # Environment checklist
-                                           label = "Environment:", 
-                                           choices = levels(aoc_setup$env_f),
-                                           selected = levels(aoc_setup$env_f),   
-                                           options = list(`actions-box` = TRUE), # option to de/select all
-                                           multiple = TRUE)),
-                        
-                        
-                        
-                        ), # allows for multiple inputs
+                            pickerInput(inputId = "env_check", # Environment checklist
+                              label = "Environment:", 
+                              choices = levels(aoc_setup$env_f),
+                              selected = levels(aoc_setup$env_f),   
+                              options = list(`actions-box` = TRUE), 
+                              multiple = TRUE))), # allows for multiple inputs
                     
-                    
-                 
-                    
+                    # New row of widgets
                      column(width=12,
+
 
 
                             column(width = 3,
@@ -481,6 +475,14 @@ uiOutput(outputId= "Emily_plot")),
                       
                       column(width = 3,
                         actionButton("go", "Update Filters")), # adds update action button 
+
+                        sliderInput("range", # Allows for two inputs
+                            label = "Exposure duration by treatment group", #Labels widget
+                            min = 0, max = 100, value = c(0, 100)),
+                        
+                       column(width = 3,
+                          actionButton("go", "Update Filters")), # adds update action button
+
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
 
@@ -500,7 +502,10 @@ uiOutput(outputId= "Emily_plot")),
                         br()), # line break
                       column(width = 12,
                         plotOutput(outputId = "poly_plot_react"),
-                        br())), # line break 
+                        br()), # line break 
+                      column(width =12,
+                        plotOutput(outputId = "lvl_plot_react"),
+                        br())), # line break
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -889,6 +894,40 @@ server <- function(input, output) {
         fill = "Effect?")
     
     (poly1 + poly2) # join plots together using patchwork
+    
+  })
+  
+  output$lvl_plot_react <- renderPlot({
+    
+    lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      theme_classic() +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
+      labs(x = "Concentration (mg/L)",
+        y = "Endpoint",
+        color = "Effect?",
+        fill = "Effect?")
+    
+    lvl2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = lvl1_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      theme_classic() +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
+      labs(x = "Concentration (particles/mL)",
+        y = " ",
+        color = "Effect?",
+        fill = "Effect?")
+    
+    (lvl1 + lvl2) # join plots together using patchwork
     
   })
   
