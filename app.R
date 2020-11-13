@@ -411,7 +411,7 @@ uiOutput(outputId= "Emily_plot")),
                         
                         column(width = 3,
                         pickerInput(inputId = "life_check", # life stage checklist
-                          label = "life stages:", 
+                          label = "Life Stages:", 
                           choices = levels(aoc_setup$life_f),
                           selected = levels(aoc_setup$life_f),   
                           options = list(`actions-box` = TRUE), 
@@ -444,8 +444,8 @@ uiOutput(outputId= "Emily_plot")),
                           multiple = TRUE)),
                             
                         column(width = 3,
-                        pickerInput(inputId = "shape_check", # Environment checklist
-                          label = "Environment:", 
+                        pickerInput(inputId = "shape_check", # shape checklist
+                          label = "Shape:", 
                           choices = levels(aoc_setup$shape_f),
                           selected = levels(aoc_setup$shape_f),   
                           options = list(`actions-box` = TRUE), # option to de/select all
@@ -453,7 +453,7 @@ uiOutput(outputId= "Emily_plot")),
                            
                         column(width = 3,
                         pickerInput(inputId = "size_check", # Environment checklist
-                          label = "size:", 
+                          label = "Size:", 
                           choices = levels(aoc_setup$size_f),
                           selected = levels(aoc_setup$size_f),   
                           options = list(`actions-box` = TRUE), # option to de/select all
@@ -461,8 +461,8 @@ uiOutput(outputId= "Emily_plot")),
                     
                         column(width = 3,
                         sliderInput("range", # Allows for two inputs
-                          label = "Exposure duration by treatment group", #Labels widget
-                          min = 0, max = 100, value = c(0, 100)))),
+                          label = "Exposure duration by treatment group:", #Labels widget
+                          min = 0, max = 100, value = 100))),
                        
                     # New row of widgets
                     column(width=12,
@@ -476,9 +476,10 @@ uiOutput(outputId= "Emily_plot")),
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
                       
-                      br(), # line break
-                      hr(), # adds divider
-                      br(), # line break
+
+                      column(width = 12,
+                        hr()), # adds divider
+
                       column(width = 12,
                         plotOutput(outputId = "size_plot_react"),
                         br()), # line break
@@ -737,11 +738,12 @@ server <- function(input, output) {
     bio_c <- input$bio_check # assign bio values to "bio_c"
     vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
-    life_c <- input$life_check #assign values to life check
-    env_c <- input$env_check #assign values to environment check 
-    poly_c <- input$poly_check # assign values to polymer
-    shape_c <- input$shape_check # assign values to shape 
-    size_c <- input$size_check # assign values to size 
+    life_c <- input$life_check #assign values to "life_check"
+    env_c <- input$env_check #assign values to "env_c"
+    poly_c <- input$poly_check # assign values to "poly_c"
+    shape_c <- input$shape_check # assign values to "shape_c" 
+    size_c <- input$size_check # assign values to "size_c" 
+    range_n <- input$range # assign values to "range_n"
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -751,19 +753,16 @@ server <- function(input, output) {
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c) %>% #filter by effect
       filter(life_f %in% life_c) %>% #filter by life stage
-      filter(poly_f %in% poly_c)%>% #filter by polymer
-      filter(size_f %in% size_c)%>% #filter by size 
-      filter(shape_f %in% shape_c) #filter by shape 
+      filter(poly_f %in% poly_c) %>% #filter by polymer
+      filter(size_f %in% size_c) %>% #filter by size class
+      filter(shape_f %in% shape_c) %>% #filter by shape 
+      filter(size.length.um.used.for.conversions <= range_n) # filter by size
       
   })
-
-  #slider 
-      
-  output$value <- renderPrint({ input$exp_c })
      
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
-  # Size Plots
+  # Size Plot
   
   output$size_plot_react <- renderPlot({
     
@@ -777,9 +776,9 @@ server <- function(input, output) {
     #     studies = n_distinct(article))
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       # geom_text_repel(data = aoc_size1, 
@@ -795,32 +794,35 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      theme_classic() +
-      theme(text = element_text(size=16), 
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
+    size1
     
-    (size1 + size2) # using patchwork to combine figures
+    # Commenting out for now, deleting from remaining plots.
+    # size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
+    #   geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+    #   scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    #     labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+    #   scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
+    #   scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
+    #   theme_classic() +
+    #   theme(text = element_text(size=16), 
+    #     legend.position = "top") +
+    #   labs(x = "Concentration (particles/mL)",
+    #     y = " ",
+    #     color = "Effect?",
+    #     fill = "Effect?")
+    
+    # (size1 + size2) # using patchwork to combine figures
     
   })
   
-  # Shape Plots
+  # Shape Plot
   
   output$shape_plot_react <- renderPlot({
     
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       theme_classic() +
@@ -831,32 +833,18 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = shape_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (shape1 + shape2) # patchwork combining plots
+    shape1
     
   })
   
-  # Polymer Plots
+  # Polymer Plot
   
   output$poly_plot_react <- renderPlot({
     
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
@@ -867,32 +855,18 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = poly_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#FAB455", "#A5683C")) +
-      scale_fill_manual(values = c("#FAB455", "#A5683C")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (poly1 + poly2) # join plots together using patchwork
+    poly1
     
   })
   
-  # Endpoint Plots
+  # Endpoint Plot
   
   output$lvl_plot_react <- renderPlot({
     
     lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
@@ -903,21 +877,7 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    lvl2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = lvl1_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
-      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (lvl1 + lvl2) # join plots together using patchwork
+    lvl1
     
   })
   
