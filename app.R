@@ -476,7 +476,10 @@ uiOutput(outputId= "Emily_plot")),
                         br()), # line break
                       column(width = 12,
                         plotOutput(outputId = "poly_plot_react"),
-                        br())), # line break 
+                        br()), # line break 
+                      column(width =12,
+                        plotOutput(outputId = "lvl_plot_react"),
+                        br())), # line break
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -861,6 +864,40 @@ server <- function(input, output) {
         fill = "Effect?")
     
     (poly1 + poly2) # join plots together using patchwork
+    
+  })
+  
+  output$lvl_plot_react <- renderPlot({
+    
+    lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
+      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
+        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      theme_classic() +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
+      labs(x = "Concentration (mg/L)",
+        y = "Endpoint",
+        color = "Effect?",
+        fill = "Effect?")
+    
+    lvl2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = lvl1_f)) +
+      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      theme_classic() +
+      theme(text = element_text(size=16),
+        legend.position = "top") +
+      labs(x = "Concentration (particles/mL)",
+        y = " ",
+        color = "Effect?",
+        fill = "Effect?")
+    
+    (lvl1 + lvl2) # join plots together using patchwork
     
   })
   
