@@ -29,6 +29,8 @@ aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
 #### Leah Setup ####
 
+# All text inputs below.
+
 #### Emily Setup ####
 
 Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
@@ -98,7 +100,7 @@ aoc_setup <- aoc %>% # start with original dataset
     effect == "N" ~ "No"),
     levels = c("Yes", "No"))) %>%
   # size category data tidying.
-  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0 so we can better relabel it.
+  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0
   mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
     size.category.noNA == 2 ~ "100nm < 1µm",
     size.category.noNA == 3 ~ "1µm < 100µm",
@@ -111,7 +113,7 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order our different polymers.
+  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
   # taxonomic category data tidying.
   mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
   mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
@@ -170,7 +172,7 @@ aoc_setup <- aoc %>% # start with original dataset
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
     lvl2 == "vision.system"~"Vision System")))%>% #Renames for widget
-  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Organization Data Tidying
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
     bio.org == "organism"~"Organism",
     bio.org == "population"~ "Population",
     bio.org == "subcell"~"Subcell",
@@ -184,9 +186,6 @@ aoc_setup <- aoc %>% # start with original dataset
                                   environment == "Marine" ~ "Marine",
                                   environment == "Terrestrial" ~ "Terrestrial")))
          
-
-xtabs(~exposure.duration.d, aoc)
-
 #### Scott Setup ####
 
 # Master dataset for SSDs
