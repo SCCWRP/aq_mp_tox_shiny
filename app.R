@@ -462,9 +462,8 @@ uiOutput(outputId= "Emily_plot")),
                         column(width = 3,
                         actionButton("go", "Update Filters")), # adds update action button 
 
-                        sliderInput("range", # Allows for two inputs
-                            label = "Exposure duration by treatment group", #Labels widget
-                            min = 0, max = 100, value = c(0, 100)),
+                        sliderInput("sizenum_f", label = h3("Slider"), min = 0, 
+                                    max = 1000, value = 50)),
                         
         
 
@@ -738,7 +737,8 @@ server <- function(input, output) {
     env_c <- input$env_check #assign values to environment check 
     poly_c <- input$poly_check # assign values to polymer
     shape_c <- input$shape_check # assign values to shape 
-    size_c <- input$size_check # assign values to size 
+    size_c <- input$size_check# assign values to size 
+    sizenum_c<- input$size.length.um.used.for.conversions #assign values to size slider
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -750,7 +750,9 @@ server <- function(input, output) {
       filter(life_f %in% life_c) %>% #filter by life stage
       filter(poly_f %in% poly_c)%>% #filter by polymer
       filter(size_f %in% size_c)%>% #filter by size 
-      filter(shape_f %in% shape_c) #filter by shape 
+      filter(shape_f %in% shape_c)%>% #filter by shape 
+      filter(sizenum_f <= sizenum_c)# filter by numerical size
+      
       
   })
 
