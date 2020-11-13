@@ -185,11 +185,6 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
                                   environment == "Terrestrial" ~ "Terrestrial")))
- 
-
- 
-  
-         
 
 #### Scott Setup ####
 
@@ -397,96 +392,86 @@ uiOutput(outputId= "Emily_plot")),
                         htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
-                             pickerInput(inputId = "bio_check", # bio org checklist
-                              label = "Level of Biological Organization", 
-                              choices = levels(aoc_setup$bio_f),
-                              selected = levels(aoc_setup$bio_f), 
-                              options = list(`actions-box` = TRUE),
-                              multiple = TRUE))), # allows for multiple inputs
+                      pickerInput(inputId = "bio_check", # bio org checklist
+                        label = "Level of Biological Organization", 
+                        choices = levels(aoc_setup$bio_f),
+                        selected = levels(aoc_setup$bio_f), 
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE))), # allows for multiple inputs
                       
                     # New row of widgets
                       column(width = 12,
                         column(width = 3,
-                            pickerInput(inputId = "vivo_check", # invitro/vivo checklist
-                              label = "In Vitro or In Vivo:", 
-                              choices = levels(aoc_setup$vivo_f),
-                              selected = levels(aoc_setup$vivo_f),   
-                              options = list(`actions-box` = TRUE), 
-                              multiple = TRUE)),
+                        pickerInput(inputId = "vivo_check", # invitro/vivo checklist
+                          label = "In Vitro or In Vivo:", 
+                          choices = levels(aoc_setup$vivo_f),
+                          selected = levels(aoc_setup$vivo_f),   
+                          options = list(`actions-box` = TRUE), 
+                          multiple = TRUE)),
                         
                         column(width = 3,
-                            pickerInput(inputId = "life_check", # life stage checklist
-                              label = "life stages:", 
-                              choices = levels(aoc_setup$life_f),
-                              selected = levels(aoc_setup$life_f),   
-                              options = list(`actions-box` = TRUE), 
-                              multiple = TRUE)),
+                        pickerInput(inputId = "life_check", # life stage checklist
+                          label = "life stages:", 
+                          choices = levels(aoc_setup$life_f),
+                          selected = levels(aoc_setup$life_f),   
+                          options = list(`actions-box` = TRUE), 
+                          multiple = TRUE)),
                   
                         column(width = 3,
-                            pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                              label = "Effect:", 
-                              choices = levels(aoc_setup$effect_f),
-                              selected = "Yes",   
-                              options = list(`actions-box` = TRUE),
-                              multiple = TRUE)),
+                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                          label = "Effect:", 
+                          choices = levels(aoc_setup$effect_f),
+                          selected = "Yes",   
+                          options = list(`actions-box` = TRUE),
+                          multiple = TRUE)),
                       
                         column(width = 3,
-                            pickerInput(inputId = "env_check", # Environment checklist
-                              label = "Environment:", 
-                              choices = levels(aoc_setup$env_f),
-                              selected = levels(aoc_setup$env_f),   
-                              options = list(`actions-box` = TRUE), 
-                              multiple = TRUE))), # allows for multiple inputs
+                        pickerInput(inputId = "env_check", # Environment checklist
+                          label = "Environment:", 
+                          choices = levels(aoc_setup$env_f),
+                          selected = levels(aoc_setup$env_f),   
+                          options = list(`actions-box` = TRUE), 
+                          multiple = TRUE))), # allows for multiple inputs
                     
                     # New row of widgets
                      column(width=12,
-
-
-
-                            column(width = 3,
-                                   pickerInput(inputId = "poly_check", # Environment checklist
-                                               label = "Polymer:", 
-                                               choices = levels(aoc_setup$poly_f),
-                                               selected = levels(aoc_setup$poly_f),   
-                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                               multiple = TRUE)),
+                        column(width = 3,
+                        pickerInput(inputId = "poly_check", # Environment checklist
+                          label = "Polymer:", 
+                          choices = levels(aoc_setup$poly_f),
+                          selected = levels(aoc_setup$poly_f),   
+                          options = list(`actions-box` = TRUE), # option to de/select all
+                          multiple = TRUE)),
                             
-                            column(width = 3,
-                                   pickerInput(inputId = "shape_check", # Environment checklist
-                                               label = "Environment:", 
-                                               choices = levels(aoc_setup$shape_f),
-                                               selected = levels(aoc_setup$shape_f),   
-                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                               multiple = TRUE)),
+                        column(width = 3,
+                        pickerInput(inputId = "shape_check", # Environment checklist
+                          label = "Environment:", 
+                          choices = levels(aoc_setup$shape_f),
+                          selected = levels(aoc_setup$shape_f),   
+                          options = list(`actions-box` = TRUE), # option to de/select all
+                          multiple = TRUE)),
                            
-                           column(width = 3,
-                                   pickerInput(inputId = "size_check", # Environment checklist
-                                               label = "size:", 
-                                               choices = levels(aoc_setup$size_f),
-                                               selected = levels(aoc_setup$size_f),   
-                                               options = list(`actions-box` = TRUE), # option to de/select all
+                        column(width = 3,
+                        pickerInput(inputId = "size_check", # Environment checklist
+                          label = "size:", 
+                          choices = levels(aoc_setup$size_f),
+                          selected = levels(aoc_setup$size_f),   
+                          options = list(`actions-box` = TRUE), # option to de/select all
                                                multiple = TRUE)),
                     
-                           
-                           
-                           
-                           
-                           
-                      
-                      column(width = 3,
+                        column(width = 3,
                         actionButton("go", "Update Filters")), # adds update action button 
 
                         sliderInput("range", # Allows for two inputs
                             label = "Exposure duration by treatment group", #Labels widget
                             min = 0, max = 100, value = c(0, 100)),
                         
-                       column(width = 3,
-                          actionButton("go", "Update Filters")), # adds update action button
-
+                        column(width = 3,
+                        actionButton("go", "Update Filters")), # adds update action button
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
 
-                      column(width = 3,
+                        column(width = 3,
                         downloadButton("downloadData", "Download Data"))), # adds download button
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
@@ -675,7 +660,6 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
-        
 
         ##### dummy tab ####
         # commented out for the time being
