@@ -461,8 +461,8 @@ uiOutput(outputId= "Emily_plot")),
                     
                         column(width = 3,
                         sliderInput("range", # Allows for two inputs
-                          label = "Exposure duration by treatment group:", #Labels widget
-                          min = 0, max = 100, value = 100))),
+                          label = "Particle Size (um):", #Labels widget
+                          min = 0, max = 3000, value = 3000))),
                        
                     # New row of widgets
                     column(width=12,
