@@ -184,6 +184,10 @@ aoc_setup <- aoc %>% # start with original dataset
                                   environment == "Terrestrial" ~ "Terrestrial")))
          
 
+xtabs(~exposure.duration.d, aoc)
+
+
+
 #renaming for widget
     
 #filter out terrestrial data
@@ -447,7 +451,16 @@ uiOutput(outputId= "Emily_plot")),
                     
                     column(width=12,
                     
-
+                    
+                           sliderInput("range", # Allows for two inputs
+                                       label = "Exposure duration by treatment group", #Labels widget
+                                       min = 0, max = 100, value = c(0, 100)),
+                    
+                           
+                           
+                           
+                           
+                           
                       
                       column(width = 3,
                         actionButton("go", "Update Filters")), # adds update action button 
@@ -705,6 +718,7 @@ server <- function(input, output) {
     effect_c <- input$effect_check # assign effect values to "effect_c"
     life_c <- input$life_check #assign values to life check
     env_c <- input$env_check #assign values to environment check 
+    exp_c <- input$Exp_slide # assign values to exposure duration
     
     
     
@@ -716,11 +730,16 @@ server <- function(input, output) {
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c)%>% #filter by effect
       filter(life_f %in% life_c)%>% #filter by life stage
-      filter(env_f %in% env_c) #filter by environment 
+      filter(exposure.duration.d %in% env_c) #filter by environment 
+      
      
       
   })
 
+  #slider 
+      
+  output$value <- renderPrint({ input$exp_c })
+     
 
   # Use newly created dataset from above to generate plotly plots for size, shape, and polymer plots on three different rows (for sizing display purposes).
   
