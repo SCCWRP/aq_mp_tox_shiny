@@ -445,7 +445,7 @@ uiOutput(outputId= "Emily_plot")),
                             
                         column(width = 3,
                         pickerInput(inputId = "shape_check", # Environment checklist
-                          label = "Environment:", 
+                          label = "Shape:", 
                           choices = levels(aoc_setup$shape_f),
                           selected = levels(aoc_setup$shape_f),   
                           options = list(`actions-box` = TRUE), # option to de/select all
