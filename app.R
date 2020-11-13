@@ -203,9 +203,9 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
   mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
   #must drop NAs or else nothing will work 
-  drop_na(dose.mg.L) %>% 
+  drop_na(dose.mg.L.master) %>% 
   #SSD package depends on specific naming conventions. Prep factors accordingly below
-  mutate(Conc = dose.mg.L)   #must make value named 'Conc' for this package
+  mutate(Conc = dose.mg.L.master)   #must make value named 'Conc' for this package
 
 # final cleanup and factoring  
 aoc_z$species <- str_replace(aoc_z$species,"franciscana�","franciscana") #fix <?> unicode symbol in francisca species
@@ -450,9 +450,9 @@ uiOutput(outputId= "Emily_plot")),
                     
                  
                     
-                    column(width=12,
-                    
-                    
+                     column(width=12,
+
+
                            sliderInput("range", # Allows for two inputs
                                        label = "Exposure duration by treatment group", #Labels widget
                                        min = 0, max = 100, value = c(0, 100)),
@@ -743,8 +743,8 @@ server <- function(input, output) {
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
       filter(bio_f %in% bio_c) %>% #filter by bio organization
       filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
-      filter(effect_f %in% effect_c)%>% #filter by effect
-      filter(life_f %in% life_c)%>% #filter by life stage
+      filter(effect_f %in% effect_c) %>% #filter by effect
+      filter(life_f %in% life_c) %>% #filter by life stage
       filter(exposure.duration.d %in% env_c) #filter by environment 
       
      
@@ -759,24 +759,25 @@ server <- function(input, output) {
   output$size_plot_react <- renderPlot({
     
     # Creating dataset to output counts.
-    aoc_size1 <- aoc_filter() %>%
-      drop_na(dose.mg.L) %>%
-      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
-      summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
-        measurements = n(),
-        studies = n_distinct(article))
+    # Commenting out for now, deleting from remaining plots.
+    # aoc_size1 <- aoc_filter() %>%
+    #   drop_na(dose.mg.L) %>%
+    #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+    #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
+    #     measurements = n(),
+    #     studies = n_distinct(article))
 
-    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = size_f)) +
+    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      geom_text_repel(data = aoc_size1, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
+      # geom_text_repel(data = aoc_size1, 
+      #   aes(label = paste("(",measurements,",",studies,")")),
+      #   nudge_x = -1,
+      #   nudge_y = -0.25,
+      #   segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16), 
         legend.position = "top") +
@@ -785,21 +786,8 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    # Creating dataset to output counts.
-    aoc_size2 <- aoc_filter() %>%
-      group_by(size_f, effect_f) %>%
-      drop_na(dose.particles.mL) %>%
-      summarize(dose.particles.mL = quantile(dose.particles.mL, .1), 
-        measurements = n(),
-        studies = n_distinct(article))
-    
-    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
+    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      geom_text_repel(data = aoc_size2, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
@@ -818,24 +806,12 @@ server <- function(input, output) {
   
   output$shape_plot_react <- renderPlot({
     
-    aoc_shape1 <- aoc_filter() %>%
-      drop_na(dose.mg.L) %>%
-      group_by(shape_f, effect_f) %>% 
-      summarize(dose.mg.L = quantile(dose.mg.L, .1),
-        measurements = n(),
-        studies = n_distinct(article))
-    
-    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = shape_f)) +
+    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
-      geom_text_repel(data = aoc_shape1, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16), 
         legend.position = "top") +
@@ -844,24 +820,12 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    aoc_shape2 <- aoc_filter() %>%
-      drop_na(dose.particles.mL) %>%
-      group_by(shape_f, effect_f) %>% 
-      summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
-        measurements = n(),
-        studies = n_distinct(article))
-    
-    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = shape_f)) +
+    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = shape_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
-      geom_text_repel(data = aoc_shape2, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16),
         legend.position = "top") +
@@ -876,24 +840,12 @@ server <- function(input, output) {
   
   output$poly_plot_react <- renderPlot({
     
-    aoc_poly1 <- aoc_filter() %>%
-      drop_na(dose.mg.L) %>%
-      group_by(poly_f, effect_f) %>% 
-      summarize(dose.mg.L = quantile(dose.mg.L, .1),
-        measurements = n(),
-        studies = n_distinct(article))
-    
-    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L, y = poly_f)) +
+    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
       scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
         labels = c(0.0001, 0.01, 1, 100, 10000)) +
       geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
-      geom_text_repel(data = aoc_poly1, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16),
         legend.position = "top") +
@@ -902,24 +854,12 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    aoc_poly2 <- aoc_filter() %>%
-      drop_na(dose.particles.mL) %>%
-      group_by(poly_f, effect_f) %>% 
-      summarize(dose.particles.mL = quantile(dose.particles.mL, .1),
-        measurements = n(),
-        studies = n_distinct(article))
-    
-    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = poly_f)) +
+    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = poly_f)) +
       scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
         labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
-      geom_text_repel(data = aoc_poly2, 
-        aes(label = paste("(",measurements,",",studies,")")),
-        nudge_x = -1,
-        nudge_y = -0.25,
-        segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16),
         legend.position = "top") +
