@@ -368,17 +368,20 @@ uiOutput(outputId= "Emily_plot")),
                     p("Download the data: To download the data being displayed according to your selections, click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), # line break
                     
+                    # widget headers
+                    column(width=12,
+                      
+                      column(width = 3,
+                        h4("Effects")),
+                      
+                      column(width = 3,
+                        h4("Particle Characteristics")),
+                      
+                      column(width = 3,
+                        h4("Biological Factors"))),
+                    
                     # widgets
                     column(width = 12,
-                      column(width = 3,
-                      # alternative to fully listed checklists
-                      # requires shinyWidgets package
-                      pickerInput(inputId = "organism_check", # organismal checklist
-                        label = "Organisms:", 
-                        choices = levels(aoc_setup$org_f),
-                        selected = levels(aoc_setup$org_f),   
-                        options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
@@ -389,80 +392,96 @@ uiOutput(outputId= "Emily_plot")),
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                        htmlOutput("secondSelection")), # dependent endpoint checklist
+                      pickerInput(inputId = "poly_check", # Environment checklist
+                        label = "Polymer:", 
+                        choices = levels(aoc_setup$poly_f),
+                        selected = levels(aoc_setup$poly_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "bio_check", # bio org checklist
-                        label = "Level of Biological Organization", 
-                        choices = levels(aoc_setup$bio_f),
-                        selected = levels(aoc_setup$bio_f), 
-                        options = list(`actions-box` = TRUE),
+                      pickerInput(inputId = "organism_check", # organismal checklist
+                        label = "Organisms:", 
+                        choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE))), # allows for multiple inputs
                       
                     # New row of widgets
-                      column(width = 12,
-                        column(width = 3,
-                        pickerInput(inputId = "vivo_check", # invitro/vivo checklist
-                          label = "In Vitro or In Vivo:", 
-                          choices = levels(aoc_setup$vivo_f),
-                          selected = levels(aoc_setup$vivo_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE)),
-                        
-                        column(width = 3,
-                        pickerInput(inputId = "life_check", # life stage checklist
-                          label = "Life Stages:", 
-                          choices = levels(aoc_setup$life_f),
-                          selected = levels(aoc_setup$life_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE)),
-                  
-                        column(width = 3,
-                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                          label = "Effect:", 
-                          choices = levels(aoc_setup$effect_f),
-                          selected = "Yes",   
-                          options = list(`actions-box` = TRUE),
-                          multiple = TRUE)),
+                    column(width = 12,
                       
-                        column(width = 3,
-                        pickerInput(inputId = "env_check", # Environment checklist
-                          label = "Environment:", 
-                          choices = levels(aoc_setup$env_f),
-                          selected = levels(aoc_setup$env_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE))), # allows for multiple inputs
+                      column(width = 3,
+                      htmlOutput("secondSelection")), # dependent endpoint checklist
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "shape_check", # shape checklist
+                        label = "Shape:", 
+                        choices = levels(aoc_setup$shape_f),
+                        selected = levels(aoc_setup$shape_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "env_check", # Environment checklist
+                        label = "Environment:", 
+                        choices = levels(aoc_setup$env_f),
+                        selected = levels(aoc_setup$env_f),   
+                        options = list(`actions-box` = TRUE), 
+                        multiple = TRUE))), # allows for multiple inputs
+                      
+                    # New row of widgets
+                    column(width = 12,
+                        
+                      column(width = 3,
+                      pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                        label = "Effect:", 
+                        choices = levels(aoc_setup$effect_f),
+                        selected = "Yes",   
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "size_check", # Environment checklist
+                        label = "Size:", 
+                        choices = levels(aoc_setup$size_f),
+                        selected = levels(aoc_setup$size_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "life_check", # life stage checklist
+                        label = "Life Stages:", 
+                        choices = levels(aoc_setup$life_f),
+                        selected = levels(aoc_setup$life_f),   
+                        options = list(`actions-box` = TRUE), 
+                        multiple = TRUE))),
                     
                     # New row of widgets
-                     column(width=12,
+                    column(width=12,
+                      
+                        column(width = 3),
+                      
                         column(width = 3,
-                        pickerInput(inputId = "poly_check", # Environment checklist
-                          label = "Polymer:", 
-                          choices = levels(aoc_setup$poly_f),
-                          selected = levels(aoc_setup$poly_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                          multiple = TRUE)),
-                            
-                        column(width = 3,
-                        pickerInput(inputId = "shape_check", # shape checklist
-                          label = "Shape:", 
-                          choices = levels(aoc_setup$shape_f),
-                          selected = levels(aoc_setup$shape_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                          multiple = TRUE)),
-                           
-                        column(width = 3,
-                        pickerInput(inputId = "size_check", # Environment checklist
-                          label = "Size:", 
-                          choices = levels(aoc_setup$size_f),
-                          selected = levels(aoc_setup$size_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                                               multiple = TRUE)),
-                    
-                        column(width = 3,
-                        sliderInput("range", # Allows for two inputs
+                        sliderInput("range", # Allows for max input
                           label = "Particle Size (um):", #Labels widget
-                          min = 0, max = 3000, value = 3000))),
+                          min = 0, max = 4000, value = 4000)),
+                      
+                        column(width = 3,
+                        pickerInput(inputId = "bio_check", # bio org checklist
+                          label = "Level of Biological Organization", 
+                          choices = levels(aoc_setup$bio_f),
+                          selected = levels(aoc_setup$bio_f), 
+                          options = list(`actions-box` = TRUE),
+                          multiple = TRUE))), # allows for multiple inputs
+                      
+                    # invitro/vivo checklist - commented out for now
+                       # column(width = 3,
+                       # pickerInput(inputId = "vivo_check", 
+                       #    label = "In Vitro or In Vivo:", 
+                       #    choices = levels(aoc_setup$vivo_f),
+                       #    selected = levels(aoc_setup$vivo_f),   
+                       #    options = list(`actions-box` = TRUE), 
+                       #    multiple = TRUE))
                        
                     # New row of widgets
                     column(width=12,
@@ -477,21 +496,24 @@ uiOutput(outputId= "Emily_plot")),
                     # "Download" is the title that appears on the button
                       
 
-                      column(width = 12,
-                        hr()), # adds divider
+                    column(width = 12,
+                    hr()), # adds divider
 
-                      column(width = 12,
-                        plotOutput(outputId = "size_plot_react"),
-                        br()), # line break
-                      column(width = 12,
-                        plotOutput(outputId = "shape_plot_react"),
-                        br()), # line break
-                      column(width = 12,
-                        plotOutput(outputId = "poly_plot_react"),
-                        br()), # line break 
-                      column(width =12,
-                        plotOutput(outputId = "lvl_plot_react"),
-                        br())), # line break
+                    column(width = 12,
+                    plotOutput(outputId = "size_plot_react"),
+                    br()), # line break
+                    
+                    column(width = 12,
+                    plotOutput(outputId = "shape_plot_react"),
+                    br()), # line break
+                    
+                    column(width = 12,
+                    plotOutput(outputId = "poly_plot_react"),
+                    br()), # line break 
+                    
+                    column(width =12,
+                    plotOutput(outputId = "lvl_plot_react"),
+                    br())), # line break
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -736,7 +758,6 @@ server <- function(input, output) {
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
     lvl2_c <- input$lvl2_check # assign lvl2 values to "lvl2_c"
     bio_c <- input$bio_check # assign bio values to "bio_c"
-    vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
     life_c <- input$life_check #assign values to "life_check"
     env_c <- input$env_check #assign values to "env_c"
@@ -750,7 +771,6 @@ server <- function(input, output) {
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
       filter(bio_f %in% bio_c) %>% #filter by bio organization
-      filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c) %>% #filter by effect
       filter(life_f %in% life_c) %>% #filter by life stage
       filter(poly_f %in% poly_c) %>% #filter by polymer
@@ -777,8 +797,8 @@ server <- function(input, output) {
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       # geom_text_repel(data = aoc_size1, 
@@ -820,8 +840,8 @@ server <- function(input, output) {
   output$shape_plot_react <- renderPlot({
     
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
-      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
@@ -842,8 +862,8 @@ server <- function(input, output) {
   output$poly_plot_react <- renderPlot({
     
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
-      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
@@ -864,8 +884,8 @@ server <- function(input, output) {
   output$lvl_plot_react <- renderPlot({
     
     lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
-      scale_x_log10(breaks = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
