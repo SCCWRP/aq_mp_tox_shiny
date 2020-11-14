@@ -491,7 +491,8 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update" is the title that appears on the app
 
                         column(width = 3,
-                        downloadButton("downloadData", "Download Data"))), # adds download button
+                        downloadButton("downloadData", "Download Data")) # adds download button
+                      ), 
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
                       
@@ -499,6 +500,10 @@ uiOutput(outputId= "Emily_plot")),
                     column(width = 12,
                     hr()), # adds divider
 
+                    column(width =12,
+                    plotOutput(outputId = "lvl_plot_react"),
+                    br()), # line break
+                    
                     column(width = 12,
                     plotOutput(outputId = "size_plot_react"),
                     br()), # line break
@@ -509,10 +514,6 @@ uiOutput(outputId= "Emily_plot")),
                     
                     column(width = 12,
                     plotOutput(outputId = "poly_plot_react"),
-                    br()), # line break 
-                    
-                    column(width =12,
-                    plotOutput(outputId = "lvl_plot_react"),
                     br())), # line break
         
 #### Scott UI ####
