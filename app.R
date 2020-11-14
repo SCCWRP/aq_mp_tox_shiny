@@ -74,6 +74,7 @@ get_plot_output_list <- function(input_n) {
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
+        ylab("Endpoints Measured")
         labs(fill="Effect") +
         theme(legend.position = "right",
           axis.ticks=element_blank(),
@@ -110,7 +111,7 @@ aoc_setup <- aoc %>% # start with original dataset
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
-  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "cube", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
   mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
@@ -180,7 +181,7 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
-                                   life.stage == "Juveniles"~"Juvenile",
+                                   life.stage == "Juvenile"~"Juvenile",
                                    life.stage == "Adult"~"Adult")))%>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
@@ -366,17 +367,20 @@ uiOutput(outputId= "Emily_plot")),
                     p("Download the data: To download the data being displayed according to your selections, click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), # line break
                     
+                    # widget headers
+                    column(width=12,
+                      
+                      column(width = 3,
+                        h4("Effects")),
+                      
+                      column(width = 3,
+                        h4("Particle Characteristics")),
+                      
+                      column(width = 3,
+                        h4("Biological Factors"))),
+                    
                     # widgets
                     column(width = 12,
-                      column(width = 3,
-                      # alternative to fully listed checklists
-                      # requires shinyWidgets package
-                      pickerInput(inputId = "organism_check", # organismal checklist
-                        label = "Organisms:", 
-                        choices = levels(aoc_setup$org_f),
-                        selected = levels(aoc_setup$org_f),   
-                        options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
@@ -387,80 +391,96 @@ uiOutput(outputId= "Emily_plot")),
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                        htmlOutput("secondSelection")), # dependent endpoint checklist
+                      pickerInput(inputId = "poly_check", # Environment checklist
+                        label = "Polymer:", 
+                        choices = levels(aoc_setup$poly_f),
+                        selected = levels(aoc_setup$poly_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "bio_check", # bio org checklist
-                        label = "Level of Biological Organization", 
-                        choices = levels(aoc_setup$bio_f),
-                        selected = levels(aoc_setup$bio_f), 
-                        options = list(`actions-box` = TRUE),
+                      pickerInput(inputId = "organism_check", # organismal checklist
+                        label = "Organisms:", 
+                        choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE))), # allows for multiple inputs
                       
                     # New row of widgets
-                      column(width = 12,
-                        column(width = 3,
-                        pickerInput(inputId = "vivo_check", # invitro/vivo checklist
-                          label = "In Vitro or In Vivo:", 
-                          choices = levels(aoc_setup$vivo_f),
-                          selected = levels(aoc_setup$vivo_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE)),
-                        
-                        column(width = 3,
-                        pickerInput(inputId = "life_check", # life stage checklist
-                          label = "life stages:", 
-                          choices = levels(aoc_setup$life_f),
-                          selected = levels(aoc_setup$life_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE)),
-                  
-                        column(width = 3,
-                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                          label = "Effect:", 
-                          choices = levels(aoc_setup$effect_f),
-                          selected = "Yes",   
-                          options = list(`actions-box` = TRUE),
-                          multiple = TRUE)),
+                    column(width = 12,
                       
-                        column(width = 3,
-                        pickerInput(inputId = "env_check", # Environment checklist
-                          label = "Environment:", 
-                          choices = levels(aoc_setup$env_f),
-                          selected = levels(aoc_setup$env_f),   
-                          options = list(`actions-box` = TRUE), 
-                          multiple = TRUE))), # allows for multiple inputs
+                      column(width = 3,
+                      htmlOutput("secondSelection")), # dependent endpoint checklist
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "shape_check", # shape checklist
+                        label = "Shape:", 
+                        choices = levels(aoc_setup$shape_f),
+                        selected = levels(aoc_setup$shape_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "env_check", # Environment checklist
+                        label = "Environment:", 
+                        choices = levels(aoc_setup$env_f),
+                        selected = levels(aoc_setup$env_f),   
+                        options = list(`actions-box` = TRUE), 
+                        multiple = TRUE))), # allows for multiple inputs
+                      
+                    # New row of widgets
+                    column(width = 12,
+                        
+                      column(width = 3,
+                      pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                        label = "Effect:", 
+                        choices = levels(aoc_setup$effect_f),
+                        selected = "Yes",   
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "size_check", # Environment checklist
+                        label = "Size:", 
+                        choices = levels(aoc_setup$size_f),
+                        selected = levels(aoc_setup$size_f),   
+                        options = list(`actions-box` = TRUE), # option to de/select all
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                      pickerInput(inputId = "life_check", # life stage checklist
+                        label = "Life Stages:", 
+                        choices = levels(aoc_setup$life_f),
+                        selected = levels(aoc_setup$life_f),   
+                        options = list(`actions-box` = TRUE), 
+                        multiple = TRUE))),
                     
                     # New row of widgets
-                     column(width=12,
+                    column(width=12,
+                      
+                        column(width = 3),
+                      
                         column(width = 3,
-                        pickerInput(inputId = "poly_check", # Environment checklist
-                          label = "Polymer:", 
-                          choices = levels(aoc_setup$poly_f),
-                          selected = levels(aoc_setup$poly_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                          multiple = TRUE)),
-                            
+                        sliderInput("range", # Allows for max input
+                          label = "Particle Size (um):", #Labels widget
+                          min = 0, max = 4000, value = 4000)),
+                      
                         column(width = 3,
-                        pickerInput(inputId = "shape_check", # Environment checklist
-                          label = "Environment:", 
-                          choices = levels(aoc_setup$shape_f),
-                          selected = levels(aoc_setup$shape_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                          multiple = TRUE)),
-                           
-                        column(width = 3,
-                        pickerInput(inputId = "size_check", # Environment checklist
-                          label = "size:", 
-                          choices = levels(aoc_setup$size_f),
-                          selected = levels(aoc_setup$size_f),   
-                          options = list(`actions-box` = TRUE), # option to de/select all
-                                               multiple = TRUE)),
-                    
-                        column(width = 3,
-                        sliderInput("range", # Allows for two inputs
-                          label = "Exposure duration by treatment group", #Labels widget
-                          min = 0, max = 100, value = c(0, 100)))),
+                        pickerInput(inputId = "bio_check", # bio org checklist
+                          label = "Level of Biological Organization", 
+                          choices = levels(aoc_setup$bio_f),
+                          selected = levels(aoc_setup$bio_f), 
+                          options = list(`actions-box` = TRUE),
+                          multiple = TRUE))), # allows for multiple inputs
+                      
+                    # invitro/vivo checklist - commented out for now
+                       # column(width = 3,
+                       # pickerInput(inputId = "vivo_check", 
+                       #    label = "In Vitro or In Vivo:", 
+                       #    choices = levels(aoc_setup$vivo_f),
+                       #    selected = levels(aoc_setup$vivo_f),   
+                       #    options = list(`actions-box` = TRUE), 
+                       #    multiple = TRUE))
                        
                     # New row of widgets
                     column(width=12,
@@ -470,25 +490,30 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update" is the title that appears on the app
 
                         column(width = 3,
-                        downloadButton("downloadData", "Download Data"))), # adds download button
+                        downloadButton("downloadData", "Download Data")) # adds download button
+                      ), 
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
                       
-                      br(), # line break
-                      hr(), # adds divider
-                      br(), # line break
-                      column(width = 12,
-                        plotOutput(outputId = "size_plot_react"),
-                        br()), # line break
-                      column(width = 12,
-                        plotOutput(outputId = "shape_plot_react"),
-                        br()), # line break
-                      column(width = 12,
-                        plotOutput(outputId = "poly_plot_react"),
-                        br()), # line break 
-                      column(width =12,
-                        plotOutput(outputId = "lvl_plot_react"),
-                        br())), # line break
+
+                    column(width = 12,
+                    hr()), # adds divider
+
+                    column(width =12,
+                    plotOutput(outputId = "lvl_plot_react"),
+                    br()), # line break
+                    
+                    column(width = 12,
+                    plotOutput(outputId = "size_plot_react"),
+                    br()), # line break
+                    
+                    column(width = 12,
+                    plotOutput(outputId = "shape_plot_react"),
+                    br()), # line break
+                    
+                    column(width = 12,
+                    plotOutput(outputId = "poly_plot_react"),
+                    br())), # line break
         
 #### Scott UI ####
                   tabPanel("Species Sensitivity Distribution", 
@@ -735,35 +760,31 @@ server <- function(input, output) {
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
     lvl2_c <- input$lvl2_check # assign lvl2 values to "lvl2_c"
     bio_c <- input$bio_check # assign bio values to "bio_c"
-    vivo_c <- input$vivo_check # assign in values to "vivo_c"
     effect_c <- input$effect_check # assign effect values to "effect_c"
-    life_c <- input$life_check #assign values to life check
-    env_c <- input$env_check #assign values to environment check 
-    poly_c <- input$poly_check # assign values to polymer
-    shape_c <- input$shape_check # assign values to shape 
-    size_c <- input$size_check # assign values to size 
+    life_c <- input$life_check #assign values to "life_check"
+    env_c <- input$env_check #assign values to "env_c"
+    poly_c <- input$poly_check # assign values to "poly_c"
+    shape_c <- input$shape_check # assign values to "shape_c" 
+    size_c <- input$size_check # assign values to "size_c" 
+    range_n <- input$range # assign values to "range_n"
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
       filter(bio_f %in% bio_c) %>% #filter by bio organization
-      filter(vivo_f %in% vivo_c) %>% # filter by invitro or invivo
       filter(effect_f %in% effect_c) %>% #filter by effect
       filter(life_f %in% life_c) %>% #filter by life stage
-      filter(poly_f %in% poly_c)%>% #filter by polymer
-      filter(size_f %in% size_c)%>% #filter by size 
-      filter(shape_f %in% shape_c) #filter by shape 
+      filter(poly_f %in% poly_c) %>% #filter by polymer
+      filter(size_f %in% size_c) %>% #filter by size class
+      filter(shape_f %in% shape_c) %>% #filter by shape 
+      filter(size.length.um.used.for.conversions <= range_n) # filter by size
       
   })
-
-  #slider 
-      
-  output$value <- renderPrint({ input$exp_c })
      
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
-  # Size Plots
+  # Size Plot
   
   output$size_plot_react <- renderPlot({
     
@@ -777,9 +798,9 @@ server <- function(input, output) {
     #     studies = n_distinct(article))
 
     size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       # geom_text_repel(data = aoc_size1, 
@@ -795,32 +816,35 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      theme_classic() +
-      theme(text = element_text(size=16), 
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
+    size1
     
-    (size1 + size2) # using patchwork to combine figures
+    # Commenting out for now, deleting from remaining plots.
+    # size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
+    #   geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+    #   scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
+    #     labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
+    #   scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
+    #   scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
+    #   theme_classic() +
+    #   theme(text = element_text(size=16), 
+    #     legend.position = "top") +
+    #   labs(x = "Concentration (particles/mL)",
+    #     y = " ",
+    #     color = "Effect?",
+    #     fill = "Effect?")
+    
+    # (size1 + size2) # using patchwork to combine figures
     
   })
   
-  # Shape Plots
+  # Shape Plot
   
   output$shape_plot_react <- renderPlot({
     
     shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       theme_classic() +
@@ -831,32 +855,18 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    shape2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = shape_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (shape1 + shape2) # patchwork combining plots
+    shape1
     
   })
   
-  # Polymer Plots
+  # Polymer Plot
   
   output$poly_plot_react <- renderPlot({
     
     poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
@@ -867,32 +877,18 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    poly2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = poly_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#FAB455", "#A5683C")) +
-      scale_fill_manual(values = c("#FAB455", "#A5683C")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (poly1 + poly2) # join plots together using patchwork
+    poly1
     
   })
   
-  # Endpoint Plots
+  # Endpoint Plot
   
   output$lvl_plot_react <- renderPlot({
     
     lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
-      scale_x_log10(breaks = c(0.0001, 0.01, 1, 100, 10000), 
-        labels = c(0.0001, 0.01, 1, 100, 10000)) +
-      geom_boxplot(alpha = 0.7, show.legend = FALSE, aes(color = effect_f, fill = effect_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
@@ -903,21 +899,7 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    lvl2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = lvl1_f)) +
-      scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-        labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
-      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
-      theme_classic() +
-      theme(text = element_text(size=16),
-        legend.position = "top") +
-      labs(x = "Concentration (particles/mL)",
-        y = " ",
-        color = "Effect?",
-        fill = "Effect?")
-    
-    (lvl1 + lvl2) # join plots together using patchwork
+    lvl1
     
   })
   
