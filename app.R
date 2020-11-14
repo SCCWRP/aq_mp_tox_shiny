@@ -111,7 +111,7 @@ aoc_setup <- aoc %>% # start with original dataset
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
-  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "unavailable"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "cube", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
   mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
@@ -181,7 +181,7 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
-                                   life.stage == "Juveniles"~"Juvenile",
+                                   life.stage == "Juvenile"~"Juvenile",
                                    life.stage == "Adult"~"Adult")))%>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
