@@ -193,10 +193,8 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
   # environment category data tidying.
   mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
-  #must drop NAs or else nothing will work 
-  drop_na(dose.mg.L.master) %>% 
-  #SSD package depends on specific naming conventions. Prep factors accordingly below
-  mutate(Conc = dose.mg.L.master)   #must make value named 'Conc' for this package
+  drop_na(dose.mg.L.master)  #must drop NAs or else nothing will work 
+  #mutate(dose.mg.L = dose.mg.L.master)   #rename
 
 # final cleanup and factoring  
 aoc_z$species <- str_replace(aoc_z$species,"franciscana�","franciscana") #fix <?> unicode symbol in francisca species
@@ -577,6 +575,8 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               DT::dataTableOutput(outputId = "aoc_filter_ssd_table"),
                               p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
+                              # br(),
+                              # DT::dataTableOutput(outputId = "aoc_filter_ssd_summary_table"), #comment our for now until I can fix it
                               br(),
                               plotOutput(outputId = "autoplot_dists_react"),
                               p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel)."),
@@ -933,8 +933,33 @@ server <- function(input, output) {
 
 #### Scott S ####
 
-  # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
-  aoc_filter_ssd <- eventReactive(list(input$SSDgo),{
+  # Create new all tested dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
+  aoc_z_L <- eventReactive(list(input$SSDgo),{
+    # eventReactive explicitly delays activity until you press the button
+    # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
+    poly_c_ssd <- input$poly_check_ssd #assign polymers
+    
+    #left-hand table of all data considered
+    aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
+      filter(dose.mg.L.master > 0) %>% #clean out no dose data
+      group_by(Species) %>% 
+            summarise(MinConcTested = min(dose.mg.L.master), MaxConcTested = max(dose.mg.L.master), CountTotal = n()) %>%   #summary data for whole database
+      drop_na() #must drop NAs or else nothing will work
+        })
+  
+  # Create new effect dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
+  aoc_z_R <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     
@@ -945,28 +970,71 @@ server <- function(input, output) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     
-    aoc_z %>% # take original dataset
+    #right-hand table of just effect data
+    aoc_z %>% 
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
       filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
-      group_by(Species, Group) %>% 
-      summarise(Conc = min(Conc)) #set concentration to minimum observed effect
+      filter(effect_f == "Yes") %>% #only select observed effects
+      group_by(Species, Group) %>%
+      summarise(Conc = min(dose.mg.L.master), meanConcEffect = mean(dose.mg.L.master), medianConcEffect = median(dose.mg.L.master), SDConcEffect = sd(dose.mg.L.master),MaxConcEffect = max(dose.mg.L.master), CountEffect = n(), MinEffectType = lvl1[which.min(dose.mg.L.master)], MinEnvironment = environment[which.min(dose.mg.L.master)], MinDoi = doi[which.min(dose.mg.L.master)], MinLifeStage = life.stage[which.min(dose.mg.L.master)], Mininvitro.invivo = invitro.invivo[which.min(dose.mg.L.master)]) %>%  #set concentration to minimum observed effect
+      drop_na(Conc) #must drop NAs or else nothing will work
+     })
+  
+  #Join
+  aoc_filter_ssd <- reactive({
+    req(aoc_z_L)
+    req(aoc_z_R)
+    
+    #join datasets (final)
+    aoc_z_join <- right_join(aoc_z_L(), aoc_z_R(), by = "Species") 
+    #order list
+    col_order <- c("Group", "Species", "Conc", "MinEffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
+    #reorder
+    aoc_z_join_order <- aoc_z_join[, col_order]
+    
+    #'print'
+    aoc_z_join_order
   })
+  
   
   #print summarize filtered data in data table
   output$aoc_filter_ssd_table <- DT::renderDataTable({
     req(input$SSDgo)
     
     datatable(aoc_filter_ssd(),
-              options = list(), #only display the table and nothing else
-              class = "compact",
-              colnames = c("Species", "Group", "Sensitive Concentration (mg/L)"),
-              caption = "Filtered Data"
-    )
+              extensions = c('Buttons'),
+              options = list(
+                dom = 'Brtip',
+                buttons = c('copy', 'csv', 'excel')),#only display the table and nothing else
+              colnames = c("Group", "Species", "Most Sensitive Concentration (mg/L)", "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+              caption = "Filtered Data") %>% 
+      formatStyle(
+        "Conc",
+        backgroundColor = '#a9d6d6')
   })
+  
+  #Summary of Summary table
+  aoc_filter_ssd_summary <- reactive({
+    req(input$SSDgo)
+    
+    aoc_filter_ssd() %>% 
+      summarise(SpeciesCount = n_distinct("Species"), DosesCount = sum("CountTotal"))
+  })
+  
+  #print summarize filtered data in data table
+  output$aoc_filter_ssd_summary_table <- DT::renderDataTable({
+    req(input$SSDgo)
+    
+    datatable(aoc_filter_ssd_summary(),
+              options = list(
+                dom = 'Brtip',
+                caption = "Summary of Filtered Data"))
+  })
+  
   
   # Use newly created dataset from above to generate SSD
  # ** Prediction ---- 
