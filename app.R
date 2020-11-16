@@ -588,7 +588,8 @@ uiOutput(outputId= "Emily_plot")),
                            
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", 
-                                               style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                               #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
+                                               ),
                                   align = "center"), # adds action button 
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
@@ -652,7 +653,8 @@ uiOutput(outputId= "Emily_plot")),
                                            max = 10000),
                               br(),
                               column(width = 12,
-                                actionButton("ssdPred", "Predict", style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                actionButton("ssdPred", "Predict", #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
+                                             ),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
@@ -663,7 +665,7 @@ uiOutput(outputId= "Emily_plot")),
                               column(width = 12,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "button"), #download ssdplot
                                      align = "center"),
-                              tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
+                              #tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
