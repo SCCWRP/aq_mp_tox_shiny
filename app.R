@@ -77,7 +77,8 @@ get_plot_output_list <- function(input_n) {
         ylab("Endpoints Measured") +
         labs(fill="Effect") +
         guides(x = guide_axis(n.dodge = 2)) +
-        ggtitle(case_when(i=="Polymer"~"Polymer", i=="Organism"~"Organism", i=="Size"~"Particle Size",i=="Shape"~"Shape",i=="Endpoint Category"~"Endpoint Category",i=="Life Stage"~"Life Stage",i=="Exposure Route"~"Exposure Route",i=="In Vivo or In Vitro"~"In Vivo or Invitro"))+
+        ggtitle(case_when(i=="Polymer"~"Polymer", i=="Organism"~"Organism", i=="Size"~"Particle Size",i=="Shape"~"Shape",i=="Endpoint Category"~"Endpoint Category",i=="Life Stage"~"Life Stage",i=="Exposure Route"~"Exposure Route",i=="In Vivo or In Vitro"~"In Vivo or In vitro"))+
+        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
         theme(legend.position = "right",
           axis.ticks=element_blank(),
           axis.text.y=element_blank(),
@@ -345,11 +346,18 @@ tabPanel("2: Overview",
          br(), 
          p("Detailed descriptions of data categories may be found under the Resources tab."),
          br(),
-awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
-            label = "Data Categories:", # checklist label
-            choices = levels(Final_effect_dataset$plot_f), # options for user
-            selected = "Polymer",# default selected
-            inline = TRUE), #allows for multiple selections at once
+#awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
+            #label = "Data Categories:", # checklist label
+            #choices = levels(Final_effect_dataset$plot_f), # options for user
+            #selected = "Polymer",# default selected
+            #inline = TRUE), #allows for multiple selections at once
+            
+pickerInput(inputId = "Emily_check", # endpoint checklist
+            label = "Overview", 
+            choices = levels(Final_effect_dataset$plot_f),
+            selected = levels(Final_effect_dataset$plot_f), 
+            options = list(`actions-box` = TRUE), # option to de/select all
+            multiple = TRUE), # allows for multiple inputs
             br(),
             
 uiOutput(outputId= "Emily_plot")),
