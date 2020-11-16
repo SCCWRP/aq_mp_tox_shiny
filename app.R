@@ -74,8 +74,9 @@ get_plot_output_list <- function(input_n) {
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"collinsia",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
-        ylab("Endpoints Measured")
+        ylab("Endpoints Measured") +
         labs(fill="Effect") +
+        guides(x = guide_axis(n.dodge = 2)) +
         theme(legend.position = "right",
           axis.ticks=element_blank(),
           axis.text.y=element_blank(),
@@ -208,14 +209,14 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
-ui <- fluidPage( theme= "classic",
+ui <- fluidPage(theme = shinytheme("flatly"),
   
   # App title
-  titlePanel(h1("Microplastics Toxicity Database")),
+  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
   tags$div(
-    "This is a draft website to present the results of the aquatic microplastics toxicology database. Do not use without prior consulting with Leah Thornton Hampton (leahth@sccwrp.org)."),
+    "This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop. Do not use without prior consultation with Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
   
   br(), # line break
   
@@ -226,62 +227,58 @@ ui <- fluidPage( theme= "classic",
       tabsetPanel(type = "tabs",
 
 #### Leah UI ####        
-                  tabPanel("Introduction", 
+                  tabPanel(strong("1: Introduction"), 
                     
                     #Place holder for a cute logo someday? 
                                   
-                    br(), # line break
-                    h3("What is the Microplastics Toxicity Database?", align = "center", style = "color:darkcyan"),
+                    br(), 
+                    h3("What is the Microplastics Toxicity Database?", align = "center"),
                     
-                    strong(p("The Microplastics Toxicity Database is a repository for microplastics 
-                      toxicity data pertaining to both human and aquatic organism health.")), 
+                    strong(p("This database is a repository for microplastics 
+                      toxicity data pertaining to aquatic organism health that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
                     
-                    p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
-                      an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
-                      studies focused on the effects of microplastics are being rapidly published and 
-                      often vary in quality. Because of this, it is challenging to identify sensitive biological 
-                      endpoints and prioritize potential drivers of microplastic toxicity."),
+                    #p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
+                     # an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
+                      #studies focused on the effects of microplastics are being rapidly published and 
+                      #often vary in quality. Because of this, it is challenging to identify sensitive biological 
+                      #endpoints and prioritize potential drivers of microplastic toxicity."),
                     
-                    p("This web application is intended to meet these challenges
-                    by allowing users to explore toxicity 
+                    p("This web application allows users to explore toxicity 
                     data using an intuitive interface while retaining the diversity and complexity inherent 
                     to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
-                    toxicity data pertaining to microplastics and associated chemicals and organized into 5 
-                    main categories:"),
+                    toxicity data pertaining to microplastics."),
                     
-                    img(src = "data_categories_image.png", height = "90%", width = "90%", style = "display:block;margin-left: auto; margin-right: auto;"),
-                    br(),
-                    p("This web application allows users to visualize the data while selecting for specific 
-                      parameters within the data categories above. For instance, a user may want to visualize 
-                      how polymer type impacts the growth of early life stage fish that were exposed to 
-                      microplastics for 7 days or longer."),
+                    #img(src = "data_categories_image.png", height = "90%", width = "90%", style = "display:block;margin-left: auto; margin-right: auto;"),
+                    #br(),
+                    # p("This web application allows users to visualize the data while selecting for specific 
+                    #   parameters within the data categories above. For instance, a user may want to visualize 
+                    #   how polymer type impacts the growth of early life stage fish that were exposed to 
+                    #   microplastics for 7 days or longer."),
                     
-                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center", style = "color:darkcyan"),
+                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
+                    
+                    p("Use the numbered tabs at the top of the page to navigate to each section. Each section provides different information or data visualization options. 
+                      More specific instructions may be found within each section."),
+                    
+                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center"),
                     
                     p("The database and application tools have been created for use by the participants of the ", a(href = "https://www.sccwrp.org/about/
                       research-areas/additional-research-areas/
                       trash-pollution/microplastics-health-effects-webinar-series/", 'Microplastics Health Effects Workshop', 
-                      .noWS = "outside"),
-                      ". The purpose of this workshop is to identify the primary pathways by which microplastics affect biota, prioritize 
-                      the microplastics characteristics (e.g., size, shape, polymer) that are of greatest biological concern, and identify 
-                      critical thresholds for each at which those biological effects become pronounced. These findings will 
-                      be used directly by the state of California to fulfill ", a(href = "https://www.sccwrp.org/about/research-areas/
+                      .noWS = "outside"),".The purpose of this workshop is to identify the most sensitive and biologically critical endpoints associated with microplastics exposure, 
+                      prioritize which microplastics characteristics (e.g., size, shape, polymer) that are of greatest biological concern, and identify 
+                      critical thresholds for each at which those biological effects become pronounced. Workshop participants will also make reccomendations for future
+                      research investments. Workshop findings will be published in a special issue of ", a(href ="https://microplastics.springeropen.com/", 'Microplastics and Nanoplastics', .noOWs = "outside"),". 
+                      These findings will be used directly by the state of California to fulfill ", a(href = "https://www.sccwrp.org/about/research-areas/
                       additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
-                      .noWS = "outside")," regarding the
-                      management of microplastics in drinking water and the aquatic environment."),
+                      .noWS = "outside")," regarding the management of microplastics in drinking water and the aquatic environment."),
                    
-                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center", style = "color:darkcyan"),
+                    h3("Can I see the raw data?", align = "center"),
                     
-                    p("By clicking on the tabs at the top of this page, you may navigate to different section. Each section provides different information or data visualization options. 
-                      More specific instructions may be found within each section."),
-                  
-                    h3("What if I want to analyze or visualize the data in a way that is not available on the Web Application?", align = "center", style = "color:darkcyan"),
+                    p("Workshop participants also have access to the complete, raw database as an .xls file by directly contacting Dr. Leah Thornton Hampton (leahth@sccwrp.org), and are welcome to conduct their own analyses.
+                      Users may also download meta data associated with visualizations and analyses in the Data Exploration and Species Sensitivity Distribution tabs."),
                     
-                    p("We are happy to conduct specific analyses or generate custom visualizations for workshop participants. If you have a specific request, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-                    br(),
-                    p("Workshop participants also have access to the complete, raw database as a .csv file, and are welcome to conduct their own analyses if they wish. Access to the database is provided under the Resources tab."),
-                    
-                    h3("Contributors", align = "center", style = "color:darkcyan"),
+                    h3("Contributors", align = "center"),
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
@@ -305,7 +302,7 @@ ui <- fluidPage( theme= "classic",
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
-                    h3("Contact", align = "center", style = "color:darkcyan"),
+                    h3("Contact", align = "center"),
                     
                     p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
                     
@@ -322,7 +319,9 @@ ui <- fluidPage( theme= "classic",
                     
                     verbatimTextOutput(outputId = "Leah1")),
                 
-                  tabPanel("Resources", 
+                  tabPanel("5: Resources", 
+                      br(),
+                      p("Use the links below to view resource files. For access to the complete database (.xls file), please contact Dr. Leah Thornton Hampton directly (leahth@sccwrp.org)"),
                       br(),     
                       h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
                       br(),
@@ -334,17 +333,17 @@ ui <- fluidPage( theme= "classic",
         
 #### Emily UI ####
 
-tabPanel("Data Overview", 
+tabPanel("2: Overview", 
          br(), 
-         h3("Microplastics in Aquatic Environments: Data Overview of Toxicological Effects", align = "center", style = "color:darkcyan"),
+         h3("Microplastics in Aquatic Environments: Overview of Toxicological Effects", align = "center"),
          br(),
-         p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms grouped by key categories relevant to microplastics and biota.
-           Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected."), 
+         p("Check the boxes below to visualize figures. Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
          br(),
-         p("Use the checkboxes at the top of the page to visualize different figures. Hovering the cursor over each stacked bar will display the number of endpoints that are currently included in the database. Detailed descriptions of data categories including keys for abbrevations may be found under the Resources tab."),
+         p("Use the checkboxes at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
+           Click on the legend to select data."),
          br(), 
-        
-    
+         p("Detailed descriptions of data categories may be found under the Resources tab."),
+         br(),
 awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
             label = "Data Categories:", # checklist label
             choices = levels(Final_effect_dataset$plot_f), # options for user
@@ -355,16 +354,21 @@ awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
-                  tabPanel("Data Exploration & Download", 
-                    h3("Microplastics in Aquatic Environments: Data Exploration of Toxicological Effects", align = "center", style = "color:darkcyan"),
+                  tabPanel("3: Exploration", 
+                    h3("Microplastics in Aquatic Environments: Exploration of Toxicological Effects", align = "center"),
                     br(), # line break
-                    p("The figures below display data from the literature review of toxicological effects of microplastics on aquatic organisms. All data displayed - individual points and boxplots - are from studies in which there was a demonstrated significant toxicological effect of microplastics. "),
-                    br(), # line break
-                    p("Each row of figures displays a different value along the y-axis - size, shape, and polymer, respectively. Each column of figures displays a different unit along the x-axis - mg/L and particles/mL, respectively. To the left of each boxplot are displayed the number of individuals measurements or observations (the first value within parentheses) and the number of published studies from which the data was collected (the second value within parentheses)."),
+                    p("Each row of figures displays a different metric along the y-axis - endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
+                    were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
+                    br(),
+                    p("The data displayed in these figures are not filtered for quality and only display data where doses were reported as 
+                      mass per volume or were converted from doses reported from counts per volume - other dosing units (e.g., particle mass/kg sediment) 
+                      are not displayed but are available in the complete database file."),
                     br(), # line break
                     p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
                     br(), # line break
-                    p("Download the data: To download the data being displayed according to your selections, click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
+                    p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
+                    br(), # line break
+                    strong(p("To Begin: Click the 'Update Filters' button.")),
                     br(), # line break
                     
                     # widget headers
@@ -384,7 +388,7 @@ uiOutput(outputId= "Emily_plot")),
                       
                       column(width = 3,
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
-                        label = "Endpoint Examined:", 
+                        label = "Broad Endpoint Category:", 
                         choices = levels(aoc_setup$lvl1_f),
                         selected = levels(aoc_setup$lvl1_f), 
                         options = list(`actions-box` = TRUE), # option to de/select all
@@ -441,7 +445,7 @@ uiOutput(outputId= "Emily_plot")),
                       
                       column(width = 3,
                       pickerInput(inputId = "size_check", # Environment checklist
-                        label = "Size:", 
+                        label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
                         selected = levels(aoc_setup$size_f),   
                         options = list(`actions-box` = TRUE), # option to de/select all
@@ -462,7 +466,7 @@ uiOutput(outputId= "Emily_plot")),
                       
                         column(width = 3,
                         sliderInput("range", # Allows for max input
-                          label = "Particle Size (um):", #Labels widget
+                          label = "Particle Size (µm):", #Labels widget
                           min = 0, max = 4000, value = 4000)),
                       
                         column(width = 3,
@@ -516,9 +520,9 @@ uiOutput(outputId= "Emily_plot")),
                     br())), # line break
         
 #### Scott UI ####
-                  tabPanel("Species Sensitivity Distribution", 
+                  tabPanel("4: Species Sensitivity Distribution", 
                     br(), # line break
-                    h3("Species Sensitivity Distribution", align = "center", style = "color:darkcyan"),
+                    h3("Species Sensitivity Distribution", align = "center"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
                     br(), # line break
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
@@ -567,7 +571,7 @@ uiOutput(outputId= "Emily_plot")),
                             #Endpoint widget
                            column(width = 4,
                                   pickerInput(inputId = "lvl1_check_ssd", # organism checklist
-                                              label = "Endpoints:",
+                                              label = "Broad Endpoint:",
                                               choices = levels(aoc_z$lvl1_f),
                                               selected = levels(aoc_z$lvl1_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
@@ -686,7 +690,7 @@ uiOutput(outputId= "Emily_plot")),
                           ) #closes out scott's main panel
                     ) #closes out Scott's tab panel
 
-        ##### dummy tab ####
+##### dummy tab ####
         # commented out for the time being
         # tabPanel("File Upload", 
         #   
@@ -744,7 +748,7 @@ server <- function(input, output) {
       mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
       
     pickerInput(inputId = "lvl2_check", 
-      label = "Levels by Endpoint:", 
+      label = "Specific Endpoint within Broad Category:", 
       choices = levels(aoc_new$lvl2_f_new),
       selected = levels(aoc_new$lvl2_f_new),
       options = list(`actions-box` = TRUE),
