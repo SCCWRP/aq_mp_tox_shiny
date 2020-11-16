@@ -213,7 +213,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
-ui <- fluidPage(theme = shinytheme("flatly"), ,
+ui <- fluidPage(theme = shinytheme("flatly"), 
   
   # App title
   titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
