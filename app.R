@@ -85,7 +85,8 @@ get_plot_output_list <- function(input_n) {
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
       
-      ggplotly(tooltip = 'Endpoints')
+      ggplotly(tooltip = 'Endpoints')%>%
+        config(displayModeBar = FALSE)
       
     })
     
