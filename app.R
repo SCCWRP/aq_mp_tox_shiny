@@ -83,7 +83,7 @@ get_plot_output_list <- function(input_n) {
           axis.ticks= element_blank(),
           axis.text.x = element_text(angle=45),
           axis.text.y=element_blank(),
-          axis.title.y = element_blank())
+          axis.title.x = element_blank())
       
       ggplotly(tooltip = 'Endpoints')%>%
         config(displayModeBar = FALSE)
@@ -341,15 +341,15 @@ tabPanel("2: Overview",
             #choices = levels(Final_effect_dataset$plot_f), # options for user
             #selected = "Polymer",# default selected
             #inline = TRUE), #allows for multiple selections at once
-column(width = 3,           
+           
 pickerInput(inputId = "Emily_check", # endpoint checklist
             label = "Overview", 
             choices = levels(Final_effect_dataset$plot_f),
             selected = levels(Final_effect_dataset$plot_f), 
             options = list(`actions-box` = TRUE), # option to de/select all
-            multiple = TRUE)), # allows for multiple inputs
+            multiple = TRUE), # allows for multiple inputs
             br(),
-            
+
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
