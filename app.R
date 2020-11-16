@@ -80,11 +80,13 @@ get_plot_output_list <- function(input_n) {
         ggtitle(case_when(i=="Polymer"~"Polymer", i=="Organism"~"Organism", i=="Size"~"Particle Size",i=="Shape"~"Shape",i=="Endpoint Category"~"Endpoint Category",i=="Life Stage"~"Life Stage",i=="Exposure Route"~"Exposure Route",i=="In Vivo or In Vitro"~"In Vivo or In vitro"))+
         theme(plot.title = element_text(hjust = 0.5, face="bold"))+
         theme(legend.position = "right",
-          axis.ticks=element_blank(),
+          axis.ticks= element_blank(),
+          axis.text.x = element_text(angle=45),
           axis.text.y=element_blank(),
           axis.title.y = element_blank())
       
-      ggplotly(tooltip = 'Endpoints')
+      ggplotly(tooltip = 'Endpoints')%>%
+        config(displayModeBar = FALSE)
       
     })
     
