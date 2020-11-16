@@ -342,7 +342,7 @@ tabPanel("2: Overview",
          br(),
          p("Check the boxes below to visualize figures. Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
          br(),
-         p("Use the checkboxes at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
+         p("Use the drop down menu at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
            Click on the legend to select data."),
          br(), 
          p("Detailed descriptions of data categories may be found under the Resources tab."),
