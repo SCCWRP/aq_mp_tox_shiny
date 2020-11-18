@@ -393,7 +393,7 @@ uiOutput(outputId= "Emily_plot")),
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                      pickerInput(inputId = "poly_check", # Environment checklist
+                      pickerInput(inputId = "poly_check", # polymer checklist
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
                         selected = levels(aoc_setup$poly_f),   
@@ -800,6 +800,7 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
+      filter(env_f %in% env_c) %>% #filter by environment
       filter(size.length.um.used.for.conversions <= range_n) # filter by size
       
   })
