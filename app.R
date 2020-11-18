@@ -83,7 +83,7 @@ get_plot_output_list <- function(input_n) {
           axis.ticks= element_blank(),
           axis.text.x = element_text(angle=45),
           axis.text.y=element_blank(),
-          axis.title.y = element_blank())
+          axis.title.x = element_blank())
       
       ggplotly(tooltip = 'Endpoints')%>%
         config(displayModeBar = FALSE)
@@ -213,25 +213,26 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
+
 ui <- fluidPage(theme = shinytheme("flatly"),  
-  
+          
+
   # App title
   titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
-  tags$div(
-    "This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop. Do not use without prior consultation with Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+  tags$div("This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop."),
   
   br(), # line break
   
   # Main panel for displaying outputs
-  mainPanel(
+  mainPanel(width = 9,
     
-      # Output: set of 5 tabs
+      # Output: set of 6 tabs
       tabsetPanel(type = "tabs",
 
 #### Leah UI ####        
-                  tabPanel(strong("1: Introduction"), 
+                  tabPanel("1: Introduction", 
                     
                     #Place holder for a cute logo someday? 
                                   
@@ -259,7 +260,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     #   how polymer type impacts the growth of early life stage fish that were exposed to 
                     #   microplastics for 7 days or longer."),
                     
-                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
+                    # h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
                     
                     p("Use the numbered tabs at the top of the page to navigate to each section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
@@ -306,11 +307,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
-                    h3("Contact", align = "center"),
-                    
-                    p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-                    
-                    br(),
+                    # h3("Contact", align = "center"),
+                    # 
+                    # p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    # 
+                    # br(),
                     
                   splitLayout(align = "center", 
                   tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
@@ -336,16 +337,15 @@ tabPanel("2: Overview",
          br(), 
          p("Detailed descriptions of data categories may be found under the Resources tab."),
          br(),
-
-column(width = 3,           
+           
 pickerInput(inputId = "Emily_check", # endpoint checklist
             label = "Overview", 
             choices = levels(Final_effect_dataset$plot_f),
             selected = levels(Final_effect_dataset$plot_f), 
             options = list(`actions-box` = TRUE), # option to de/select all
-            multiple = TRUE)), # allows for multiple inputs
+            multiple = TRUE), # allows for multiple inputs
             br(),
-            
+
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
@@ -390,7 +390,7 @@ uiOutput(outputId= "Emily_plot")),
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                      pickerInput(inputId = "poly_check", # Environment checklist
+                      pickerInput(inputId = "poly_check", # polymer checklist
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
                         selected = levels(aoc_setup$poly_f),   
@@ -584,7 +584,8 @@ uiOutput(outputId= "Emily_plot")),
                            
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", 
-                                               style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                               #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
+                                               ),
                                   align = "center"), # adds action button 
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
@@ -648,7 +649,8 @@ uiOutput(outputId= "Emily_plot")),
                                            max = 10000),
                               br(),
                               column(width = 12,
-                                actionButton("ssdPred", "Predict", style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'),
+                                actionButton("ssdPred", "Predict", #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
+                                             ),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
@@ -659,7 +661,7 @@ uiOutput(outputId= "Emily_plot")),
                               column(width = 12,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "button"), #download ssdplot
                                      align = "center"),
-                              tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
+                              #tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
@@ -695,7 +697,15 @@ tabPanel("5: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
          
-         verbatimTextOutput(outputId = "Leah2"))
+         verbatimTextOutput(outputId = "Leah2")),
+
+tabPanel("6: Contact", 
+         br(),
+         h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+         br(),
+         h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
+         
+         verbatimTextOutput(outputId = "Leah3"))
 
 ##### dummy tab ####
         # commented out for the time being
@@ -789,6 +799,7 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
+      filter(env_f %in% env_c) %>% #filter by environment
       filter(size.length.um.used.for.conversions <= range_n) # filter by size
       
   })
