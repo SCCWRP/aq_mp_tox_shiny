@@ -43,7 +43,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Life.stage" ~ "Life Stage",
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
-  mutate(plot_f = factor(plot_f))
+  mutate(plot_f = factor(plot_f))%>%
+  mutate(logEndpoints = log(Endpoints))
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -69,7 +70,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y=Freq, x=Type, Endpoints=Endpoints)) +
+        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Endpoints=Endpoints)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"gayophytum",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
@@ -82,7 +83,7 @@ get_plot_output_list <- function(input_n) {
         theme(legend.position = "right",
           axis.ticks= element_blank(),
           axis.text.x = element_text(angle=45),
-          axis.text.y=element_blank(),
+          axis.text.y = element_blank(),
           axis.title.x = element_blank())
       
       ggplotly(tooltip = 'Endpoints')%>%
@@ -459,10 +460,10 @@ uiOutput(outputId= "Emily_plot")),
                       
                         column(width = 3),
                       
-                        column(width = 3,
-                        sliderInput("range", # Allows for max input
-                          label = "Particle Size (µm):", #Labels widget
-                          min = 0, max = 4000, value = 4000)),
+                        #column(width = 3,
+                        #sliderInput("range", # Allows for max input
+                          #label = "Particle Size (µm):", #Labels widget
+                          #min = 0, max = 4000, value = 4000)),
                       
                         column(width = 3,
                         pickerInput(inputId = "bio_check", # bio org checklist
