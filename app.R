@@ -124,7 +124,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   # polymer category data tidying.
   mutate(poly_f = factor(polymer, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
   # taxonomic category data tidying.
-  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
     lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
@@ -136,22 +136,22 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl1 == "stress" ~ "Stress"))) %>% # creates new column with nicer names.
   # Level 2 Data tidying
   mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
+    lvl2 == "actinobacteria" ~ "Actinobacteria",
     lvl2 == "agressivity"~"Agressivity",
-    lvl2 == "bacteriodetes"~ "Bacteriodetes",
-    lvl2 == "actinobacteria"~"Actinobacteria",
     lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
+    lvl2 == "bacteriodetes"~ "Bacteriodetes",
     lvl2 == "blood"~"Blood",
-    lvl2 == "boldness"~"Boldness",
     lvl2 == "body.condition"~"Body Condition",
-    lvl2 == "brainhisto"~"Brain Histological Abnormalities",
+    lvl2 == "boldness"~"Boldness",
+    lvl2 == "brain.histo"~"Brain Histological Abnormalities",
     lvl2 == "burrowing"~"Burrowing",
     lvl2 == "carb.metabolism"~"Carb Metabolism",
     lvl2 == "chemokines.cytokines"~"Chemokines",
     lvl2 == "circulatory"~"Circulatory",
     lvl2 == "detoxification"~"Detoxification",
-    lvl2 == "developement"~"Developement",
+    lvl2 == "development"~"Development",
     lvl2 == "digestion"~"Digestion",
-    lvl2 == "digestive enzymes"~"Digestive Enzymes",
+    lvl2 == "digestive.enzymes"~"Digestive Enzymes",
     lvl2 == "digestive.tract.histo"~"Digestive Tract Histological Abnormalities",
     lvl2 == "diversity"~ "Diversity",
     lvl2 == "feeding"~ "Feeding",
