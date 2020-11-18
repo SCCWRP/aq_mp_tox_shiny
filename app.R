@@ -284,7 +284,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     h3("Can I see the raw data?", align = "center"),
                     
                     p("Workshop participants also have access to the complete, raw database as an .xls file by directly contacting Dr. Leah Thornton Hampton (leahth@sccwrp.org), and are welcome to conduct their own analyses.
-                      Users may also download meta data associated with visualizations and analyses in the Data Exploration and Species Sensitivity Distribution tabs."),
+                      Users may also download meta data associated with visualizations and analyses in the Exploration and Species Sensitivity Distribution tabs."),
                     
                     h3("Contributors", align = "center"),
                  
@@ -333,7 +333,7 @@ tabPanel("2: Overview",
          br(), 
          h3("Microplastics in Aquatic Environments: Overview of Toxicological Effects", align = "center"),
          br(),
-         p("Check the boxes below to visualize figures. Each bar displays the proportion of measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
+         p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
          br(),
          p("Use the drop down menu at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
            Click on the legend to select data."),
@@ -366,8 +366,7 @@ uiOutput(outputId= "Emily_plot")),
                     br(), # line break
                     p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), # line break
-                    strong(p("To Begin: Click the 'Update Filters' button.")),
-                    br(), # line break
+                    
                     
                     # widget headers
                     column(width=12,
@@ -487,16 +486,20 @@ uiOutput(outputId= "Emily_plot")),
                     # New row of widgets
                     column(width=12,
                         column(width = 3,
-                        actionButton("go", "Update Filters")), # adds update action button
+                        actionButton("go", "Update Filters", class = "btn-success")), # adds update action button
                     # "go" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
 
                         column(width = 3,
-                        downloadButton("downloadData", "Download Data")) # adds download button
+                        downloadButton("downloadData", "Download Data", class = "btn-info")) # adds download button
                       ), 
                     # "downloadData" is the internal name
                     # "Download" is the title that appears on the button
-                      
+                    
+                    column(width = 3,
+                    br(),
+                    strong(p("To Begin: Click the 'Update Filters' button above.")),
+                    br()), # line break  
 
                     column(width = 12,
                     hr()), # adds divider
@@ -586,7 +589,7 @@ uiOutput(outputId= "Emily_plot")),
                            ), #close out column
                            
                             column(width = 12,
-                                  actionButton("SSDgo", "Submit", 
+                                  actionButton("SSDgo", "Submit", class = "btn-success" 
                                                #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
                                                ),
                                   align = "center"), # adds action button 
@@ -652,7 +655,7 @@ uiOutput(outputId= "Emily_plot")),
                                            max = 10000),
                               br(),
                               column(width = 12,
-                                actionButton("ssdPred", "Predict", #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
+                                actionButton("ssdPred", "Predict", class = "btn-success"#style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
                                              ),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
@@ -662,7 +665,7 @@ uiOutput(outputId= "Emily_plot")),
                               plotOutput(outputId = "aoc_ssd_ggplot"),
                               br(),
                               column(width = 12,
-                                     downloadButton("downloadSsdPlot", "Download Plot", class = "button"), #download ssdplot
+                                     downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
                               #tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
                               br(),
