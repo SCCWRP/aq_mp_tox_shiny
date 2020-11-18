@@ -835,7 +835,7 @@ server <- function(input, output) {
       #   segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16), 
-        legend.position = "top") +
+        legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Size",
         color = "Effect?",
@@ -872,7 +872,7 @@ server <- function(input, output) {
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       theme_classic() +
       theme(text = element_text(size=16), 
-        legend.position = "top") +
+        legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Shape",
         color = "Effect?",
@@ -892,7 +892,7 @@ server <- function(input, output) {
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
       theme(text = element_text(size=16),
-        legend.position = "top") +
+        legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Polymer",
         color = "Effect?",
@@ -912,7 +912,7 @@ server <- function(input, output) {
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
       theme(text = element_text(size=16),
-        legend.position = "top") +
+        legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Endpoint",
         color = "Effect?",
