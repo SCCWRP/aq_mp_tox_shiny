@@ -213,25 +213,24 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
-ui <- fluidPage(theme = shinytheme("flatly"), 
-  
+ui <- fluidPage(theme = shinytheme("flatly"),
+          
   # App title
   titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
-  tags$div(
-    "This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop. Do not use without prior consultation with Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+  tags$div("This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop."),
   
   br(), # line break
   
   # Main panel for displaying outputs
-  mainPanel(
+  mainPanel(width = 9,
     
-      # Output: set of 5 tabs
+      # Output: set of 6 tabs
       tabsetPanel(type = "tabs",
 
 #### Leah UI ####        
-                  tabPanel(strong("1: Introduction"), 
+                  tabPanel("1: Introduction", 
                     
                     #Place holder for a cute logo someday? 
                                   
@@ -259,7 +258,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     #   how polymer type impacts the growth of early life stage fish that were exposed to 
                     #   microplastics for 7 days or longer."),
                     
-                    h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
+                    # h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
                     
                     p("Use the numbered tabs at the top of the page to navigate to each section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
@@ -306,11 +305,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                     
-                    h3("Contact", align = "center"),
-                    
-                    p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-                    
-                    br(),
+                    # h3("Contact", align = "center"),
+                    # 
+                    # p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+                    # 
+                    # br(),
                     
                   splitLayout(align = "center", 
                   tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
@@ -701,7 +700,13 @@ tabPanel("5: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
          
-         verbatimTextOutput(outputId = "Leah2"))
+         verbatimTextOutput(outputId = "Leah2")),
+
+tabPanel("6: Contact", 
+         br(),
+         p("Text"),
+         
+         verbatimTextOutput(outputId = "Leah3"))
 
 ##### dummy tab ####
         # commented out for the time being
