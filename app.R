@@ -101,29 +101,30 @@ get_plot_output_list <- function(input_n) {
 #### Heili Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
-aoc_setup <- aoc %>% # start with original dataset
+aoc_v1 <- aoc %>% # start with original dataset
+  # mutate(DOSE = as.numeric(as.character(dose.mg.L.master))) %>%
   # full dataset filters.
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
     levels = c("Yes", "No"))) %>%
-  # size category data tidying.
-  mutate(size.category.noNA = replace_na(size.category, 0)) %>% # replaces NA with 0
-  mutate(size_f = factor(case_when(size.category.noNA == 1 ~ "1nm < 100nm",
-    size.category.noNA == 2 ~ "100nm < 1µm",
-    size.category.noNA == 3 ~ "1µm < 100µm",
-    size.category.noNA == 4 ~ "100µm < 1mm",
-    size.category.noNA == 5 ~ "1mm < 5mm",
-    size.category.noNA == 0 ~ "unavailable"), 
+  # removing NAs.
+  replace_na(list(size.category = 0, shape = "unavailable", polymer = "unavailable", organism.group = "unavailable", life.stage = "unavailable"))
+
+aoc_setup <- aoc_v1 %>% # start with original dataset
+  mutate(size_f = factor(case_when(
+    size.category == 1 ~ "1nm < 100nm",
+    size.category == 2 ~ "100nm < 1µm",
+    size.category == 3 ~ "1µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
+    size.category == 5 ~ "1mm < 5mm",
+    size.category == 0 ~ "unavailable"), 
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
-  mutate(shape.noNA = replace_na(shape, "unavailable")) %>% # replaces NAs to better relabel.
-  mutate(shape_f = factor(shape.noNA, levels = c("fiber", "fragment", "sphere", "cube", "unavailable"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape, levels = c("fiber", "fragment", "sphere", "cube", "unavailable"))) %>% # order our different shapes.
   # polymer category data tidying.
-  mutate(polymer.noNA = replace_na(polymer, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(poly_f = factor(polymer.noNA, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
+  mutate(poly_f = factor(polymer, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
   # taxonomic category data tidying.
-  mutate(organism.noNA = replace_na(organism.group, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(org_f = factor(organism.noNA, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacteria", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
     lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
@@ -187,11 +188,12 @@ aoc_setup <- aoc %>% # start with original dataset
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>%
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
-                                   life.stage == "Juvenile"~"Juvenile",
-                                   life.stage == "Adult"~"Adult")))%>%
+    life.stage == "Juvenile"~"Juvenile",
+    life.stage == "Adult"~"Adult",
+    life.stage == "unavailable"~"unavailable")))%>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
-                                  environment == "Marine" ~ "Marine",
-                                  environment == "Terrestrial" ~ "Terrestrial")))
+    environment == "Marine" ~ "Marine",
+    environment == "Terrestrial" ~ "Terrestrial")))
 
 #### Scott Setup ####
 
@@ -800,8 +802,8 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
-      filter(env_f %in% env_c) %>% #filter by environment
-      filter(size.length.um.used.for.conversions <= range_n) # filter by size
+      filter(env_f %in% env_c) #%>% #filter by environment
+      #filter(size.length.um.used.for.conversions <= range_n) # filter by size
       
   })
      
@@ -820,7 +822,7 @@ server <- function(input, output) {
     #     measurements = n(),
     #     studies = n_distinct(article))
 
-    size1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
@@ -838,8 +840,6 @@ server <- function(input, output) {
         y = "Size",
         color = "Effect?",
         fill = "Effect?")
-    
-    size1
     
     # Commenting out for now, deleting from remaining plots.
     # size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
@@ -864,7 +864,7 @@ server <- function(input, output) {
   
   output$shape_plot_react <- renderPlot({
     
-    shape1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -878,15 +878,13 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    shape1
-    
   })
   
   # Polymer Plot
   
   output$poly_plot_react <- renderPlot({
     
-    poly1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -900,15 +898,13 @@ server <- function(input, output) {
         color = "Effect?",
         fill = "Effect?")
     
-    poly1
-    
   })
   
   # Endpoint Plot
   
   output$lvl_plot_react <- renderPlot({
     
-    lvl1 <- ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -921,8 +917,6 @@ server <- function(input, output) {
         y = "Endpoint",
         color = "Effect?",
         fill = "Effect?")
-    
-    lvl1
     
   })
   
