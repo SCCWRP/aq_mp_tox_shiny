@@ -213,7 +213,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
-ui <- fluidPage(theme = shinytheme("flatly"), 
+ui <- fluidPage(theme = shinytheme("flatly"),  
   
   # App title
   titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
@@ -336,11 +336,7 @@ tabPanel("2: Overview",
          br(), 
          p("Detailed descriptions of data categories may be found under the Resources tab."),
          br(),
-#awesomeCheckboxGroup(inputId = "Emily_check", # effect checklist
-            #label = "Data Categories:", # checklist label
-            #choices = levels(Final_effect_dataset$plot_f), # options for user
-            #selected = "Polymer",# default selected
-            #inline = TRUE), #allows for multiple selections at once
+
 column(width = 3,           
 pickerInput(inputId = "Emily_check", # endpoint checklist
             label = "Overview", 
