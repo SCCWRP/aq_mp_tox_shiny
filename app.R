@@ -704,7 +704,9 @@ tabPanel("5: Resources",
 
 tabPanel("6: Contact", 
          br(),
-         p("Text"),
+         h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+         br(),
+         h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
          
          verbatimTextOutput(outputId = "Leah3"))
 
