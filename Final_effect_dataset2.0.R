@@ -4,7 +4,22 @@ aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
 polyf<-as.data.frame(polydf)%>% #Makes data frame 
   filter(effect %in% c("Y","N"))%>% #Sorts into Yes and No
-  rename(Type = "polymer")%>% #rename so future columns have same name 
+  rename(Type = "polymer")%>%#rename so future columns have same name 
+  mutate(Type = case_when(
+    Type == "BIO" ~ "Biopolymer",
+    Type == "EVA" ~ "Polyethylene Vinyl Acetate",
+    Type == "LTX" ~ "Latex",
+    Type == "PA" ~ "Polyamide",
+    Type == "PE" ~ "Polyethylene",
+    Type == "PC" ~ "Polycarbonate",
+    Type == "PET" ~ "Polyethylene Terephthalate",
+    Type == "PI" ~ "Polyisoprene",
+    Type == "PMMA" ~ "Polymethylmethacrylate",
+    Type == "PP" ~ "Polypropylene",
+    Type == "PS" ~ "Polystyrene",
+    Type == "PUR" ~ "Polyurathane",
+    Type == "PVC" ~ "Polyvinylchloride",
+    Type == "PLA" ~ "Polyactic Acid"))%>%
   mutate_if(is.numeric, round,0)%>% #rounds percents 
   mutate(plot="Polymer") # change column name for check list
 Endpoints<-xtabs(~polymer +effect ,aoc) #Pulls all study obs. for polymer from dataset
@@ -13,6 +28,8 @@ polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
   rename(category='polymer')#renames column
 
 polyfinal
+
+
 
 sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
 sizef<-as.data.frame(sizedf)%>%
@@ -65,6 +82,7 @@ taxfinal<- data.frame(cbind(taxf, study_t))%>%
 
 taxfinal
 
+
 lvl1df<-rowPerc(xtabs(~lvl1 +effect, aoc))
 lvl1f<-as.data.frame(lvl1df)%>%
   filter(effect %in% c("Y","N"))%>%
@@ -81,7 +99,6 @@ lvl1f<-as.data.frame(lvl1df)%>%
     Type == "metabolism" ~ "Metabolism",
     Type == "microbiome" ~ "Microbiome",
     Type == "stress" ~ "Stress")) 
-    
 study_l<-xtabs(~lvl1 +effect,aoc)
 lvl1final<- data.frame(cbind(lvl1f, study_l))%>% 
   rename(Endpoints='Freq.1')%>%
@@ -126,7 +143,9 @@ routef<-as.data.frame(routedf)%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Exposure.route")%>%
   mutate(Type = case_when(
-    Type == "maternal.transfer" ~ "Maternal Transfer",
+    Type == "coparental.exposure" ~"Co-Parental Exposure",
+    Type == "paternal.exposure" ~ "Paternal Exposure",
+    Type == "maternal.exposure" ~ "Maternal Exposure",
     Type == "food" ~ "Food",
     Type == "water" ~ "Water",
     Type == "sediment" ~ "Sediment"))
