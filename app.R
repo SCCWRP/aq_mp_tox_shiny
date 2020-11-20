@@ -140,7 +140,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PUR" ~ "Polyurathane",
     polymer == "PVC" ~ "Polyvinylchloride",
     polymer == "PLA" ~ "Polylactic Acid",
-    polymer == "unavailable" ~ "Not Reported")))%>%
+    polymer == "NA" ~ "Not Reported")))%>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
