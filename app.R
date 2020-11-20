@@ -503,7 +503,11 @@ uiOutput(outputId= "Emily_plot")),
 
                     column(width = 12,
                     hr()), # adds divider
-
+                    
+                    column(width =12,
+                    plotOutput(outputId = "organism_plot_react"),
+                    br()), # line break
+                  
                     column(width =12,
                     plotOutput(outputId = "lvl_plot_react"),
                     br()), # line break
@@ -812,18 +816,39 @@ server <- function(input, output) {
      
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
+  # Creating dataset to output counts.
+  # Commenting out for now, deleting from remaining plots.
+  # aoc_size1 <- aoc_filter() %>%
+  #   drop_na(dose.mg.L) %>%
+  #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+  #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
+  #     measurements = n(),
+  #     studies = n_distinct(article))
+  
+  #Organism plot
+  
+  output$organism_plot_react <- renderPlot({
+    
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = org_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      theme_classic() +
+      theme(text = element_text(size=16), 
+            legend.position = "right") +
+      labs(x = "Concentration (mg/L)",
+           y = "Organism",
+           color = "Effect?",
+           fill = "Effect?")
+    
+  })
+  
+  
   # Size Plot
   
   output$size_plot_react <- renderPlot({
-    
-    # Creating dataset to output counts.
-    # Commenting out for now, deleting from remaining plots.
-    # aoc_size1 <- aoc_filter() %>%
-    #   drop_na(dose.mg.L) %>%
-    #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
-    #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
-    #     measurements = n(),
-    #     studies = n_distinct(article))
 
     ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -862,6 +887,27 @@ server <- function(input, output) {
     # (size1 + size2) # using patchwork to combine figures
     
   })
+  
+  #Organism plot
+  
+  output$shape_plot_react <- renderPlot({
+    
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      theme_classic() +
+      theme(text = element_text(size=16), 
+            legend.position = "right") +
+      labs(x = "Concentration (mg/L)",
+           y = "Shape",
+           color = "Effect?",
+           fill = "Effect?")
+    
+  })
+  
   
   # Shape Plot
   
