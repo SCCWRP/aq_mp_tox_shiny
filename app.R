@@ -452,9 +452,9 @@ uiOutput(outputId= "Emily_plot")),
                         
                       column(width = 3,
                       pickerInput(inputId = "effect_check",  # Effect Yes/No widget
-                        label = "Effect:", 
+                        label = "Effect:",
+                        selected = "yes",
                         choices = levels(aoc_setup$effect_f),
-                        selected = "Yes",   
                         options = list(`actions-box` = TRUE),
                         multiple = TRUE)),
                       
@@ -462,7 +462,6 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "size_check", # Environment checklist
                         label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
-                        selected = levels(aoc_setup$size_f),   
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)),
                       
@@ -470,7 +469,6 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "life_check", # life stage checklist
                         label = "Life Stages:", 
                         choices = levels(aoc_setup$life_f),
-                        selected = levels(aoc_setup$life_f),   
                         options = list(`actions-box` = TRUE), 
                         multiple = TRUE))),
                     
@@ -523,8 +521,8 @@ uiOutput(outputId= "Emily_plot")),
                     hr()), # adds divider
                     
                     column(width = 4,
-                           plotOutput(outputId = "organism_plot_react"),
-                           br()), # line break
+                    plotOutput(outputId = "organism_plot_react"),
+                    br()), # line break
                   
                     column(width = 4,
                     plotOutput(outputId = "lvl_plot_react"),
