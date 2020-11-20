@@ -125,7 +125,22 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   # shape category data tidying.
   mutate(shape_f = factor(shape, levels = c("fiber", "fragment", "sphere", "cube", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
-  mutate(poly_f = factor(polymer, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "Not Reported"))) %>% # order different polymers
+  mutate(poly_f = factor(case_when(
+    polymer == "BIO" ~ "Biopolymer",
+    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+    polymer == "LTX" ~ "Latex",
+    polymer == "PA" ~ "Polyamide",
+    polymer == "PE" ~ "Polyethylene",
+    polymer == "PC" ~ "Polycarbonate",
+    polymer == "PET" ~ "Polyethylene Terephthalate",
+    polymer == "PI" ~ "Polyisoprene",
+    polymer == "PMMA" ~ "Polymethylmethacrylate",
+    polymer == "PP" ~ "Polypropylene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PVC" ~ "Polyvinylchloride",
+    polymer == "PLA" ~ "Polylactic Acid",
+    polymer == "unavailable" ~ "Not Reported")))%>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
