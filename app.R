@@ -405,6 +405,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Broad Endpoint Category:", 
                         choices = levels(aoc_setup$lvl1_f),
+                        selected = levels(aoc_setup$lvl1_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
@@ -412,6 +413,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "poly_check", # polymer checklist
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
+                        selected = levels(aoc_setup$poly_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)),
                       
@@ -419,6 +421,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "organism_check", # organismal checklist
                         label = "Organisms:", 
                         choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE))), # allows for multiple inputs
                       
@@ -432,6 +435,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "shape_check", # shape checklist
                         label = "Shape:", 
                         choices = levels(aoc_setup$shape_f),
+                        selected = levels(aoc_setup$shape_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)),
                       
@@ -439,6 +443,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "env_check", # Environment checklist
                         label = "Environment:", 
                         choices = levels(aoc_setup$env_f),
+                        selected = levels(aoc_setup$env_f),
                         options = list(`actions-box` = TRUE), 
                         multiple = TRUE))), # allows for multiple inputs
                       
@@ -449,6 +454,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "effect_check",  # Effect Yes/No widget
                         label = "Effect:",
                         choices = levels(aoc_setup$effect_f),
+                        selected = levels(aoc_setup$effect_f),
                         options = list(`actions-box` = TRUE),
                         multiple = TRUE)),
                       
@@ -456,6 +462,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "size_check", # Environment checklist
                         label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
+                        selected = levels(aoc_setup$size_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)),
                       
@@ -463,6 +470,7 @@ uiOutput(outputId= "Emily_plot")),
                       pickerInput(inputId = "life_check", # life stage checklist
                         label = "Life Stages:", 
                         choices = levels(aoc_setup$life_f),
+                        selected = levels(aoc_setup$life_f),
                         options = list(`actions-box` = TRUE), 
                         multiple = TRUE))),
                     
@@ -480,6 +488,7 @@ uiOutput(outputId= "Emily_plot")),
                         pickerInput(inputId = "bio_check", # bio org checklist
                           label = "Level of Biological Organization", 
                           choices = levels(aoc_setup$bio_f),
+                          selected = levels(aoc_setup$bio_f),
                           options = list(`actions-box` = TRUE),
                           multiple = TRUE))), # allows for multiple inputs
                       
