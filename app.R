@@ -530,6 +530,10 @@ uiOutput(outputId= "Emily_plot")),
                     plotOutput(outputId = "lvl_plot_react"),
                     br()), # line break
                     
+                    column(width =12,
+                    plotOutput(outputId = "lvl2_plot_react"),
+                    br()), # line break
+                    
                     column(width = 12,
                     plotOutput(outputId = "size_plot_react"),
                     br()), # line break
@@ -965,6 +969,28 @@ server <- function(input, output) {
         fill = "Effect?")
     
   })
+  
+  #Lvl2 Plot 
+  
+  output$lvl2_plot_react <- renderPlot({
+    
+    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl2_f)) +
+      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
+                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      theme_classic() +
+      theme(text = element_text(size=16),
+            legend.position = "right") +
+      labs(x = "Concentration (mg/L)",
+           y = "Specific Endpoint",
+           color = "Effect?",
+           fill = "Effect?")
+    
+  })
+  
+  
   
   # Create downloadable csv of filtered dataset.
   output$downloadData <- downloadHandler(
