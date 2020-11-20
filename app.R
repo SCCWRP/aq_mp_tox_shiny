@@ -123,7 +123,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     size.category == 0 ~ "Not Reported"), 
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
-  mutate(shape_f = factor(shape, levels = c("fiber", "fragment", "sphere", "cube", "Not Reported"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape, levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(poly_f = factor(case_when(
     polymer == "BIO" ~ "Biopolymer",
