@@ -108,7 +108,7 @@ aoc_v1 <- aoc %>% # start with original dataset
     effect == "N" ~ "No"),
     levels = c("Yes", "No"))) %>%
   # removing NAs.
-  replace_na(list(size.category = 0, shape = "unavailable", polymer = "unavailable", organism.group = "unavailable", life.stage = "unavailable"))
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", organism.group = "Not Reported", life.stage = "Not Reported"))
 
 aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
@@ -117,12 +117,12 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     size.category == 3 ~ "1µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
-    size.category == 0 ~ "unavailable"), 
-    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "unavailable"))) %>% # creates new column with nicer names and order by size levels.
+    size.category == 0 ~ "Not Reported"), 
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
-  mutate(shape_f = factor(shape, levels = c("fiber", "fragment", "sphere", "cube", "unavailable"))) %>% # order our different shapes.
+  mutate(shape_f = factor(shape, levels = c("fiber", "fragment", "sphere", "cube", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
-  mutate(poly_f = factor(polymer, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "unavailable"))) %>% # order different polymers
+  mutate(poly_f = factor(polymer, levels = c("BIO", "EVA", "PA", "PC", "PE", "PET", "PLA", "PMMA", "PP", "PS", "PUR", "PVC", "Not Reported"))) %>% # order different polymers
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
@@ -190,10 +190,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
     life.stage == "Juvenile"~"Juvenile",
     life.stage == "Adult"~"Adult",
-    life.stage == "unavailable"~"unavailable")))%>%
+    life.stage == "unavailable"~"Not Reported")))%>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial")))
+  
 
 #### Scott Setup ####
 
