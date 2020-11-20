@@ -45,6 +45,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
   mutate(plot_f = factor(plot_f))%>%
   mutate(logEndpoints = log(Endpoints))
+ 
+#if mix column says yes then polymer type should recieve the mix label
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -888,27 +890,6 @@ server <- function(input, output) {
     # (size1 + size2) # using patchwork to combine figures
     
   })
-  
-  #Organism plot
-  
-  output$shape_plot_react <- renderPlot({
-    
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
-      theme_classic() +
-      theme(text = element_text(size=16), 
-            legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
-           y = "Shape",
-           color = "Effect?",
-           fill = "Effect?")
-    
-  })
-  
   
   # Shape Plot
   
