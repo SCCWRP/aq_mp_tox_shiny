@@ -247,7 +247,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
   br(), # line break
   
   # Main panel for displaying outputs
-  mainPanel(width = 9,
+  mainPanel(width = 12,
     
       # Output: set of 6 tabs
       tabsetPanel(type = "tabs",
@@ -522,29 +522,31 @@ uiOutput(outputId= "Emily_plot")),
                     column(width = 12,
                     hr()), # adds divider
                     
-                    column(width =12,
-                    plotOutput(outputId = "organism_plot_react"),
-                    br()), # line break
+                    column(width = 4,
+                           plotOutput(outputId = "organism_plot_react"),
+                           br()), # line break
                   
-                    column(width =12,
+                    column(width = 4,
                     plotOutput(outputId = "lvl_plot_react"),
                     br()), # line break
                     
-                    column(width =12,
+                    column(width = 4,
                     plotOutput(outputId = "lvl2_plot_react"),
                     br()), # line break
                     
-                    column(width = 12,
+                    column(width = 4,
                     plotOutput(outputId = "size_plot_react"),
                     br()), # line break
                     
-                    column(width = 12,
+                    column(width = 4,
                     plotOutput(outputId = "shape_plot_react"),
                     br()), # line break
                     
-                    column(width = 12,
+                    column(width = 4,
                     plotOutput(outputId = "poly_plot_react"),
                     br())), # line break
+
+                   
         
 #### Scott UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
