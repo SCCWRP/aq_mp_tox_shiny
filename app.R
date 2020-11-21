@@ -123,7 +123,13 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     size.category == 0 ~ "Not Reported"), 
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
-  mutate(shape_f = factor(shape, levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
+  mutate(shape_f = factor(case_when(
+    shape == "fiber" ~ "Fiber",
+    shape == "fragment" ~ "Fragment",
+    shape == "sphere" ~ "Sphere",
+    shape == "cube" ~ "Cube",
+    shape == NA ~ "Not Reported"),
+    levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(poly_f = factor(case_when(
     polymer == "BIO" ~ "Biopolymer",
@@ -139,7 +145,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PS" ~ "Polystyrene",
     polymer == "PUR" ~ "Polyurathane",
     polymer == "PVC" ~ "Polyvinylchloride",
-    polymer == "PLA" ~ "Polylactic Acid")))%>%
+    polymer == "PLA" ~ "Polylactic Acid"))) %>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "unavailable"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
@@ -196,7 +202,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl2 == "sexhormones"~"Sex Hormones",
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
-    lvl2 == "vision.system"~"Vision System")))%>% #Renames for widget
+    lvl2 == "vision.system"~"Vision System"))) %>% #Renames for widget
   mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
     bio.org == "organism"~"Organism",
     bio.org == "population"~ "Population",
@@ -506,13 +512,13 @@ uiOutput(outputId= "Emily_plot")),
                         column(width = 3,
                         actionButton("go", "Update Filters", class = "btn-success")), # adds update action button
                     # "go" is the internal name to refer to the button
-                    # "Update" is the title that appears on the app
+                    # "Update Filters" is the title that appears on the app
 
                         column(width = 3,
                         downloadButton("downloadData", "Download Data", class = "btn-info")) # adds download button
                       ), 
                     # "downloadData" is the internal name
-                    # "Download" is the title that appears on the button
+                    # "Download Data" is the title that appears on the button
                     
                     column(width = 3,
                     br(),
