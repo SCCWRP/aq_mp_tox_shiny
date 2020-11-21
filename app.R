@@ -216,7 +216,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     life.stage == "unavailable"~"Not Reported")))%>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
-    environment == "Terrestrial" ~ "Terrestrial")))
+    environment == "Terrestrial" ~ "Terrestrial",
+    environment == "unavailable" ~ "Not Reported")))
   
 
 #### Scott Setup ####
@@ -224,8 +225,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
-  mutate(environment.noNA = replace_na(environment, "unavailable")) %>% # replaces NA to better relabel.
-  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "unavailable"))) %>% # order our different environments.
+  mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) %>% # order our different environments.
   drop_na(dose.mg.L.master)  #must drop NAs or else nothing will work 
   #mutate(dose.mg.L = dose.mg.L.master)   #rename
 
@@ -1034,6 +1035,7 @@ server <- function(input, output) {
       filter(dose.mg.L.master > 0) %>% #clean out no dose data
       group_by(Species) %>% 
             summarise(MinConcTested = min(dose.mg.L.master), MaxConcTested = max(dose.mg.L.master), CountTotal = n()) %>%   #summary data for whole database
+      mutate_if(is.numeric, ~ signif(., 4)) %>% 
       drop_na() #must drop NAs or else nothing will work
         })
   
@@ -1060,6 +1062,7 @@ server <- function(input, output) {
       filter(effect_f == "Yes") %>% #only select observed effects
       group_by(Species, Group) %>%
       summarise(Conc = min(dose.mg.L.master), meanConcEffect = mean(dose.mg.L.master), medianConcEffect = median(dose.mg.L.master), SDConcEffect = sd(dose.mg.L.master),MaxConcEffect = max(dose.mg.L.master), CountEffect = n(), MinEffectType = lvl1[which.min(dose.mg.L.master)], MinEnvironment = environment[which.min(dose.mg.L.master)], MinDoi = doi[which.min(dose.mg.L.master)], MinLifeStage = life.stage[which.min(dose.mg.L.master)], Mininvitro.invivo = invitro.invivo[which.min(dose.mg.L.master)]) %>%  #set concentration to minimum observed effect
+      mutate_if(is.numeric, ~ signif(., 3)) %>% 
       drop_na(Conc) #must drop NAs or else nothing will work
      })
   
@@ -1088,8 +1091,11 @@ server <- function(input, output) {
               extensions = c('Buttons'),
               options = list(
                 dom = 'Brtip',
-                buttons = c('copy', 'csv', 'excel')),#only display the table and nothing else
-              colnames = c("Group", "Species", "Most Sensitive Concentration (mg/L)", "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+                buttons = c('copy', 'csv', 'excel'),
+                autoWidth = TRUE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
+              colnames = c("Group", "Species", "Most Sensitive Concentration (mg/L)", "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration (mg/L)", "Median Effect Concentration (mg/L)", "Std Dev Effect Concentration (mg/L)", "Maximum Observed Effect Concentration (mg/L)", "Number of doses with Effects", "Min Concentration Tested (with or without effects) (mg/L)", "Max Concentration Tested (with or without effects) (mg/L)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
         "Conc",
