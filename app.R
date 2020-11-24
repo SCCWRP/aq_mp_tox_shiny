@@ -724,18 +724,6 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
-                              # p("Below you will find an estimate of the hazard concentration at the user-specified level with associated 95% confidence interval."),
-                              # br(),
-                              # DT::dataTableOutput(outputId = "aoc_hc_table"), #print hazard concentration table
-                              # br(),
-                              # p("If the plot above is not working, you may find it below as a ggplot."),
-                              # br(),
-                              # plotOutput(outputId = "aoc_ssd_ggplot"),
-                              # br(),
-                              # p("Below is the same plot in interactive mode. Functionality is still being ironed out..."),
-                              # br(),
-                              # plotlyOutput(outputId = "aoc_ssd_ggplotly"),
-                              # br(),
                               p("Model predictions can also be viewed in tabular format."),
                               br(),
                               DT::dataTableOutput(outputId = "ssd_pred_table"),
@@ -1376,49 +1364,16 @@ output$downloadSsdPlot <- downloadHandler(
     ssd_ggplot()
   })
   
-  ## SSD plot as plotly
-  output$aoc_ssd_ggplotly <- renderPlotly({
-    
-    # calculate fraction
-    aoc_ssd <- aoc_filter_ssd() %>% 
-      arrange(Conc)
-    
-    aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
-    
-    #convert hazard concentration to sig digits
-    aochc <- aoc_hc()
-    
-    aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
-    
-    initialplot <- ggplot(aoc_pred(),aes_string(x = "est")) +
-      #geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
-      geom_line(aes_string(y = "percent/100")) +
-      geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
-      geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), hjust = 1.1, size = 4) + #species labels
-      scale_y_continuous("Species Affected (%)", labels = scales::percent) +
-      expand_limits(y = c(0, 1)) +
-      xlab("Concentration (mg/L)")+
-      coord_trans(x = "log10") +
-      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
-      geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red") + #hazard conc line vertical
-      geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red") + #hazard conc line horizontal
-      geom_text(data = aochc, aes(x = est, y = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 4) + #label for hazard conc
-      geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
-      scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
-      scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
-    
-    ggplotly(initialplot) # converts ggplot object to plotly object
-    })
   
   #hover text for info
   output$info <- renderText({
     xy_str <- function(e) {
       if(is.null(e)) return("NULL\n")
-      paste0("x=", format(e$x,scientific = TRUE), " y=", percent(e$y), "\n")
+      paste0("Concentration (mg/L)=", format(e$x,scientific = TRUE), " percent=", percent(e$y), "\n")
     }
     
     paste0(
-      "hover:", xy_str(input$plot_hover)
+      "", xy_str(input$plot_hover)
     )
   })
   
