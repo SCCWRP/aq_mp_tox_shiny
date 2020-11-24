@@ -79,7 +79,7 @@ get_plot_output_list <- function(input_n) {
         geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"gayophytum",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
-        ylab("Endpoints Measured") +
+        ylab("Number of Endpoints Measured") +
         labs(fill="Effect") +
         guides(x = guide_axis(n.dodge = 2)) +
         ggtitle(case_when(i=="Polymer"~"Polymer", i=="Organism"~"Organism", i=="Size"~"Particle Size",i=="Shape"~"Shape",i=="Endpoint Category"~"Endpoint Category",i=="Life Stage"~"Life Stage",i=="Exposure Route"~"Exposure Route",i=="In Vivo or In Vitro"~"In Vivo or In vitro"))+
@@ -517,15 +517,15 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update Filters" is the title that appears on the app
 
                         column(width = 3,
-                        downloadButton("downloadData", "Download Data", class = "btn-info")) # adds download button
-                      ), 
+                        downloadButton("downloadData", "Download Data", class = "btn-info")), # adds download button
+                       
                     # "downloadData" is the internal name
                     # "Download Data" is the title that appears on the button
                     
                     column(width = 3,
                     br(),
                     strong(p("To Begin: Click the 'Update Filters' button above.")),
-                    br()), # line break  
+                    br())), # line break  
 
                     column(width = 12,
                     hr()), # adds divider
@@ -536,7 +536,7 @@ uiOutput(outputId= "Emily_plot")),
                   
                     column(width = 6,
                     plotOutput(outputId = "lvl_plot_react"),
-                    br())), # line break
+                    br()), # line break
 
                     column(width = 12,
                     
@@ -556,10 +556,8 @@ uiOutput(outputId= "Emily_plot")),
                     
                     column(width = 6,
                     plotOutput(outputId = "poly_plot_react"),
-                    br())), # line break
+                    br()))), # line break
 
-                   
-        
 #### Scott UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
                     br(), # line break
