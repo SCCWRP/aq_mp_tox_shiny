@@ -7,24 +7,22 @@
 # Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
 
 # Load packages
-library(tidyverse)
-library(patchwork)
+library(tidyverse) #General everything
 library(tigerstats)
-library(ggplot2)
-library(ggrepel)
-library(calecopal)
-library(shiny)
-library(shinythemes)
-library(shinyWidgets)
-library(scales)
-library(reshape2)
-library(ssdtools) #for species sensitivity distributions
-library(DT) #to build HTML data tables
-library(plotly) #to make plots interactive
-library(viridis) #colors
-library(periscope)
-library(scales) #to use "percent" function
-library(shinyjs)
+library(ggplot2) #General plotting
+library(ggrepel) #For adding text labels that repel away from data points
+library(calecopal) #Color palette
+library(shiny) #Runs shiny
+library(shinythemes) #Shiny theme for the page
+library(shinyWidgets) #Widgets
+library(scales) #SSD - Use the percent format
+library(reshape2) #Overview tab - melts bars together
+library(ssdtools) #SSD package
+library(DT) #Build HTML data tables
+library(plotly) #Make plots interactive
+library(viridis) #Colors
+library(scales) #To use "percent" function
+library(shinyjs) #Exploration tab - reset button
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -48,9 +46,6 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
   mutate(plot_f = factor(plot_f))%>%
   mutate(logEndpoints = log(Endpoints))
 
- 
-#if mix column says yes then polymer type should recieve the mix label
-
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
 
@@ -59,11 +54,6 @@ get_plot_output_list <- function(input_n) {
   
   # For every value in "input_n", insert it as "i" into the function below and then save the full output into "plot_output_list":
   plot_output_list <- lapply(input_n, function(i) {
-    
-    # Commenting out these lines because don't *exactly* know what they're doing.
-    #plotname <- paste("plot", i, sep="")
-    #plot_output_object <- plotOutput(plotname)
-    #plot_output_object <- 
     
     # Render the individual plots      
     renderPlotly({
@@ -107,13 +97,12 @@ get_plot_output_list <- function(input_n) {
 
 # Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
-  # mutate(DOSE = as.numeric(as.character(dose.mg.L.master))) %>%
-  # full dataset filters.
+   # full dataset filters.
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
     levels = c("No", "Yes"))) %>%
-  # removing NAs.
-  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", organism.group = "Not Reported", life.stage = "Not Reported"))
+  # removing NAs to make data set nicer
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) 
 
 aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
@@ -149,7 +138,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PVC" ~ "Polyvinylchloride",
     polymer == "PLA" ~ "Polylactic Acid"))) %>%
   # taxonomic category data tidying.
-  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed", "unavailable"))) %>% # order our different organisms.
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", 
+                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
     lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
@@ -211,15 +201,14 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     bio.org == "subcell"~"Subcell",
     bio.org == "tissue" ~ "Tissue")))%>%
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
-    invitro.invivo == "invitro"~"In Vitro")))%>%
+    invitro.invivo == "invitro"~"In Vitro")))%>% ##Renames for widget (Not using a widget right now, but saving for human health database)
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
     life.stage == "Juvenile"~"Juvenile",
     life.stage == "Adult"~"Adult",
-    life.stage == "unavailable"~"Not Reported")))%>%
+    life.stage == "Not Reported"~"Not Reported")))%>% #Renames for widget
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
-    environment == "Terrestrial" ~ "Terrestrial",
-    environment == "unavailable" ~ "Not Reported")))
+    environment == "Terrestrial" ~ "Terrestrial"))) #Renames for widget
   
 
 #### Scott Setup ####
@@ -230,15 +219,11 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
   mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) %>% # order our different environments.
   drop_na(dose.mg.L.master)  #must drop NAs or else nothing will work 
-  #mutate(dose.mg.L = dose.mg.L.master)   #rename
-
+ 
 # final cleanup and factoring  
-aoc_z$species <- str_replace(aoc_z$species,"franciscana�","franciscana") #fix <?> unicode symbol in francisca species
 aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
-
-#mutate(species_f = factor(Species, levels = c("Daphnia magna","Mytilus galloprovincialis","Arenicola marina","Scenedesmus obliquus","Chlorella NA","Raphidocelis subcapitata","Dunaliella salina","Cyprinodon variegatus","Daphnia galeata","Paracentrotus lividus","Amphibalanus amphitrite","Artemia franciscana�","Pinctada margaritifera","Multiple NA","Pimephales promelas","Brachionus koreanus","Paracyclopina nana","Danio rerio","Lemna minor","Chlamydomas reinhardtii","Tigriopus japonicus","Chlorella pyrenoidosa","Hydra attenuata","Pomatoschistus microps","Mytilus NA","Acropora muricata","Heliopora coerulea","Pocillopora verrucosa","Mytilus spp","Scrobicularia plana","Perna viridis","Oryzias latipes","Barbodes gonionotus","Chaetoceros neogracile","Halomonas alkaliphila","Crassostrea gigas","Pocillopora damicornis","Mytilus edulis","Artemia parthenogenetica","Microcystis flos-aquae","Sebastes schlegelii","Eriocheir sinensis","Seletonema costatum","Karenia mikimotoi","Ceriodaphnia dubia","Dicentrachus labrax","Brachionus plicatilis","Tigriopus fulvus","Oryzias melastigma","Oryzias sinensis","Zacco temminckii","Oreochromis niloticus","Clarias gariepinus","Carassius carassius", "Cyprinus carpio")))# order our different species.
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
@@ -251,7 +236,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
   titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
-  tags$div("This website is only intended for use by invited particpants of the Microplastics Health Effects Workshop."),
+  tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
   
   br(), # line break
   
@@ -264,38 +249,21 @@ ui <- fluidPage(theme = shinytheme("flatly"),
 #### Leah UI ####        
                   tabPanel("1: Introduction", 
                     
-                    #Place holder for a cute logo someday? 
-                                  
                     br(), 
-                    h3("What is the Microplastics Toxicity Database?", align = "center"),
+                    h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
                     
                     strong(p("This database is a repository for microplastics 
                       toxicity data pertaining to aquatic organism health that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
-                    
-                    #p("Microplastics are a ubiquitous suite of environmental contaminants that comprise 
-                     # an incredible range of shapes, sizes, polymers and chemical additives. In addition, 
-                      #studies focused on the effects of microplastics are being rapidly published and 
-                      #often vary in quality. Because of this, it is challenging to identify sensitive biological 
-                      #endpoints and prioritize potential drivers of microplastic toxicity."),
                     
                     p("This web application allows users to explore toxicity 
                     data using an intuitive interface while retaining the diversity and complexity inherent 
                     to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
                     toxicity data pertaining to microplastics."),
-                    
-                    #img(src = "data_categories_image.png", height = "90%", width = "90%", style = "display:block;margin-left: auto; margin-right: auto;"),
-                    #br(),
-                    # p("This web application allows users to visualize the data while selecting for specific 
-                    #   parameters within the data categories above. For instance, a user may want to visualize 
-                    #   how polymer type impacts the growth of early life stage fish that were exposed to 
-                    #   microplastics for 7 days or longer."),
-                    
-                    # h3("How do I use the Microplastics Toxicity Database Web Application?", align = "center"),
-                    
+                  
                     p("Use the numbered tabs at the top of the page to navigate to each section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section."),
                     
-                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center"),
+                    h3("Why was the Microplastics Toxicity Database and Web Application created?", align = "center"), #Section 2
                     
                     p("The database and application tools have been created for use by the participants of the ", a(href = "https://www.sccwrp.org/about/
                       research-areas/additional-research-areas/
@@ -308,12 +276,12 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
                       .noWS = "outside")," regarding the management of microplastics in drinking water and the aquatic environment."),
                    
-                    h3("Can I see the raw data?", align = "center"),
+                    h3("Can I see the raw data?", align = "center"), #Section 3 
                     
                     p("Workshop participants also have access to the complete, raw database as an .xls file by directly contacting Dr. Leah Thornton Hampton (leahth@sccwrp.org), and are welcome to conduct their own analyses.
                       Users may also download meta data associated with visualizations and analyses in the Exploration and Species Sensitivity Distribution tabs."),
                     
-                    h3("Contributors", align = "center"),
+                    h3("Contributors", align = "center"), #Section 4: Contributors list with links to twitter and github
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
@@ -336,12 +304,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       tags$a(href="https://twitter.com/MicroplasticLab", tags$img(src="twitter.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
-                    
-                    # h3("Contact", align = "center"),
-                    # 
-                    # p(align = "center", "For more information about the database or other questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-                    # 
-                    # br(),
+                  
+                    #Logos with links to organizations
                     
                   splitLayout(align = "center", 
                   tags$a(href="https://www.waterboards.ca.gov", tags$img(src="waterboard.png", width = "100%", height = "100%")),
@@ -349,7 +313,6 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                   tags$a(href="https://www.utoronto.ca", tags$img(src="toronto.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%"))),
                   
-                    
                     br(), 
                     
                     verbatimTextOutput(outputId = "Leah1")),
@@ -380,12 +343,12 @@ uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
                   tabPanel("3: Exploration",
-                    shinyjs::useShinyjs(), # requires package for "reset" button
+                    shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
                     h3("Microplastics in Aquatic Environments: Exploration of Toxicological Effects", align = "center"),
                     br(), # line break
-                    p("Each row of figures displays a different metric along the y-axis - endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
+                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
                     were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
                     br(),
                     p("The data displayed in these figures are not filtered for quality and only display data where doses were reported as 
@@ -426,7 +389,7 @@ uiOutput(outputId= "Emily_plot")),
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
                         selected = levels(aoc_setup$poly_f),
-                        options = list(`actions-box` = TRUE), # option to de/select all
+                        options = list(`actions-box` = TRUE), 
                         multiple = TRUE)),
                       
                       column(width = 3,
@@ -434,8 +397,8 @@ uiOutput(outputId= "Emily_plot")),
                         label = "Organisms:", 
                         choices = levels(aoc_setup$org_f),
                         selected = levels(aoc_setup$org_f),
-                        options = list(`actions-box` = TRUE), # option to de/select all
-                        multiple = TRUE))), # allows for multiple inputs
+                        options = list(`actions-box` = TRUE), 
+                        multiple = TRUE))), 
                       
                     # New row of widgets
                     column(width = 12,
@@ -448,7 +411,7 @@ uiOutput(outputId= "Emily_plot")),
                         label = "Shape:", 
                         choices = levels(aoc_setup$shape_f),
                         selected = levels(aoc_setup$shape_f),
-                        options = list(`actions-box` = TRUE), # option to de/select all
+                        options = list(`actions-box` = TRUE), 
                         multiple = TRUE)),
                       
                       column(width = 3,
@@ -457,7 +420,7 @@ uiOutput(outputId= "Emily_plot")),
                         choices = levels(aoc_setup$env_f),
                         selected = levels(aoc_setup$env_f),
                         options = list(`actions-box` = TRUE), 
-                        multiple = TRUE))), # allows for multiple inputs
+                        multiple = TRUE))), 
                       
                     # New row of widgets
                     column(width = 12,
@@ -475,7 +438,7 @@ uiOutput(outputId= "Emily_plot")),
                         label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
                         selected = levels(aoc_setup$size_f),
-                        options = list(`actions-box` = TRUE), # option to de/select all
+                        options = list(`actions-box` = TRUE), 
                         multiple = TRUE)),
                       
                       column(width = 3,
@@ -491,6 +454,7 @@ uiOutput(outputId= "Emily_plot")),
                       
                         column(width = 3),
                       
+                        #Slider Widget - commented out for now
                         #column(width = 3,
                         #sliderInput("range", # Allows for max input
                           #label = "Particle Size (µm):", #Labels widget
@@ -502,9 +466,9 @@ uiOutput(outputId= "Emily_plot")),
                           choices = levels(aoc_setup$bio_f),
                           selected = levels(aoc_setup$bio_f),
                           options = list(`actions-box` = TRUE),
-                          multiple = TRUE))), # allows for multiple inputs
+                          multiple = TRUE))), 
                       
-                    # invitro/vivo checklist - commented out for now
+                    #In vitro/in vivo widget - commented out for now
                        # column(width = 3,
                        # pickerInput(inputId = "vivo_check", 
                        #    label = "In Vitro or In Vivo:", 
@@ -529,8 +493,8 @@ uiOutput(outputId= "Emily_plot")),
                         column(width = 3,
                         actionButton("reset_input", "Reset Filters"))), # adds update button
                       
-                      # "downloadData" is the internal name
-                      # "Download Data" is the title that appears on the button  
+                      # "Reset_input" is the internal name
+                      # "Reset Filter" is the title that appears on the button  
                     
                     # New row
                     column(width=12,  
@@ -542,7 +506,7 @@ uiOutput(outputId= "Emily_plot")),
                         column(width = 3,
                           br(),
                           strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")),
-                          br())), # line break  
+                          br())), 
                     
                     # New row
                     column(width = 12,
@@ -550,31 +514,31 @@ uiOutput(outputId= "Emily_plot")),
                     
                     column(width = 6,
                     plotOutput(outputId = "organism_plot_react"),
-                    br()), # line break
+                    br()), 
                   
                     column(width = 6,
                     plotOutput(outputId = "lvl_plot_react"),
-                    br()), # line break
+                    br()), 
 
                     column(width = 12,
                     
                     column(width = 6,
                     plotOutput(outputId = "lvl2_plot_react"),
-                    br()), # line break
+                    br()), 
                     
                     column(width = 6,
                     plotOutput(outputId = "size_plot_react"),
-                    br())), # line break
+                    br())), 
                     
                     column(width = 12,
                   
                     column(width = 6,
                     plotOutput(outputId = "shape_plot_react"),
-                    br()), # line break
+                    br()), 
                     
                     column(width = 6,
                     plotOutput(outputId = "poly_plot_react"),
-                    br()))), # line break
+                    br()))), 
 
 #### Scott UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
@@ -641,25 +605,21 @@ uiOutput(outputId= "Emily_plot")),
                            ), #close out column
                            
                             column(width = 12,
-                                  actionButton("SSDgo", "Submit", class = "btn-success" 
-                                               #style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
-                                               ),
+                                  actionButton("SSDgo", "Submit", class = "btn-success"),
                                   align = "center"), # adds action button 
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
                            
-                    br(), # line break
+                    br(), 
                     p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices."),
                     br(),
 
                     
                     mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
-                              br(), # line break
+                              br(), 
                               br(),
                               DT::dataTableOutput(outputId = "aoc_filter_ssd_table"),
                               p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
-                              # br(),
-                              # DT::dataTableOutput(outputId = "aoc_filter_ssd_summary_table"), #comment our for now until I can fix it
                               br(),
                               plotOutput(outputId = "autoplot_dists_react"),
                               p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel)."),
@@ -707,8 +667,7 @@ uiOutput(outputId= "Emily_plot")),
                                            max = 10000),
                               br(),
                               column(width = 12,
-                                actionButton("ssdPred", "Predict", class = "btn-success"#style = 'padding: 4px; font-size: 150%; font-family: bold; color: #008b8b'
-                                             ),
+                                actionButton("ssdPred", "Predict", class = "btn-success"),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
@@ -720,7 +679,6 @@ uiOutput(outputId= "Emily_plot")),
                               column(width = 12,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
-                              #tags$head(tags$style(".button{color:#008b8b;}")), #specify button color
                               br(),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
@@ -754,32 +712,9 @@ tabPanel("6: Contact",
          
          verbatimTextOutput(outputId = "Leah3"))
 
-##### dummy tab ####
-        # commented out for the time being
-        # tabPanel("File Upload", 
-        #   
-        #   br(), # line break
-        #   
-        #   h3("Additional Data Exploration", align = "center", style = "color:darkcyan"),
-        #   
-        #   p("Use the file upload feature on the left-hand side of the page to upload your own dataset and explore it using the resulting plot. Datasets may only be uploaded in '.csv' format. Column titles must be one of the following: state, region_us_census, rank, costume, candy, pounds_candy_sold."),
-        #   
-        #   sidebarLayout(
-        #     
-        #   sidebarPanel(
-        # 
-        #     fileInput("file1", "Drag and drop data file here:", # .csv file input
-        #       multiple = FALSE,
-        #       accept = c(".csv"))),
-        # 
-        #   mainPanel(p("Region's top costumes:"),
-        #     plotOutput(outputId = "costume_graph"))
-        #     )
-        # )
-          
 #following three parentheses close out UI. Do not delete. 
         )))   
-        #))  #comment-out these two parentheses. they must be here, but need to figure out where forward parentheses need to be. 
+     
 
 #### Server ####
 server <- function(input, output) {
@@ -847,20 +782,11 @@ server <- function(input, output) {
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
       filter(env_f %in% env_c) #%>% #filter by environment
-      #filter(size.length.um.used.for.conversions <= range_n) # filter by size
+      #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
       
   })
      
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
-  
-  # Creating dataset to output counts.
-  # Commenting out for now, deleting from remaining plots.
-  # aoc_size1 <- aoc_filter() %>%
-  #   drop_na(dose.mg.L) %>%
-  #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
-  #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
-  #     measurements = n(),
-  #     studies = n_distinct(article))
   
   #Organism plot
   
@@ -893,11 +819,6 @@ server <- function(input, output) {
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      # geom_text_repel(data = aoc_size1, 
-      #   aes(label = paste("(",measurements,",",studies,")")),
-      #   nudge_x = -1,
-      #   nudge_y = -0.25,
-      #   segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=16), 
         legend.position = "right") +
@@ -905,24 +826,7 @@ server <- function(input, output) {
         y = "Size",
         color = "Effect?",
         fill = "Effect?")
-    
-    # Commenting out for now, deleting from remaining plots.
-    # size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL.master, y = size_f)) +
-    #   geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-    #   scale_x_log10(breaks = c(1, 10000, 100000000, 1000000000000, 10000000000000000), 
-    #     labels = c(1, 10000, 100000000, 1000000000000, 10000000000000000)) +
-    #   scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
-    #   scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-    #   theme_classic() +
-    #   theme(text = element_text(size=16), 
-    #     legend.position = "top") +
-    #   labs(x = "Concentration (particles/mL)",
-    #     y = " ",
-    #     color = "Effect?",
-    #     fill = "Effect?")
-    
-    # (size1 + size2) # using patchwork to combine figures
-    
+
   })
   
   # Shape Plot
@@ -1030,7 +934,7 @@ server <- function(input, output) {
     shinyjs::reset("size_check")
     shinyjs::reset("life_check")
     shinyjs::reset("bio_check")
-  })
+  }) #If we add more widgets, make sure they get added here. 
 
 #### Scott S ####
 
@@ -1155,26 +1059,7 @@ server <- function(input, output) {
         "Conc",
         backgroundColor = '#a9d6d6')
   })
-  
-  #Summary of Summary table
-  aoc_filter_ssd_summary <- reactive({
-    req(input$SSDgo)
-    
-    aoc_filter_ssd() %>% 
-      summarise(SpeciesCount = n_distinct("Species"), DosesCount = sum("CountTotal"))
-  })
-  
-  #print summarize filtered data in data table
-  output$aoc_filter_ssd_summary_table <- DT::renderDataTable({
-    req(input$SSDgo)
-    
-    datatable(aoc_filter_ssd_summary(),
-              options = list(
-                dom = 'Brtip',
-                caption = "Summary of Filtered Data"))
-  })
-  
-  
+
   # Use newly created dataset from above to generate SSD
  # ** Prediction ---- 
   #create distribution based on newly created dataset
@@ -1188,7 +1073,6 @@ server <- function(input, output) {
                  computable = FALSE, #flag specifying whether to only return fits with numerically computable standard errors
                 silent = FALSE) #flag indicating whether fits should fail silently
   }) 
-  
   
   #create an autoplot of the distributions
   output$autoplot_dists_react <- renderPlot({
@@ -1306,28 +1190,6 @@ output$downloadSsdPlot <- downloadHandler(
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
   })
   
-# #Print table of hazard concentration data  
-#   output$aoc_hc_table <- DT::renderDataTable({
-#     req(input$ssdPred)
-#     
-#     aoc_hc <- aoc_hc() %>% 
-#       mutate_if(is.numeric, ~ signif(., 3))
-#       
-#     datatable(aoc_hc,
-#               rownames = FALSE,
-#               options = list(dom = 't'), #only display the table and nothing else
-#               class = "compact",
-#               colnames = c("Percent", "Estimated Concentration (mg/L)", "Standard Error", "Lower Confidence Limit", "Upper Confidence Limit","Distribution Type"),
-#               caption = "Hazard Concentration from Filtered Data"
-#     )
-#   })
-
-# #define hazard concentration value for figure
-#   aoc_hc_sub <- eventReactive(list(input$ssdPred),{
-#    
-#   return(hc)
-# })
-  
 #Plot SSD data with ggplot
    ssd_ggplot <- reactive({
     # calculate fraction
@@ -1398,28 +1260,7 @@ output$downloadSsdPlot <- downloadHandler(
                 caption = "Predicted species sensitivity distribution concentrations with uncertanties."
                 )
   })
-  
-  # server-side for dummy file input tab
-  # notice - I don't refer to anything reactive within the "({})" with additional parentheses, because as long as the call is created and used within these brackets, you don't need the addition parentheses.
-    # output$costume_graph <- renderPlot({
-    # 
-    # req(input$file1) # Using user-supplied dataset
-    # 
-    # spooky <- read_csv(input$file1$datapath) # Reads in dataset as a .csv dataframe
-    #   
-    # region_costume <- spooky %>%
-    #   group_by(region_us_census) %>%
-    #   count(costume, rank) # Creates a new dataset
-    # 
-    # ggplot(region_costume, aes(x = costume, y = n)) +
-    #   geom_col(aes(fill = rank)) +
-    #   coord_flip() +
-    #   scale_fill_manual(values = c("black", "purple", "orange")) +
-    #   facet_grid(region_us_census~.) +
-    #   theme_minimal() # plots the data
-    # 
-    #   })
-  
+
   } #Server end
 
 #### Full App ####
