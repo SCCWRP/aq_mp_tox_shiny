@@ -192,7 +192,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
     lvl2 == "lipid.metabolism"~"Lipid Metabolism",
     lvl2 == "liver.histo"~"Liver Histological Abnormalities",
-    lvl2 == "liver.kidney.products" ~" Liver and Kidney Products",
+    lvl2 == "liver.kidney.products" ~ "Liver and Kidney Products",
     lvl2 == "locomotion"~"Locomotion",
     lvl2 == "mortality"~"Mortality",
     lvl2 == "nervous.system"~"Nervous System",
