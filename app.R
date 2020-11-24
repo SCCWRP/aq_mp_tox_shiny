@@ -516,15 +516,15 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update Filters" is the title that appears on the app
 
                         column(width = 3,
-                        downloadButton("downloadData", "Download Data", class = "btn-info")) # adds download button
-                      ), 
+                        downloadButton("downloadData", "Download Data", class = "btn-info")), # adds download button
+                       
                     # "downloadData" is the internal name
                     # "Download Data" is the title that appears on the button
                     
                     column(width = 3,
                     br(),
                     strong(p("To Begin: Click the 'Update Filters' button above.")),
-                    br()), # line break  
+                    br())), # line break  
 
                     column(width = 12,
                     hr()), # adds divider
@@ -535,7 +535,7 @@ uiOutput(outputId= "Emily_plot")),
                   
                     column(width = 6,
                     plotOutput(outputId = "lvl_plot_react"),
-                    br())), # line break
+                    br()), # line break
 
                     column(width = 12,
                     
@@ -555,7 +555,7 @@ uiOutput(outputId= "Emily_plot")),
                     
                     column(width = 6,
                     plotOutput(outputId = "poly_plot_react"),
-                    br())), # line break
+                    br()))), # line break
 
 #### Scott UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
