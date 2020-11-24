@@ -637,7 +637,13 @@ uiOutput(outputId= "Emily_plot")),
                                               choices = levels(aoc_z$poly_f),
                                               selected = levels(aoc_z$poly_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE))# allows for multiple inputs
+                                              multiple = TRUE)),# allows for multiple inputs
+                           column(width = 4,
+                                  radioButtons(
+                                    inputId = "Reported_Converted_rad",
+                                    label = "Use Calculated Exposure Concentrations?",
+                                    choices = list("reported", "converted", "all"),
+                                    selected = "all"))
                            ), #close out column
                            
                             column(width = 12,
@@ -1034,7 +1040,7 @@ server <- function(input, output) {
 
 #### Scott S ####
 
-  #Create dependent dropdown checklists: select lvl2 by lvl1.
+  #Create dependent dropdown checklists: select Species by Group.
   output$SpeciesSelection <- renderUI({
     
     Group_c <- input$Group_check_ssd # assign level values to "lvl1_c"
@@ -1077,6 +1083,20 @@ server <- function(input, output) {
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+   
+    #filter out reported, calcualted, or all based on checkbox
+     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    if(Reported_Converted_rad == "converted"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted")
+    } 
+    if(Reported_Converted_rad == "reported"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "reported")
+    } 
+    if(Reported_Converted_rad == "all"){
+      aoc_z <- aoc_z 
+    }
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -1104,6 +1124,20 @@ server <- function(input, output) {
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    
+    #filter out reported, calcualted, or all based on checkbox
+    Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    if(Reported_Converted_rad == "converted"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted")
+    } 
+    if (Reported_Converted_rad == "reported"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "reported")
+    } 
+    if (Reported_Converted_rad == "all"){
+        aoc_z <- aoc_z 
+    }
     
     #right-hand table of just effect data
     aoc_z %>% 
