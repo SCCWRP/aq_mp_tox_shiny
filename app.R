@@ -111,7 +111,7 @@ aoc_v1 <- aoc %>% # start with original dataset
   # full dataset filters.
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
-    levels = c("Yes", "No"))) %>%
+    levels = c("No", "Yes"))) %>%
   # removing NAs.
   replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", organism.group = "Not Reported", life.stage = "Not Reported"))
 
@@ -192,7 +192,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
     lvl2 == "lipid.metabolism"~"Lipid Metabolism",
     lvl2 == "liver.histo"~"Liver Histological Abnormalities",
-    lvl2 == "liver.kidney.products" ~" Liver and Kidney Products",
+    lvl2 == "liver.kidney.products" ~ "Liver and Kidney Products",
     lvl2 == "locomotion"~"Locomotion",
     lvl2 == "mortality"~"Mortality",
     lvl2 == "nervous.system"~"Nervous System",
