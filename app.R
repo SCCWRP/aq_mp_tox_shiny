@@ -24,6 +24,7 @@ library(plotly) #to make plots interactive
 library(viridis) #colors
 library(periscope)
 library(scales) #to use "percent" function
+library(shinyjs)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -378,7 +379,10 @@ pickerInput(inputId = "Emily_check", # endpoint checklist
 uiOutput(outputId= "Emily_plot")),
 
 #### Heili UI ####
-                  tabPanel("3: Exploration", 
+                  tabPanel("3: Exploration",
+                    shinyjs::useShinyjs(), # requires package for "reset" button
+                    id = "heili-tab", # adds ID for resetting Heili's tab's filters
+                    
                     h3("Microplastics in Aquatic Environments: Exploration of Toxicological Effects", align = "center"),
                     br(), # line break
                     p("Each row of figures displays a different metric along the y-axis - endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
@@ -521,12 +525,26 @@ uiOutput(outputId= "Emily_plot")),
                        
                     # "downloadData" is the internal name
                     # "Download Data" is the title that appears on the button
+                      
+                        column(width = 3,
+                        actionButton("reset_input", "Reset Filters"))), # adds update button
+                      
+                      # "downloadData" is the internal name
+                      # "Download Data" is the title that appears on the button  
                     
-                    column(width = 3,
-                    br(),
-                    strong(p("To Begin: Click the 'Update Filters' button above.")),
-                    br())), # line break  
-
+                    # New row
+                    column(width=12,  
+                        column(width = 3,
+                          br(),
+                          strong(p("To Begin: Click the 'Update Filters' button above.")),
+                          br()),
+                        column(width = 3),
+                        column(width = 3,
+                          br(),
+                          strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")),
+                          br())), # line break  
+                    
+                    # New row
                     column(width = 12,
                     hr()), # adds divider
                     
@@ -811,7 +829,7 @@ server <- function(input, output) {
       selected = levels(aoc_new$lvl2_f_new),
       options = list(`actions-box` = TRUE),
       multiple = TRUE)})
-  
+
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
@@ -1010,6 +1028,21 @@ server <- function(input, output) {
       write.csv(aoc_filter(), file, row.names = FALSE)
     }
   )
+  
+  # Create "reset" button to revert all filters back to what they began as.
+  # Need to call all widgets individually by their ids.
+  # See https://stackoverflow.com/questions/44779775/reset-inputs-with-reactive-app-in-shiny for more information.
+  observeEvent(input$reset_input, {
+    shinyjs::reset("lvl1_check")
+    shinyjs::reset("poly_check")
+    shinyjs::reset("organism_check")
+    shinyjs::reset("shape_check")
+    shinyjs::reset("env_check")
+    shinyjs::reset("effect_check")
+    shinyjs::reset("size_check")
+    shinyjs::reset("life_check")
+    shinyjs::reset("bio_check")
+  })
 
 #### Scott S ####
 
