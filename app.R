@@ -111,7 +111,7 @@ aoc_v1 <- aoc %>% # start with original dataset
   # full dataset filters.
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
-    levels = c("Yes", "No"))) %>%
+    levels = c("No", "Yes"))) %>%
   # removing NAs.
   replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", organism.group = "Not Reported", life.stage = "Not Reported"))
 
