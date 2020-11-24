@@ -23,6 +23,7 @@ library(DT) #to build HTML data tables
 library(plotly) #to make plots interactive
 library(viridis) #colors
 library(periscope)
+library(scales) #to use "percent" function
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -563,7 +564,7 @@ uiOutput(outputId= "Emily_plot")),
                   tabPanel("4: Species Sensitivity Distribution", 
                     br(), # line break
                     h3("Species Sensitivity Distribution", align = "center"),
-                    p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to Posthuma, Suter II, and Traas (2001)."),
+                    p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
                     br(), # line break
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     
@@ -586,14 +587,8 @@ uiOutput(outputId= "Emily_plot")),
                                               selected = levels(aoc_z$Group),   
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
-                           #Species widget
-                           column(width = 4,
-                                  pickerInput(inputId = "Species_check_ssd", # organism checklist
-                                              label = "Species:",
-                                              choices = levels(aoc_z$Species),
-                                              selected = levels(aoc_z$Species),
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE))), # allows for multiple inputs
+                           
+                           htmlOutput("SpeciesSelection")), # dependent Species checklist
                            br(),
                            p("Advanced options. Suggest using defaults."),
                            br(),
@@ -616,6 +611,8 @@ uiOutput(outputId= "Emily_plot")),
                                               selected = levels(aoc_z$lvl1_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
+                           column(width = 4,
+                                  htmlOutput("lvl2Selection")), #specific endpoint based on previous checkbox
                            
                            #Polymer widget
                            column(width = 4,
@@ -701,7 +698,8 @@ uiOutput(outputId= "Emily_plot")),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
                               p("Species Sensitivity Distribution"),
-                              plotOutput(outputId = "aoc_ssd_ggplot"),
+                              plotOutput(outputId = "aoc_ssd_ggplot", width = "160%", height = "500px", hover = hoverOpts(id = "plot_hover")),
+                              verbatimTextOutput("info"),
                               br(),
                               column(width = 12,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
@@ -1017,6 +1015,39 @@ server <- function(input, output) {
 
 #### Scott S ####
 
+  #Create dependent dropdown checklists: select lvl2 by lvl1.
+  output$SpeciesSelection <- renderUI({
+    
+    Group_c <- input$Group_check_ssd # assign level values to "lvl1_c"
+    
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(Group %in% Group_c) %>% # filter by level inputs
+      mutate(Species_new = factor(as.character(Species))) # new subset of factors
+    
+    pickerInput(inputId = "Species_check_ssd", 
+                label = "Species:", 
+                choices = levels(aoc_new$Species_new),
+                selected = levels(aoc_new$Species_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Create dependent dropdown checklists: select lvl2 by lvl1.
+  output$lvl2Selection <- renderUI({
+    
+    lvl1_c <- input$lvl1_check_ssd # assign level values to "lvl1_c"
+    
+    aoc_new <- aoc_setup %>% # take original dataset
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
+    
+    pickerInput(inputId = "lvl2_check_ssd", 
+                label = "Specific Endpoint within Broad Category:", 
+                choices = levels(aoc_new$lvl2_f_new),
+                selected = levels(aoc_new$lvl2_f_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  
   # Create new all tested dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_z_L <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
@@ -1211,7 +1242,7 @@ SSD_plot_react <- reactive({
      hc = pred_c_hc_ssd) + #percent hazard concentration
      scale_fill_viridis_d() + #make colors more differentiable 
      scale_colour_viridis_d() +  #make colors more differentiable 
-     expand_limits(x = 5000) + # to ensure the species labels fit
+     expand_limits(x = c(0.000000000001,5000)) + # to ensure the species labels fit
     geom_text(data = aochc, aes(x = est, y = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 4) + #label for hazard conc
     geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red") + #label for hazard conc
      ggtitle("Species Sensitivity for Microplastics")
@@ -1295,15 +1326,15 @@ output$downloadSsdPlot <- downloadHandler(
       geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
       geom_line(aes_string(y = "percent/100")) +
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
-      geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), hjust = 1.1, size = 4) + #species labels
+      geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent) +
-      expand_limits(y = c(0, 1)) +
+      expand_limits(x = c(0.000000001, 100000),y = c(0, 1)) + #ensure species labels fit
       xlab("Concentration (mg/L)")+
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
       geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = 1) + #hazard conc line vertical
       geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = 1) + #hazard conc line horizontal
-      geom_text(data = aochc, aes(x = est, y = -0.02, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = -0.09, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
       geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red", size = 5) + #label for hazard conc
       scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
       scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
@@ -1347,6 +1378,18 @@ output$downloadSsdPlot <- downloadHandler(
     
     ggplotly(initialplot) # converts ggplot object to plotly object
     })
+  
+  #hover text for info
+  output$info <- renderText({
+    xy_str <- function(e) {
+      if(is.null(e)) return("NULL\n")
+      paste0("x=", format(e$x,scientific = TRUE), " y=", percent(e$y), "\n")
+    }
+    
+    paste0(
+      "hover:", xy_str(input$plot_hover)
+    )
+  })
   
   # SSD Table
 
