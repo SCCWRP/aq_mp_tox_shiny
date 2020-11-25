@@ -796,7 +796,7 @@ server <- function(input, output) {
   })
      
   
-  brewer.pal(n = 9, name = "BrBG")
+  brewer.pal(n = 9, name = "Oranges")
   
   
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
@@ -809,8 +809,8 @@ server <- function(input, output) {
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#F16913", "#7F2704")) +
-      scale_fill_manual(values = c("#F16913", "#7F2704")) +
+      scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
+      scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
