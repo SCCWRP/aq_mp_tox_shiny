@@ -993,11 +993,11 @@ server <- function(input, output) {
    
     #filter out reported, calcualted, or all based on checkbox
      Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
-    if(Reported_Converted_rad == "converted"){
+    if(Reported_Converted_rad == "reported"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "converted")
     } 
-    if(Reported_Converted_rad == "reported"){
+    if(Reported_Converted_rad == "converted"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "reported")
     } 
