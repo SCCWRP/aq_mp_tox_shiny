@@ -8,7 +8,7 @@
 
 # Load packages
 library(tidyverse) #General everything
-library(tigerstats)
+library(RColorBrewer)
 library(ggplot2) #General plotting
 library(ggrepel) #For adding text labels that repel away from data points
 library(calecopal) #Color palette
@@ -44,7 +44,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
   mutate(plot_f = factor(plot_f))%>%
-  mutate(logEndpoints = log(Endpoints))
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -65,9 +66,9 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Endpoints=Endpoints)) +
+        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Percent=Percent)) +
         geom_bar(position="stack", stat="identity") +
-        geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
+        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"gayophytum",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         ylab("Number of Endpoints Measured") +
@@ -77,11 +78,11 @@ get_plot_output_list <- function(input_n) {
         theme(plot.title = element_text(hjust = 0.5, face="bold"))+
         theme(legend.position = "right",
           axis.ticks= element_blank(),
-          axis.text.x = element_text(angle=45),
+          axis.text.x = element_text(angle=45, size = 10),
           axis.text.y = element_blank(),
           axis.title.x = element_blank())
       
-      ggplotly(tooltip = 'Endpoints')%>%
+      ggplotly(tooltip = 'Percent')%>%
         config(displayModeBar = FALSE)
       
     })
@@ -230,10 +231,9 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 #### User Interface ####
 
 ui <- fluidPage(theme = shinytheme("flatly"),  
-          
-
+  
   # App title
-  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -253,7 +253,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
                     
                     strong(p("This database is a repository for microplastics 
-                      toxicity data pertaining to aquatic organism health that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
+                      toxicity data that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
                     
                     p("This web application allows users to explore toxicity 
                     data using an intuitive interface while retaining the diversity and complexity inherent 
@@ -601,9 +601,16 @@ uiOutput(outputId= "Emily_plot")),
                                               choices = levels(aoc_z$poly_f),
                                               selected = levels(aoc_z$poly_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE))# allows for multiple inputs
-                           ), #close out column
-                           
+                                              multiple = TRUE)),# allows for multiple inputs
+                           ),#close out column
+                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    column(width = 12,
+                                  radioButtons(
+                                    inputId = "Reported_Converted_rad",
+                                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                    choices = list("reported", "converted", "all"),
+                                    selected = "all")),
+                    br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
                                   align = "center"), # adds action button 
@@ -611,12 +618,11 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update" is the title that appears on the app
                            
                     br(), 
-                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices."),
+                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices...", align = "center"),
                     br(),
 
                     
-                    mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
-                              br(), 
+                    mainPanel("Filtered Data Based on Choices Above:",
                               br(),
                               DT::dataTableOutput(outputId = "aoc_filter_ssd_table"),
                               p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
@@ -624,7 +630,7 @@ uiOutput(outputId= "Emily_plot")),
                               plotOutput(outputId = "autoplot_dists_react"),
                               p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel)."),
                               br(),
-                              p("Goodness of Fit Table"),
+                              h4("Goodness of Fit Table", align = "center"),
                               DT::dataTableOutput(outputId = "table_gof_react"), #using DT package provides better functionality
                               br(),
                               p("The best fitting model is that with the smallest Information Criteria value. Note that several informaiton criteria are listed. Burnham and Anderson (2002) recommend using Akiak'es Information Criteria (Corrected for sample size) [aicc] for model selection. The model with the smallest aicc is indicated by the smallest delta value in the goodness of fit table. For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
@@ -672,7 +678,7 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
-                              p("Species Sensitivity Distribution"),
+                              h4("Species Sensitivity Distribution", align = "center"),
                               plotOutput(outputId = "aoc_ssd_ggplot", width = "160%", height = "500px", hover = hoverOpts(id = "plot_hover")),
                               verbatimTextOutput("info"),
                               br(),
@@ -684,6 +690,7 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("Model predictions can also be viewed in tabular format."),
                               br(),
+                              h4("SSD Table", align = "center"),
                               DT::dataTableOutput(outputId = "ssd_pred_table"),
                               br(),
                               h4(align = "center", "Credits"),
@@ -691,6 +698,7 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
+#### Resources UI ####
 
 tabPanel("5: Resources", 
          br(),
@@ -700,9 +708,11 @@ tabPanel("5: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+         #h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
          
          verbatimTextOutput(outputId = "Leah2")),
+
+#### Contact UI ####
 
 tabPanel("6: Contact", 
          br(),
@@ -718,7 +728,7 @@ tabPanel("6: Contact",
 
 #### Server ####
 server <- function(input, output) {
-  
+
 #### Leah S ####
 
   # Leah does not have any reactive features.
@@ -786,6 +796,10 @@ server <- function(input, output) {
       
   })
      
+  
+  brewer.pal(n = 9, name = "Oranges")
+  
+  
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
   #Organism plot
@@ -796,10 +810,10 @@ server <- function(input, output) {
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
+      scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Organism",
@@ -820,7 +834,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Size",
@@ -837,10 +851,10 @@ server <- function(input, output) {
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_color_manual(values = c("#C7EAE5","#35978F")) +
+      scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Shape",
@@ -860,7 +874,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Polymer",
@@ -880,7 +894,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Endpoint",
@@ -900,7 +914,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Specific Endpoint",
@@ -938,7 +952,7 @@ server <- function(input, output) {
 
 #### Scott S ####
 
-  #Create dependent dropdown checklists: select lvl2 by lvl1.
+  #Create dependent dropdown checklists: select Species by Group.
   output$SpeciesSelection <- renderUI({
     
     Group_c <- input$Group_check_ssd # assign level values to "lvl1_c"
@@ -981,6 +995,20 @@ server <- function(input, output) {
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+   
+    #filter out reported, calcualted, or all based on checkbox
+     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    if(Reported_Converted_rad == "reported"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted")
+    } 
+    if(Reported_Converted_rad == "converted"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "reported")
+    } 
+    if(Reported_Converted_rad == "all"){
+      aoc_z <- aoc_z 
+    }
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -1008,6 +1036,20 @@ server <- function(input, output) {
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    
+    #filter out reported, calcualted, or all based on checkbox
+    Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    if(Reported_Converted_rad == "converted"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted")
+    } 
+    if (Reported_Converted_rad == "reported"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "reported")
+    } 
+    if (Reported_Converted_rad == "all"){
+        aoc_z <- aoc_z 
+    }
     
     #right-hand table of just effect data
     aoc_z %>% 
@@ -1049,7 +1091,7 @@ server <- function(input, output) {
               extensions = c('Buttons'),
               options = list(
                 dom = 'Brtip',
-                buttons = c('copy', 'csv', 'excel'),
+                buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
