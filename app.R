@@ -510,33 +510,39 @@ uiOutput(outputId= "Emily_plot")),
                     
                     # New row
                     column(width = 12,
-                    hr()), # adds divider
+                    hr(), # adds divider
                     
-                    column(width = 6,
+                    column(width = 12,
                     plotOutput(outputId = "organism_plot_react"),
-                    br()), 
+                    br())), 
+                    
+                    column(width = 12,
                   
-                    column(width = 6,
+                    column(width = 12,
                     plotOutput(outputId = "lvl_plot_react"),
-                    br()), 
+                    br())), 
 
                     column(width = 12,
                     
-                    column(width = 6,
+                    column(width = 12,
                     plotOutput(outputId = "lvl2_plot_react"),
-                    br()), 
+                    br())), 
                     
-                    column(width = 6,
+                    column(width = 12,
+                           
+                    column(width = 12,
                     plotOutput(outputId = "size_plot_react"),
                     br())), 
                     
                     column(width = 12,
                   
-                    column(width = 6,
+                    column(width = 12,
                     plotOutput(outputId = "shape_plot_react"),
-                    br()), 
+                    br())), 
                     
-                    column(width = 6,
+                    column(width = 12,
+                
+                    column(width = 12,
                     plotOutput(outputId = "poly_plot_react"),
                     br()))), 
 
