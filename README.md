@@ -14,13 +14,18 @@ Dataset created in the [MPToxReview repository](https://github.com/ScottCoffin/M
 
 Application deployed at https://sccwrp.shinyapps.io/aq_mp_tox_shiny/.
 
+## Additional Resources Tab
+
+https://rshiny.lifewatch.be/ng-ocean-plastic-challenge/
+
+https://wincowger.shinyapps.io/OpenSpecy/
 
 
 ## To-do List
 
 **Scott**
 
-*Scott* Make plots interactive (plotly or RBokeh)
+
 
 **Leah**
 

@@ -8,7 +8,7 @@
 
 # Load packages
 library(tidyverse) #General everything
-library(tigerstats)
+library(RColorBrewer)
 library(ggplot2) #General plotting
 library(ggrepel) #For adding text labels that repel away from data points
 library(calecopal) #Color palette
@@ -44,7 +44,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
   mutate(plot_f = factor(plot_f))%>%
-  mutate(logEndpoints = log(Endpoints))
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -65,9 +66,9 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Endpoints=Endpoints)) +
+        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Percent=Percent)) +
         geom_bar(position="stack", stat="identity") +
-        geom_text(aes(label= paste0(Freq,"%")), position = position_stack(vjust = 0.5),colour="black") +
+        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"gayophytum",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
         theme_classic() +
         ylab("Number of Endpoints Measured") +
@@ -77,11 +78,11 @@ get_plot_output_list <- function(input_n) {
         theme(plot.title = element_text(hjust = 0.5, face="bold"))+
         theme(legend.position = "right",
           axis.ticks= element_blank(),
-          axis.text.x = element_text(angle=45),
+          axis.text.x = element_text(angle=45, size = 10),
           axis.text.y = element_blank(),
           axis.title.x = element_blank())
       
-      ggplotly(tooltip = 'Endpoints')%>%
+      ggplotly(tooltip = 'Percent')%>%
         config(displayModeBar = FALSE)
       
     })
@@ -230,10 +231,9 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 #### User Interface ####
 
 ui <- fluidPage(theme = shinytheme("flatly"),  
-          
-
+  
   # App title
-  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -253,7 +253,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
                     
                     strong(p("This database is a repository for microplastics 
-                      toxicity data pertaining to aquatic organism health that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
+                      toxicity data that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
                     
                     p("This web application allows users to explore toxicity 
                     data using an intuitive interface while retaining the diversity and complexity inherent 
@@ -683,18 +683,21 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
+#### Resources UI ####
 
 tabPanel("5: Resources", 
          br(),
          p("Use the links below to view resource files. For access to the complete database (.xls file), please contact Dr. Leah Thornton Hampton directly (leahth@sccwrp.org)"),
          br(),     
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/Eb8XXdAvn9BBpOB6Z6klzEcBlb6mFpJcYJrHBAQk7r1z3A?e=tRTqDM", 'Data Category Descriptions')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+         #h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
          
          verbatimTextOutput(outputId = "Leah2")),
+
+#### Contact UI ####
 
 tabPanel("6: Contact", 
          br(),
@@ -710,7 +713,7 @@ tabPanel("6: Contact",
 
 #### Server ####
 server <- function(input, output) {
-  
+
 #### Leah S ####
 
   # Leah does not have any reactive features.
@@ -778,6 +781,10 @@ server <- function(input, output) {
       
   })
      
+  
+  brewer.pal(n = 9, name = "Oranges")
+  
+  
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
   #Organism plot
@@ -788,10 +795,10 @@ server <- function(input, output) {
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
+      scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Organism",
@@ -812,7 +819,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Size",
@@ -829,10 +836,10 @@ server <- function(input, output) {
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_color_manual(values = c("#BED6B3", "#4A5438")) +
-      scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
+      scale_color_manual(values = c("#C7EAE5","#35978F")) +
+      scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Shape",
@@ -852,7 +859,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Polymer",
@@ -872,7 +879,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Endpoint",
@@ -892,7 +899,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Specific Endpoint",
@@ -904,12 +911,15 @@ server <- function(input, output) {
   
   
   # Create downloadable csv of filtered dataset.
+  # Removed columns created above so the dataset matches Leah's original dataset.
   output$downloadData <- downloadHandler(
     filename = function() {
       paste('data-', Sys.Date(), '.csv', sep='')
     },
     content = function(file) {
-      write.csv(aoc_filter(), file, row.names = FALSE)
+      write.csv(aoc_filter() %>%
+          select(-c(effect_f, size_f, shape_f, poly_f, org_f, lvl1_f, lvl2_f, bio_f, vivo_f, life_f, env_f)), 
+        file, row.names = FALSE)
     }
   )
   
@@ -1048,11 +1058,11 @@ server <- function(input, output) {
    
     #filter out reported, calcualted, or all based on checkbox
      Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
-    if(Reported_Converted_rad == "converted"){
+    if(Reported_Converted_rad == "reported"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "converted")
     } 
-    if(Reported_Converted_rad == "reported"){
+    if(Reported_Converted_rad == "converted"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "reported")
     } 
