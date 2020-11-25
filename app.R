@@ -926,12 +926,15 @@ server <- function(input, output) {
   
   
   # Create downloadable csv of filtered dataset.
+  # Removed columns created above so the dataset matches Leah's original dataset.
   output$downloadData <- downloadHandler(
     filename = function() {
       paste('data-', Sys.Date(), '.csv', sep='')
     },
     content = function(file) {
-      write.csv(aoc_filter(), file, row.names = FALSE)
+      write.csv(aoc_filter() %>%
+          select(-c(effect_f, size_f, shape_f, poly_f, org_f, lvl1_f, lvl2_f, bio_f, vivo_f, life_f, env_f)), 
+        file, row.names = FALSE)
     }
   )
   
