@@ -561,14 +561,9 @@ uiOutput(outputId= "Emily_plot")),
                                               multiple = TRUE)), # allows for multiple inputs
                            # Organism widget
                            column(width = 4,
-                                         pickerInput(inputId = "Group_check_ssd", # organism checklist
-                                              label = "Organism Groups:", 
-                                              choices = levels(aoc_z$Group),
-                                              selected = levels(aoc_z$Group),   
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)), # allows for multiple inputs
-                           
-                           htmlOutput("SpeciesSelection")), # dependent Species checklist
+                                  htmlOutput("GroupSelection")), # organism checklist
+                           column(width = 4,
+                                  htmlOutput("SpeciesSelection"))), # dependent Species checklist
                            br(),
                            p("Advanced options. Suggest using defaults."),
                            br(),
@@ -585,23 +580,13 @@ uiOutput(outputId= "Emily_plot")),
                           
                             #Endpoint widget
                            column(width = 4,
-                                  pickerInput(inputId = "lvl1_check_ssd", # organism checklist
-                                              label = "Broad Endpoint:",
-                                              choices = levels(aoc_z$lvl1_f),
-                                              selected = levels(aoc_z$lvl1_f),
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)), # allows for multiple inputs
+                                  htmlOutput("lvl1Selection")), # allows for multiple inputs
                            column(width = 4,
                                   htmlOutput("lvl2Selection")), #specific endpoint based on previous checkbox
                            
                            #Polymer widget
                            column(width = 4,
-                                  pickerInput(inputId = "poly_check_ssd", # organism checklist
-                                              label = "Polymers:",
-                                              choices = levels(aoc_z$poly_f),
-                                              selected = levels(aoc_z$poly_f),
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)),# allows for multiple inputs
+                                  htmlOutput("polySelection")),# polymer selection based on other inputs
                            ),#close out column
                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                     column(width = 12,
@@ -945,13 +930,34 @@ server <- function(input, output) {
 
 #### Scott S ####
 
-  #Create dependent dropdown checklists: select Species by Group.
+  #Create dependent dropdown checklists: select Group by environment
+  output$GroupSelection <- renderUI({
+    
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      mutate(Group_new = factor(as.character(Group))) # new subset of factors
+    
+    pickerInput(inputId = "Group_check_ssd", 
+                label = "Group:", 
+                choices = levels(aoc_new$Group_new),
+                selected = levels(aoc_new$Group_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Create dependent dropdown checklists: select Species by env and group
   output$SpeciesSelection <- renderUI({
     
-    Group_c <- input$Group_check_ssd # assign level values to "lvl1_c"
-    
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
-      filter(Group %in% Group_c) %>% # filter by level inputs
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       mutate(Species_new = factor(as.character(Species))) # new subset of factors
     
     pickerInput(inputId = "Species_check_ssd", 
@@ -961,22 +967,72 @@ server <- function(input, output) {
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)})
   
-  #Create dependent dropdown checklists: select lvl2 by lvl1.
+  #Create dependent dropdown checklists: select lvl1 by above input
+  output$lvl1Selection <- renderUI({
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      mutate(lvl1_f_new = factor(as.character(lvl1_f))) # new subset of factors
+    #populate picker choices based on available factors
+    pickerInput(inputId = "lvl1_check_ssd", 
+                label = "Broad Endpoint:", 
+                choices = levels(aoc_new$lvl1_f_new),
+                selected = levels(aoc_new$lvl1_f_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Create dependent dropdown checklists: select lvl2 by lvl1 input and Species
   output$lvl2Selection <- renderUI({
-    
-    lvl1_c <- input$lvl1_check_ssd # assign level values to "lvl1_c"
-    
-    aoc_new <- aoc_setup %>% # take original dataset
-      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+    #Assign user inputs to variables for this reactive
+    lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
-    
+    #populate picker choices based on available factors
     pickerInput(inputId = "lvl2_check_ssd", 
                 label = "Specific Endpoint within Broad Category:", 
                 choices = levels(aoc_new$lvl2_f_new),
                 selected = levels(aoc_new$lvl2_f_new),
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)})
-  
+ 
+  #Create dependent dropdown checklists: select lvl2 by all other input
+  output$polySelection <- renderUI({
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    lvl2_c_ssd <- input$lvl2_check_ssd #assign endpoints
+    
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(lvl2_f %in% lvl2_c_ssd) %>%  #filter by second level endpoints
+      mutate(poly_f_new = factor(as.character(poly_f))) # new subset of factors
+    #populate picker choices based on available factors
+    pickerInput(inputId = "poly_check_ssd", 
+                label = "Polymers:", 
+                choices = levels(aoc_new$poly_f_new),
+                selected = levels(aoc_new$poly_f_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)}) 
   
   # Create new all tested dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_z_L <- eventReactive(list(input$SSDgo),{
@@ -986,7 +1042,8 @@ server <- function(input, output) {
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
-    lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
+    lvl1_c_ssd <- input$lvl1_check_ssd #assign broad endpoints
+    lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
    
     #filter out reported, calcualted, or all based on checkbox
@@ -1009,7 +1066,8 @@ server <- function(input, output) {
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
-      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
+      filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       filter(dose.mg.L.master > 0) %>% #clean out no dose data
       group_by(Species) %>% 
@@ -1027,7 +1085,8 @@ server <- function(input, output) {
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
-    lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
+    lvl1_c_ssd <- input$lvl1_check_ssd #assign general endpoints
+    lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     
     #filter out reported, calcualted, or all based on checkbox
@@ -1050,7 +1109,8 @@ server <- function(input, output) {
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
-      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
+      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by generic endpoints inputs
+      filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
       filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       filter(effect_f == "Yes") %>% #only select observed effects
       group_by(Species, Group) %>%
