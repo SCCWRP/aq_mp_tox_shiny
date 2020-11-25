@@ -601,14 +601,15 @@ uiOutput(outputId= "Emily_plot")),
                                               selected = levels(aoc_z$poly_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)),# allows for multiple inputs
-                           column(width = 4,
+                           ),#close out column
+                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    column(width = 12,
                                   radioButtons(
                                     inputId = "Reported_Converted_rad",
-                                    label = "Use Calculated Exposure Concentrations?",
+                                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
                                     choices = list("reported", "converted", "all"),
-                                    selected = "all"))
-                           ), #close out column
-                           
+                                    selected = "all")),
+                    br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
                                   align = "center"), # adds action button 
@@ -616,12 +617,11 @@ uiOutput(outputId= "Emily_plot")),
                     # "Update" is the title that appears on the app
                            
                     br(), 
-                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices."),
+                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices...", align = "center"),
                     br(),
 
                     
-                    mainPanel("Microplastics in Aquatic Environments: Species Sensitivity Distributions",
-                              br(), 
+                    mainPanel("Filtered Data Based on Choices Above:",
                               br(),
                               DT::dataTableOutput(outputId = "aoc_filter_ssd_table"),
                               p("The figure below displays minimum observed effect concentrations for a range of species along with three common distributions"),
@@ -629,7 +629,7 @@ uiOutput(outputId= "Emily_plot")),
                               plotOutput(outputId = "autoplot_dists_react"),
                               p("Different distributions can be fit to the data. Below are some common distributions (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel)."),
                               br(),
-                              p("Goodness of Fit Table"),
+                              h4("Goodness of Fit Table", align = "center"),
                               DT::dataTableOutput(outputId = "table_gof_react"), #using DT package provides better functionality
                               br(),
                               p("The best fitting model is that with the smallest Information Criteria value. Note that several informaiton criteria are listed. Burnham and Anderson (2002) recommend using Akiak'es Information Criteria (Corrected for sample size) [aicc] for model selection. The model with the smallest aicc is indicated by the smallest delta value in the goodness of fit table. For further information on the advantages of an information theoretic approach in the context of selecting SSDs the reader is referred to Schwarz and Tillmanns (2019)."),
@@ -677,7 +677,7 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
-                              p("Species Sensitivity Distribution"),
+                              h4("Species Sensitivity Distribution", align = "center"),
                               plotOutput(outputId = "aoc_ssd_ggplot", width = "160%", height = "500px", hover = hoverOpts(id = "plot_hover")),
                               verbatimTextOutput("info"),
                               br(),
@@ -689,6 +689,7 @@ uiOutput(outputId= "Emily_plot")),
                               br(),
                               p("Model predictions can also be viewed in tabular format."),
                               br(),
+                              h4("SSD Table", align = "center"),
                               DT::dataTableOutput(outputId = "ssd_pred_table"),
                               br(),
                               h4(align = "center", "Credits"),
@@ -1085,7 +1086,7 @@ server <- function(input, output) {
               extensions = c('Buttons'),
               options = list(
                 dom = 'Brtip',
-                buttons = c('copy', 'csv', 'excel'),
+                buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
