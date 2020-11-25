@@ -77,7 +77,7 @@ get_plot_output_list <- function(input_n) {
         theme(plot.title = element_text(hjust = 0.5, face="bold"))+
         theme(legend.position = "right",
           axis.ticks= element_blank(),
-          axis.text.x = element_text(angle=45),
+          axis.text.x = element_text(angle=45, size = 10),
           axis.text.y = element_blank(),
           axis.title.x = element_blank())
       
@@ -230,10 +230,9 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 #### User Interface ####
 
 ui <- fluidPage(theme = shinytheme("flatly"),  
-          
-
+  
   # App title
-  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
+  titlePanel(h1("Microplastics Toxicity Database")),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -253,7 +252,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
                     
                     strong(p("This database is a repository for microplastics 
-                      toxicity data pertaining to aquatic organism health that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
+                      toxicity data that will be used to generate key graphics for the Microplastics Health Effects Workshop.")), 
                     
                     p("This web application allows users to explore toxicity 
                     data using an intuitive interface while retaining the diversity and complexity inherent 
@@ -697,6 +696,7 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
+#### Resources UI ####
 
 tabPanel("5: Resources", 
          br(),
@@ -706,9 +706,11 @@ tabPanel("5: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXDS25x3JAJHhZAj3qDwWgIBeB-oz0mIihclR2oOckPjhg?e=GtOeB5", 'Aquatic Organisms Study List')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+         #h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
          
          verbatimTextOutput(outputId = "Leah2")),
+
+#### Contact UI ####
 
 tabPanel("6: Contact", 
          br(),
@@ -724,7 +726,7 @@ tabPanel("6: Contact",
 
 #### Server ####
 server <- function(input, output) {
-  
+
 #### Leah S ####
 
   # Leah does not have any reactive features.
@@ -805,7 +807,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Organism",
@@ -826,7 +828,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Size",
@@ -846,7 +848,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#BED6B3", "#4A5438")) +
       scale_fill_manual(values = c("#BED6B3", "#4A5438")) +
       theme_classic() +
-      theme(text = element_text(size=16), 
+      theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Shape",
@@ -866,7 +868,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Polymer",
@@ -886,7 +888,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = "Concentration (mg/L)",
         y = "Endpoint",
@@ -906,7 +908,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       theme_classic() +
-      theme(text = element_text(size=16),
+      theme(text = element_text(size=18),
             legend.position = "right") +
       labs(x = "Concentration (mg/L)",
            y = "Specific Endpoint",
