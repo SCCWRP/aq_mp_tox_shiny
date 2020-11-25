@@ -44,7 +44,8 @@ Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
     plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
     plot_f == "Exposure.route" ~ "Exposure Route"))%>%
   mutate(plot_f = factor(plot_f))%>%
-  mutate(logEndpoints = log(Endpoints))
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)
 
 # Adding function for multiple graph output.
 # Code adapted from https://gist.github.com/wch/5436415/ and comment at https://gist.github.com/wch/5436415/#gistcomment-1608976 .
@@ -65,7 +66,7 @@ get_plot_output_list <- function(input_n) {
         filter(plot_f==i) %>%
         
         # generate plot
-        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Freq=Freq)) +
+        ggplot(aes(fill=effect, y= logEndpoints, x=Type, Percent=Percent)) +
         geom_bar(position="stack", stat="identity") +
         geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
         scale_fill_manual(values = cal_palette(case_when(i=="Polymer"~"wetland", i=="Organism"~"sbchannel", i=="Size"~"seagrass",i=="Shape"~"gayophytum",i=="Endpoint Category"~"figmtn",i=="Life Stage"~"dudleya",i=="Exposure Route"~"halfdome",i=="In Vivo or In Vitro"~"kelp2")))+
@@ -81,7 +82,7 @@ get_plot_output_list <- function(input_n) {
           axis.text.y = element_blank(),
           axis.title.x = element_blank())
       
-      ggplotly(tooltip = 'Freq')%>%
+      ggplotly(tooltip = 'Percent')%>%
         config(displayModeBar = FALSE)
       
     })
