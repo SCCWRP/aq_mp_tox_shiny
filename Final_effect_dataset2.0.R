@@ -148,7 +148,8 @@ routef<-as.data.frame(routedf)%>%
     Type == "maternal.exposure" ~ "Maternal Exposure",
     Type == "food" ~ "Food",
     Type == "water" ~ "Water",
-    Type == "sediment" ~ "Sediment"))
+    Type == "sediment" ~ "Sediment",
+    Type == "media" ~ "Media"))
 study_r<-xtabs(~exposure.route +effect,aoc)
 routefinal<- data.frame(cbind(routef, study_r))%>% 
   rename(Endpoints='Freq.1')%>%
