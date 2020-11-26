@@ -588,13 +588,17 @@ uiOutput(outputId= "Emily_plot")),
                            column(width = 4,
                                   htmlOutput("polySelection")),# polymer selection based on other inputs
                            ),#close out column
-                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
-                    column(width = 12,
-                                  radioButtons(
-                                    inputId = "Reported_Converted_rad",
-                                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                                    choices = list("reported", "converted", "all"),
-                                    selected = "all")),
+                    radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
+                                       label = "Particles/mL or mg/L:",
+                                       choices = c("Particles/mL", "mg/L"),
+                                       selected = "mg/L"),
+                    conditionalPanel(condition = "input.particle_mass_check_ssd == 'mg/L'",
+                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                                     radioButtons(
+                                              inputId = "Reported_Converted_rad",
+                                              label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                              choices = list("reported", "converted", "all"),
+                                              selected = "all")),
                     br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
@@ -1056,17 +1060,28 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
    
+    #determine if particles of mass will be used
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
+    if(particle_mass_check_ssd == "Particles/mL"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.particles.mL.master)
+    }
+    if(particle_mass_check_ssd == "mg/L"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.mg.L.master)
+    }
+    
     #filter out reported, calcualted, or all based on checkbox
      Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
-    if(Reported_Converted_rad == "reported"){
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted")
+        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "mg/L")
     } 
     if(Reported_Converted_rad == "converted"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "reported")
+        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "mg/L")
     } 
-    if(Reported_Converted_rad == "all"){
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z 
     }
     
@@ -1079,9 +1094,9 @@ server <- function(input, output) {
       filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
       filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
-      filter(dose.mg.L.master > 0) %>% #clean out no dose data
+      filter(dose_new > 0) %>% #clean out no dose data
       group_by(Species) %>% 
-            summarise(MinConcTested = min(dose.mg.L.master), MaxConcTested = max(dose.mg.L.master), CountTotal = n()) %>%   #summary data for whole database
+            summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
       mutate_if(is.numeric, ~ signif(., 4)) %>% 
       drop_na() #must drop NAs or else nothing will work
         })
@@ -1090,7 +1105,7 @@ server <- function(input, output) {
   aoc_z_R <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
-    
+   
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
@@ -1099,17 +1114,28 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     
-    #filter out reported, calcualted, or all based on checkbox
+    #determine if particles of mass will be used
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
+    if(particle_mass_check_ssd == "Particles/mL"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.particles.mL.master)
+    }
+    if(particle_mass_check_ssd == "mg/L"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.mg.L.master)
+    }
+    
+    #filter out reported, calcualted, or all based on checkbox FOR MASS
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
-    if(Reported_Converted_rad == "converted"){
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "converted")
     } 
-    if (Reported_Converted_rad == "reported"){
+    if (Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "reported")
     } 
-    if (Reported_Converted_rad == "all"){
+    if (Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
         aoc_z <- aoc_z 
     }
     
@@ -1124,7 +1150,7 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       filter(effect_f == "Yes") %>% #only select observed effects
       group_by(Species, Group) %>%
-      summarise(Conc = min(dose.mg.L.master), meanConcEffect = mean(dose.mg.L.master), medianConcEffect = median(dose.mg.L.master), SDConcEffect = sd(dose.mg.L.master),MaxConcEffect = max(dose.mg.L.master), CountEffect = n(), MinEffectType = lvl1[which.min(dose.mg.L.master)], MinEnvironment = environment[which.min(dose.mg.L.master)], MinDoi = doi[which.min(dose.mg.L.master)], MinLifeStage = life.stage[which.min(dose.mg.L.master)], Mininvitro.invivo = invitro.invivo[which.min(dose.mg.L.master)]) %>%  #set concentration to minimum observed effect
+      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
       mutate_if(is.numeric, ~ signif(., 3)) %>% 
       drop_na(Conc) #must drop NAs or else nothing will work
      })
@@ -1148,6 +1174,7 @@ server <- function(input, output) {
   
   #print summarize filtered data in data table
   output$aoc_filter_ssd_table <- DT::renderDataTable({
+    particle_mass_check_ssd <- input$particle_mass_check_ssd
     req(input$SSDgo)
     
     datatable(aoc_filter_ssd(),
@@ -1158,7 +1185,7 @@ server <- function(input, output) {
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
-              colnames = c("Group", "Species", "Most Sensitive Concentration (mg/L)", "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration (mg/L)", "Median Effect Concentration (mg/L)", "Std Dev Effect Concentration (mg/L)", "Maximum Observed Effect Concentration (mg/L)", "Number of doses with Effects", "Min Concentration Tested (with or without effects) (mg/L)", "Max Concentration Tested (with or without effects) (mg/L)", "Total # Doses Considered"),
+              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
         "Conc",
@@ -1228,7 +1255,9 @@ server <- function(input, output) {
 SSD_plot_react <- reactive({
     req(input$ssdPred) #won't start until button is pressed for prediction
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
-   
+    #determine if particles of mass will be used
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
+    
     #reactive -> static data
     aoc_ssd <- aoc_filter_ssd() %>% 
       arrange(Conc)
@@ -1244,7 +1273,7 @@ SSD_plot_react <- reactive({
      aoc_pred(), #prediction
      color = "Group",
      label = "Species",
-     xlab = "Concentration (mg/L)",
+     xlab = particle_mass_check_ssd,
      ci = TRUE, #confidence interval plotting
      ribbon = TRUE,
      hc = pred_c_hc_ssd) + #percent hazard concentration
@@ -1285,19 +1314,22 @@ output$downloadSsdPlot <- downloadHandler(
     pred_c_ave_ssd <- as.logical(input$pred_ave_ssd) #assign prediction averaging choice
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
+    nbootNum <- as.numeric(input$nbootInput) #assign  number of bootsrap samples
     
     set.seed(99)
     ssd_hc(fit_dists(), #dataset
            percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
-           nboot = 10, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
+           nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
            average = pred_c_ave_ssd, #tells whether or not the average models
            ic = pred_c_ic_ssd, #tells which information criteria to use
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
   })
   
 #Plot SSD data with ggplot
-   ssd_ggplot <- reactive({
-    # calculate fraction
+   ssd_ggplot <- eventReactive(list(input$ssdPred),{
+     
+     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
+     # calculate fraction
     aoc_ssd <- aoc_filter_ssd() %>% 
       arrange(Conc)
     
@@ -1315,7 +1347,7 @@ output$downloadSsdPlot <- downloadHandler(
       geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent) +
       expand_limits(x = c(0.000000001, 100000),y = c(0, 1)) + #ensure species labels fit
-      xlab("Concentration (mg/L)")+
+      xlab(particle_mass_check_ssd)+
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
       geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = 1) + #hazard conc line vertical
@@ -1334,9 +1366,11 @@ output$downloadSsdPlot <- downloadHandler(
   
   #hover text for info
   output$info <- renderText({
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
+    
     xy_str <- function(e) {
       if(is.null(e)) return("NULL\n")
-      paste0("Concentration (mg/L)=", format(e$x,scientific = TRUE), " percent=", percent(e$y), "\n")
+      paste0(particle_mass_check_ssd, " = ", format(e$x,scientific = TRUE), " percent =", percent(e$y), "\n")
     }
     
     paste0(
@@ -1347,6 +1381,7 @@ output$downloadSsdPlot <- downloadHandler(
   # SSD Table
 
   output$ssd_pred_table <- DT::renderDataTable({
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
      req(aoc_pred())
     aoc_pred <- aoc_pred() %>% 
       mutate_if(is.numeric, ~ signif(., 3))
@@ -1361,7 +1396,7 @@ output$downloadSsdPlot <- downloadHandler(
                   buttons = c('copy', 'csv', 'excel')
                 ), 
                 class = "compact",
-                colnames = c("Percent", "Estimated Mean Concentration", "Standard Error", "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
+                colnames = c("Percent", paste0("Estimated Mean Concentration ",  particle_mass_check_ssd), paste0("Standard Error ",  particle_mass_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
                 caption = "Predicted species sensitivity distribution concentrations with uncertanties."
                 )
   })
