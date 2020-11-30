@@ -27,11 +27,11 @@ library(shinyjs) #Exploration tab - reset button
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
-#### Leah Setup ####
+#### Introduction Setup ####
 
 # All text inputs below.
 
-#### Emily Setup ####
+#### Overview AO Setup ####
 
 Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
   mutate(plot_f = case_when(
@@ -94,7 +94,7 @@ get_plot_output_list <- function(input_n) {
   return(plot_output_list) # Returns the full list of stored plots.
 }
 
-#### Heili Setup ####
+#### Exploration AO Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
@@ -212,7 +212,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Terrestrial" ~ "Terrestrial"))) #Renames for widget
   
 
-#### Scott Setup ####
+#### SSD AO Setup ####
 
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
@@ -228,6 +228,8 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
+#### Overview Human Setup ####
+#### Exploration Human Setup ####
 #### User Interface ####
 
 ui <- fluidPage(theme = shinytheme("flatly"),  
@@ -246,7 +248,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
       # Output: set of 6 tabs
       tabsetPanel(type = "tabs",
 
-#### Leah UI ####        
+#### Introduction UI ####        
                   tabPanel("1: Introduction", 
                     
                     br(), 
@@ -315,13 +317,13 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                   
                     br(), 
                     
-                    verbatimTextOutput(outputId = "Leah1")),
+                    verbatimTextOutput(outputId = "Introduction1")),
                 
-#### Emily UI ####
+#### Overview AO UI ####
 
-tabPanel("2: Overview", 
+tabPanel("2: Overview: Aquatic Organisms", 
          br(), 
-         h3("Microplastics in Aquatic Environments: Overview of Toxicological Effects", align = "center"),
+         h3("Overview of Toxicological Effects in Aquatic Organisms", align = "center"),
          br(),
          p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
          br(),
@@ -341,12 +343,12 @@ pickerInput(inputId = "Emily_check", # endpoint checklist
 
 uiOutput(outputId= "Emily_plot")),
 
-#### Heili UI ####
-                  tabPanel("3: Exploration",
+#### Exploration AO UI ####
+                  tabPanel("3: Exploration: Aquatic Organisms",
                     shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
-                    h3("Microplastics in Aquatic Environments: Exploration of Toxicological Effects", align = "center"),
+                    h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
                     br(), # line break
                     p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
                     were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
@@ -546,8 +548,8 @@ uiOutput(outputId= "Emily_plot")),
                     plotOutput(outputId = "poly_plot_react"),
                     br()))), 
 
-#### Scott UI ####
-                  tabPanel("4: Species Sensitivity Distribution", 
+#### SSD AO UI ####
+                  tabPanel("4: Species Sensitivity Distribution: Aquatic Organisms", 
                     br(), # line break
                     h3("Species Sensitivity Distribution", align = "center"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
@@ -693,9 +695,42 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
+#### Overview Human UI ####
+
+tabPanel("5: Overview: Humans", 
+         br(), 
+         h3("Overview of Toxicological Effects in Mammalian Systems", align = "center"),
+         br(),
+         p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
+         br(),
+         p("Use the drop down menu at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
+           Click on the legend to select data."),
+         br(), 
+         p("Detailed descriptions of data categories may be found under the Resources tab."),
+         br(),
+),
+
+#### Exploration Human UI ####
+tabPanel("6: Exploration: Humans",
+         
+         h3("Exploration of Toxicological Effects in Mammalian Systems", align = "center"),
+         br(), 
+         p("Each figure displays a different metric along the y-axis - broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
+                    were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
+         br(),
+         p("The data displayed in these figures are not filtered for quality and only display data where doses were reported as 
+                      mass per volume or were converted from doses reported from counts per volume - other dosing units (e.g., particle mass/kg sediment) 
+                      are not displayed but are available in the complete database file."),
+         br(), 
+         p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
+         br(), 
+         p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
+         br(), 
+),
+
 #### Resources UI ####
 
-tabPanel("5: Resources", 
+tabPanel("7: Resources", 
          br(),
          p("Use the links below to view resource files. For access to the complete database (.xls file), please contact Dr. Leah Thornton Hampton directly (leahth@sccwrp.org)"),
          br(),     
@@ -709,7 +744,7 @@ tabPanel("5: Resources",
 
 #### Contact UI ####
 
-tabPanel("6: Contact", 
+tabPanel("8: Contact", 
          br(),
          h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
@@ -724,11 +759,11 @@ tabPanel("6: Contact",
 #### Server ####
 server <- function(input, output) {
 
-#### Leah S ####
+#### Introduction S ####
 
-  # Leah does not have any reactive features.
+  # Introduction does not have any reactive features.
   
-#### Emily S ####
+#### Overview AO S ####
   
   # Effect plot code for check box 
   
@@ -740,7 +775,7 @@ server <- function(input, output) {
     
     })
   
-#### Heili S ####
+#### Exploration AO S ####
   
   #Create dependent dropdown checklists: select lvl2 by lvl1.
   output$secondSelection <- renderUI({
@@ -948,7 +983,7 @@ server <- function(input, output) {
     shinyjs::reset("bio_check")
   }) #If we add more widgets, make sure they get added here. 
 
-#### Scott S ####
+#### SSD AO S ####
 
   #Create dependent dropdown checklists: select Group by environment
   output$GroupSelection <- renderUI({
@@ -1407,6 +1442,8 @@ output$downloadSsdPlot <- downloadHandler(
                 )
   })
 
+#### Overview Human S ####
+#### Exploration Human S ####
   } #Server end
 
 #### Full App ####
