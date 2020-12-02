@@ -120,7 +120,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     shape == "fragment" ~ "Fragment",
     shape == "sphere" ~ "Sphere",
     shape == "cube" ~ "Cube",
-    shape == NA ~ "Not Reported"),
+    shape == "Not Reported" ~ "Not Reported"),
     levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(poly_f = factor(case_when(
@@ -137,7 +137,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PS" ~ "Polystyrene",
     polymer == "PUR" ~ "Polyurathane",
     polymer == "PVC" ~ "Polyvinylchloride",
-    polymer == "PLA" ~ "Polylactic Acid"))) %>%
+    polymer == "PLA" ~ "Polylactic Acid",
+    polymer == "Not Reported" ~ "Not Reported"))) %>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", 
                                                    "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
@@ -153,9 +154,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   # Level 2 Data tidying
   mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
     lvl2 == "actinobacteria" ~ "Actinobacteria",
-    lvl2 == "agressivity"~"Agressivity",
+    lvl2 == "aggressivity"~"Agressivity",
     lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
-    lvl2 == "bacteriodetes"~ "Bacteriodetes",
+    lvl2 == "bacteroidetes"~ "Bacteriodetes",
     lvl2 == "blood"~"Blood",
     lvl2 == "body.condition"~"Body Condition",
     lvl2 == "boldness"~"Boldness",
@@ -227,9 +228,6 @@ aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
 # Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
-
-#### Overview Human Setup ####
-#### Exploration Human Setup ####
 
 #### User Interface ####
 
@@ -696,42 +694,10 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
-#### Overview Human UI ####
-
-tabPanel("5: Overview: Humans", 
-         br(), 
-         h3("Overview of Toxicological Effects in Mammalian Systems", align = "center"),
-         br(),
-         p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
-         br(),
-         p("Use the drop down menu at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
-           Click on the legend to select data."),
-         br(), 
-         p("Detailed descriptions of data categories may be found under the Resources tab."),
-         br(),
-),
-
-#### Exploration Human UI ####
-tabPanel("6: Exploration: Humans",
-         
-         h3("Exploration of Toxicological Effects in Mammalian Systems", align = "center"),
-         br(), 
-         p("Each figure displays a different metric along the y-axis - broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
-                    were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
-         br(),
-         p("The data displayed in these figures are not filtered for quality and only display data where doses were reported as 
-                      mass per volume or were converted from doses reported from counts per volume - other dosing units (e.g., particle mass/kg sediment) 
-                      are not displayed but are available in the complete database file."),
-         br(), 
-         p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
-         br(), 
-         p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
-         br(), 
-),
 
 #### Resources UI ####
 
-tabPanel("7: Resources", 
+tabPanel("5: Resources", 
          br(),
          p("Use the links below to view resource files. For access to the complete database (.xls file), please contact Dr. Leah Thornton Hampton directly (leahth@sccwrp.org)"),
          br(),     
@@ -745,7 +711,7 @@ tabPanel("7: Resources",
 
 #### Contact UI ####
 
-tabPanel("8: Contact", 
+tabPanel("6: Contact", 
          br(),
          h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
@@ -1443,8 +1409,6 @@ output$downloadSsdPlot <- downloadHandler(
                 )
   })
 
-#### Overview Human S ####
-#### Exploration Human S ####
   } #Server end
 
 #### Full App ####
