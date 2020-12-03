@@ -233,7 +233,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ui <- fluidPage(theme = shinytheme("flatly"),  
   
   # App title
-  titlePanel(h1("Microplastics Toxicity Database")),
+  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -319,7 +319,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                 
 #### Overview AO UI ####
 
-tabPanel("2: Overview: Aquatic Organisms", 
+tabPanel("2: Overview", 
          br(), 
          h3("Overview of Toxicological Effects in Aquatic Organisms", align = "center"),
          br(),
@@ -342,7 +342,7 @@ pickerInput(inputId = "Emily_check", # endpoint checklist
 uiOutput(outputId= "Emily_plot")),
 
 #### Exploration AO UI ####
-                  tabPanel("3: Exploration: Aquatic Organisms",
+                  tabPanel("3: Exploration",
                     shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
@@ -547,7 +547,7 @@ uiOutput(outputId= "Emily_plot")),
                     br()))), 
 
 #### SSD AO UI ####
-                  tabPanel("4: Species Sensitivity Distribution: Aquatic Organisms", 
+                  tabPanel("4: Species Sensitivity Distribution", 
                     br(), # line break
                     h3("Species Sensitivity Distribution", align = "center"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
@@ -704,7 +704,7 @@ tabPanel("5: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
-         #h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+         
          
          verbatimTextOutput(outputId = "Leah2")),
 
