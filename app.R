@@ -119,9 +119,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     shape == "fiber" ~ "Fiber",
     shape == "fragment" ~ "Fragment",
     shape == "sphere" ~ "Sphere",
-    shape == "cube" ~ "Cube",
     shape == "Not Reported" ~ "Not Reported"),
-    levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
+    levels = c("Fiber", "Fragment", "Sphere", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(poly_f = factor(case_when(
     polymer == "BIO" ~ "Biopolymer",
