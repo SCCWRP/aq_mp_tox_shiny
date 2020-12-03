@@ -276,12 +276,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
                       .noWS = "outside")," regarding the management of microplastics in drinking water and the aquatic environment."),
                    
-                    h3("Can I see the raw data?", align = "center"), #Section 3 
-                    
-                    p("Workshop participants also have access to the complete, raw database as an .xls file by directly contacting Dr. Leah Thornton Hampton (leahth@sccwrp.org), and are welcome to conduct their own analyses.
-                      Users may also download meta data associated with visualizations and analyses in the Exploration and Species Sensitivity Distribution tabs."),
-                    
-                    h3("Contributors", align = "center"), #Section 4: Contributors list with links to twitter and github
+                    h3("Contributors", align = "center"), #Section 3: Contributors list with links to twitter and github
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
@@ -712,7 +707,7 @@ tabPanel("5: Resources",
 
 tabPanel("6: Contact", 
          br(),
-         h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+         h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
          h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
          
