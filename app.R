@@ -27,11 +27,11 @@ library(shinyjs) #Exploration tab - reset button
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
-#### Leah Setup ####
+#### Introduction Setup ####
 
 # All text inputs below.
 
-#### Emily Setup ####
+#### Overview AO Setup ####
 
 Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
   mutate(plot_f = case_when(
@@ -94,7 +94,7 @@ get_plot_output_list <- function(input_n) {
   return(plot_output_list) # Returns the full list of stored plots.
 }
 
-#### Heili Setup ####
+#### Exploration AO Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
@@ -119,9 +119,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     shape == "fiber" ~ "Fiber",
     shape == "fragment" ~ "Fragment",
     shape == "sphere" ~ "Sphere",
-    shape == "cube" ~ "Cube",
-    shape == NA ~ "Not Reported"),
-    levels = c("Fiber", "Fragment", "Sphere", "Cube", "Not Reported"))) %>% # order our different shapes.
+    shape == "Not Reported" ~ "Not Reported"),
+    levels = c("Fiber", "Fragment", "Sphere", "Not Reported"))) %>% # order our different shapes.
   # polymer category data tidying.
   mutate(poly_f = factor(case_when(
     polymer == "BIO" ~ "Biopolymer",
@@ -137,7 +136,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PS" ~ "Polystyrene",
     polymer == "PUR" ~ "Polyurathane",
     polymer == "PVC" ~ "Polyvinylchloride",
-    polymer == "PLA" ~ "Polylactic Acid"))) %>%
+    polymer == "PLA" ~ "Polylactic Acid",
+    polymer == "Not Reported" ~ "Not Reported"))) %>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", 
                                                    "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
@@ -153,9 +153,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   # Level 2 Data tidying
   mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
     lvl2 == "actinobacteria" ~ "Actinobacteria",
-    lvl2 == "agressivity"~"Agressivity",
+    lvl2 == "aggressivity"~"Agressivity",
     lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
-    lvl2 == "bacteriodetes"~ "Bacteriodetes",
+    lvl2 == "bacteroidetes"~ "Bacteriodetes",
     lvl2 == "blood"~"Blood",
     lvl2 == "body.condition"~"Body Condition",
     lvl2 == "boldness"~"Boldness",
@@ -212,7 +212,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Terrestrial" ~ "Terrestrial"))) #Renames for widget
   
 
-#### Scott Setup ####
+#### SSD AO Setup ####
 
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
@@ -233,7 +233,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ui <- fluidPage(theme = shinytheme("flatly"),  
   
   # App title
-  titlePanel(h1("Microplastics Toxicity Database")),
+  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -246,7 +246,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
       # Output: set of 6 tabs
       tabsetPanel(type = "tabs",
 
-#### Leah UI ####        
+#### Introduction UI ####        
                   tabPanel("1: Introduction", 
                     
                     br(), 
@@ -276,12 +276,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
                       .noWS = "outside")," regarding the management of microplastics in drinking water and the aquatic environment."),
                    
-                    h3("Can I see the raw data?", align = "center"), #Section 3 
-                    
-                    p("Workshop participants also have access to the complete, raw database as an .xls file by directly contacting Dr. Leah Thornton Hampton (leahth@sccwrp.org), and are welcome to conduct their own analyses.
-                      Users may also download meta data associated with visualizations and analyses in the Exploration and Species Sensitivity Distribution tabs."),
-                    
-                    h3("Contributors", align = "center"), #Section 4: Contributors list with links to twitter and github
+                    h3("Contributors", align = "center"), #Section 3: Contributors list with links to twitter and github
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
@@ -300,8 +295,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     p(align = "center", "Sarah Khan, Southern California Coastal Water Research Project"),
                     p(align = "center", a(href = "https://www.wur.nl/en/Persons/Bart-prof.dr.-AA-Bart-Koelmans.htm", 'Dr. Bart Koelmans'),", Wageningen University",
                      tags$a(href="https://twitter.com/MicroplasticLab", tags$img(src="twitter.png", width="2%", height="2%"))),
-                    p(align = "center", a(href = "https://twitter.com/ChelseaRochman", 'Dr. Chelsea Rochman'),", University of Toronto",
-                      tags$a(href="https://twitter.com/MicroplasticLab", tags$img(src="twitter.png", width="2%", height="2%"))),
+                    p(align = "center", a(href = "https://rochmanlab.com/", 'Dr. Chelsea Rochman'),", University of Toronto",
+                      tags$a(href="https://twitter.com/ChelseaRochman", tags$img(src="twitter.png", width="2%", height="2%"))),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"), 
                   
@@ -315,13 +310,13 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                   
                     br(), 
                     
-                    verbatimTextOutput(outputId = "Leah1")),
+                    verbatimTextOutput(outputId = "Introduction1")),
                 
-#### Emily UI ####
+#### Overview AO UI ####
 
 tabPanel("2: Overview", 
          br(), 
-         h3("Microplastics in Aquatic Environments: Overview of Toxicological Effects", align = "center"),
+         h3("Overview of Toxicological Effects in Aquatic Organisms", align = "center"),
          br(),
          p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
          br(),
@@ -341,12 +336,12 @@ pickerInput(inputId = "Emily_check", # endpoint checklist
 
 uiOutput(outputId= "Emily_plot")),
 
-#### Heili UI ####
+#### Exploration AO UI ####
                   tabPanel("3: Exploration",
                     shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
-                    h3("Microplastics in Aquatic Environments: Exploration of Toxicological Effects", align = "center"),
+                    h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
                     br(), # line break
                     p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
                     were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
@@ -460,7 +455,7 @@ uiOutput(outputId= "Emily_plot")),
                           #label = "Particle Size (µm):", #Labels widget
                           #min = 0, max = 4000, value = 4000)),
                       
-                        column(width = 3,
+                        column(width = 3, offset = 3,
                         pickerInput(inputId = "bio_check", # bio org checklist
                           label = "Level of Biological Organization", 
                           choices = levels(aoc_setup$bio_f),
@@ -546,7 +541,7 @@ uiOutput(outputId= "Emily_plot")),
                     plotOutput(outputId = "poly_plot_react"),
                     br()))), 
 
-#### Scott UI ####
+#### SSD AO UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
                     br(), # line break
                     h3("Species Sensitivity Distribution", align = "center"),
@@ -693,17 +688,16 @@ uiOutput(outputId= "Emily_plot")),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
+
 #### Resources UI ####
 
 tabPanel("5: Resources", 
-         br(),
-         p("Use the links below to view resource files. For access to the complete database (.xls file), please contact Dr. Leah Thornton Hampton directly (leahth@sccwrp.org)"),
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
-         #h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ES_FUiwiELtNpWgrPCS1Iw4Bkn3-aeiDjZxmtMLjg3uv3g?e=bmuNgG", 'Human Study List')),
+         
          
          verbatimTextOutput(outputId = "Leah2")),
 
@@ -711,7 +705,7 @@ tabPanel("5: Resources",
 
 tabPanel("6: Contact", 
          br(),
-         h4("For scientific questions or access to the complete database, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+         h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
          h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
          
@@ -724,11 +718,11 @@ tabPanel("6: Contact",
 #### Server ####
 server <- function(input, output) {
 
-#### Leah S ####
+#### Introduction S ####
 
-  # Leah does not have any reactive features.
+  # Introduction does not have any reactive features.
   
-#### Emily S ####
+#### Overview AO S ####
   
   # Effect plot code for check box 
   
@@ -740,7 +734,7 @@ server <- function(input, output) {
     
     })
   
-#### Heili S ####
+#### Exploration AO S ####
   
   #Create dependent dropdown checklists: select lvl2 by lvl1.
   output$secondSelection <- renderUI({
@@ -948,7 +942,7 @@ server <- function(input, output) {
     shinyjs::reset("bio_check")
   }) #If we add more widgets, make sure they get added here. 
 
-#### Scott S ####
+#### SSD AO S ####
 
   #Create dependent dropdown checklists: select Group by environment
   output$GroupSelection <- renderUI({
