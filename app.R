@@ -460,7 +460,7 @@ uiOutput(outputId= "Emily_plot")),
                           #label = "Particle Size (µm):", #Labels widget
                           #min = 0, max = 4000, value = 4000)),
                       
-                        column(width = 3,
+                        column(width = 3, offset = 3,
                         pickerInput(inputId = "bio_check", # bio org checklist
                           label = "Level of Biological Organization", 
                           choices = levels(aoc_setup$bio_f),
