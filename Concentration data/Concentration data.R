@@ -4,9 +4,9 @@ library(calecopal)
 library(ssdtools)
 library(DT)
 library(plotly)
-library(fastDummies)
 
-SFEI <- read.csv("SFEI.csv", stringsAsFactors = TRUE)
+
+SFEI <- read.csv("Concentration data/SFEI.csv", stringsAsFactors = TRUE)
 
 ##### SSD prep ####
 # Guess_max ensures columns with lots of NAs are not imported as logical vectors, but as numeric/double.
@@ -162,7 +162,7 @@ food.dilution.simple <- food.dilution %>%
   select(Conc)
 
 #write.csv(food.dilution.simple, "foodDilutionSimple.csv") # can't figure out how to make a new column with tox fore every row, so doing it in excell
-food.dilution.simple <- read.csv("foodDilutionSimple.csv")
+food.dilution.simple <- read.csv("Concentration data/foodDilutionSimple.csv")
 
 df <- rbind(sampleSimple,food.dilution.simple)
 
@@ -261,7 +261,7 @@ ssd_gof(sample_dists) #check the goodness of fit
 #there are multiple fitting distributions, so check which fits best
 sample_gof <- ssd_gof(sample_dists)
 sample_gof[order(sample_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
-write.csv(sample_gof,"sample_gof.csv")
+write.csv(sample_gof,"Concentration data/sample_gof.csv")
 set.seed(99)
 sample_pred <- predict(sample_dists,
                                 average = TRUE,
@@ -272,7 +272,7 @@ sample_pred <- predict(sample_dists,
 sample_pred # The resultant object is a data frame of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
 
 sample_pred %>% mutate_if(is.numeric, ~ signif(., 3)) %>% 
-  dattable(rownames = FALSE,
+  datatable(rownames = FALSE,
             extensions = c('Buttons', 'Scroller'),
             options = list(
               dom = 'Brftp',
@@ -312,3 +312,4 @@ gp2 <- ggplot(sample_pred,aes_string(x = "est")) +
 gp2
 
 ggplotly(gp2)
+
