@@ -4,7 +4,9 @@ library(calecopal)
 library(ssdtools)
 library(DT)
 library(plotly)
-
+library(gridExtra)
+library(grid)
+library(wesanderson)
 
 SFEI <- read.csv("Concentration data/SFEI.csv", stringsAsFactors = TRUE)
 
@@ -173,20 +175,39 @@ samples %>%
   geom_smooth(stat = 'density') +
   scale_x_log10()
 
-# histogram of SSD (parrticle/L)
- food.dilution %>% 
-  #filter(particle.L < 300) %>% 
+# histogram of SSD (particle/L)
+ hist.tox <- food.dilution %>% 
+ # filter(dose.particles.mL.master < 1000) %>% 
   ggplot(aes(x = particle.L))+
-  geom_histogram(bins = 15) +
-  scale_x_log10()
+ geom_histogram(aes(x = particle.L, y=..density..), fill = "blue", bins = 20, alpha = 0.5) +
+   geom_smooth(stat = 'density', color = "blue") +
+   scale_x_log10() +
+   # scale_x_continuous(labels = scales::scientific) +
+   xlab("Concentration (particles/L)")+
+   labs(title = "Histograms of Food Dilution LOECs",
+        caption = "all data corrected to 1-5,000 um; nominal and converted particles/L; SCCWRP tox dataset") +
+   theme(plot.title = element_text(hjust = 0.5, size = 20),
+         axis.title = element_text(size = 16),
+         axis.text =  element_text(size = 16),
+         legend.text = element_text(size =14),
+         legend.title = element_blank())
+ #display
+ hist.tox
+ #save
+ ggsave(hist.tox,
+        filename = "FoodDilutionHistogram_particlesL.png",
+        path = "Concentration data/plots",
+        width = 8,
+        scale = 2,
+        dpi = 500)
  
  # histogram of SSD (mg/L)
- food.dilution %>% 
+ hist.tox.mass <- food.dilution %>% 
    filter(dose.mg.L.master< 10000) %>% 
    #filter(particle.L < 300) %>% 
    ggplot(aes(x = dose.mg.L.master))+
-   geom_histogram(aes(x = dose.mg.L.master, y=..density..), fill = "blue", bins = 12, alpha = 0.5) +
-   geom_smooth(stat = 'density', color = "blue") +
+   geom_histogram(aes(x = dose.mg.L.master, y=..density..), fill = "green", bins = 12, alpha = 0.5) +
+   geom_smooth(stat = 'density', color = "green") +
    scale_x_log10() +
    # scale_x_continuous(labels = scales::scientific) +
    xlab("Concentration (mg/L)")+
@@ -198,15 +219,36 @@ samples %>%
          legend.text = element_text(size =14),
          legend.title = element_blank())
  
+ #display
+ hist.tox.mass
+ #save
+ ggsave(hist.tox.mass,
+        filename = "FoodDilutionHistogram_Particles_mgL.png",
+        path = "Concentration data/plots",
+        width = 8,
+        scale = 2,
+        dpi = 500)
+ 
+ #plot together
+ hist.tox.mass.particles <- grid.arrange(hist.tox, hist.tox.mass,
+                                       ncol = 2,
+                                       top = textGrob("Toxicity Histograms by Mass and Particles", gp=gpar(fontsize = 22, font=6)))
+ ggsave( hist.tox.mass.particles,
+        filename = " hist.tox.mass.particles.png",
+        path = "Concentration data/plots",
+        width = 8,
+        scale = 2,
+        dpi = 500)
+ 
 
-#histogram of both tox and concentrations
-df %>% 
-  filter(Conc < 100000000) %>% 
+#histogram of both tox and concentrations 
+hist.tox.occurrence <- df %>% 
+  filter(Conc < 10000000) %>% 
   ggplot(aes(x = Conc, fill = Sample.Type, color = Sample.Type))+
-  geom_histogram(aes(x = Conc, y=..density..), bins = 30, alpha = 0.6) +
+  geom_histogram(aes(x = Conc, y=..density..), bins = 15, alpha = 0.6,position = 'identity') +
   geom_smooth(stat = 'density') +
   scale_x_log10() +
-  coord_cartesian(xlim = c(1,100000000)) +
+  coord_cartesian(xlim = c(1,10000000)) +
  # scale_x_continuous(labels = scales::scientific) +
   xlab("Concentration (particles/L)")+
   scale_y_continuous(name = "Relative Density", labels = scales::percent)+
@@ -221,32 +263,102 @@ df %>%
         axis.text =  element_text(size = 16),
         legend.text = element_text(size =14),
         legend.title = element_blank())
+#display
+hist.tox.occurrence
+#save
+ggsave(hist.tox.occurrence,
+       filename = "Histogram_tox_occurrence.png",
+       path = "Concentration data/plots",
+       width = 8,
+       scale = 2,
+       dpi = 500)
 
 
 #ECDF by season
-samples %>% 
+ECDF.Season <- samples %>% 
   ggplot(aes(x = Particles.L_Corrected, color = Season))+
-  stat_ecdf(geom = "point") +
-  stat_ecdf(geom = "step", linetype = 'dashed', alpha = 0.75) +
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = "red") +
-  geom_text(label = "5% hazard concentration", color = "red", alpha = 0.75, x = 95, y = 0.10)+
-  scale_color_manual(values = cal_palette("superbloom3"))+
+  stat_ecdf(geom = "point", size = 2) +
+  stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = wes_palette("GrandBudapest2"))+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
+  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
-  theme_minimal()
+  scale_x_continuous(trans = "log10") +
+  annotation_logticks(sides = "b") + #log scale rick marks on bottom
+  theme_minimal() +
+  labs(title = "SFEI Concentrations ECDF by Season",
+       subtitle = "Particles/L corrected to 1-5,000 um",
+       caption = "Hazard Concentration from Koelmans et al (2020)")+
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.Season
 
 #ECDF by sample type
-SFEI %>% 
+ECDF.SampleType <- SFEI %>% 
   ggplot(aes(x = Particles.L_Corrected, color = Sample.Type))+
-  stat_ecdf(geom = "point") +
-  stat_ecdf(geom = "step", linetype = 'dashed', alpha = 0.75) +
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = "red") +
-  geom_text(label = "5% hazard concentration", color = "red", x = 95, y = 0.10)+
+  stat_ecdf(geom = "point", size = 2) +
+  stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = wes_palette("FantasticFox1"))+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
+  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
-  theme_minimal()
+  scale_x_continuous(trans = "log10") +
+  annotation_logticks(sides = "b")+ #log scale rick marks on bottom
+  theme_minimal() +
+  labs(title = "SFEI Concentrations ECDF by Sample Type",
+       subtitle = "Particles/L corrected to 1-5,000 um",
+       caption = "Hazard Concentration from Koelmans et al (2020)")+
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.SampleType
+
+#ECDF by location
+ECDF.Location <- SFEI %>% 
+  filter(Location != "NA") %>% 
+  ggplot(aes(x = Particles.L_Corrected, color = Location))+
+  stat_ecdf(geom = "point", size = 2) +
+  stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = wes_palette("Cavalcanti1"))+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
+  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
+  ylab("Cumulative Density") +
+  xlab("Particles/L (1-5,000 um)")+
+  scale_y_continuous(labels = scales::percent)+
+  scale_x_continuous(trans = "log10") +
+  annotation_logticks(sides = "b")+ #log scale rick marks on bottom
+  theme_minimal() +
+  labs(title = "SFEI Concentrations ECDF by Location",
+       subtitle = "Particles/L corrected to 1-5,000 um",
+       caption = "Hazard Concentration from Koelmans et al (2020)")+
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.Location
+
+ECDF.Location.Type.Season <- grid.arrange(ECDF.SampleType, ECDF.Season, ECDF.Location,
+                                       ncol = 2,
+                                       top = textGrob("Occurrence Cumulative Distributions by Sample Type, Season, and Location", gp=gpar(fontsize = 22, font=6)))
+ggsave(ECDF.Location.Type.Season,
+       filename = "ECDF.Location.Type.Season.png",
+       path = "Concentration data/plots",
+       width = 8,
+       scale = 2,
+       dpi = 500)
 
 #modelling
 sample_dists <- ssd_fit_dists(samples, #data frame
@@ -290,26 +402,47 @@ sampleSSD$frac <- ppoints(samples$Conc, 0.5)
 
 aoc_hc5 <- c(75.6)
 
-gp2 <- ggplot(sample_pred,aes_string(x = "est")) +
-  geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "lightblue") +
+ECDF_model_occurrence <- ggplot(sample_pred,aes_string(x = "est")) +
+  geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "#81a88d", fill = "#81a88d") +
   geom_line(aes_string(y = "percent/100"), linetype = 'dashed', alpha = 0.8) +
   geom_point(data = sampleSSD,aes(x = Conc, y =frac, color = Season, shape = Location), size =4) + 
   #geom_text(data = sampleSSD, aes(x = Conc, y = frac, label = Location), hjust = 1.1, size = 4) + #season labels
   scale_y_continuous("Cumulative Distribution (%)", labels = scales::percent) +
   #expand_limits(y = c(0, 1)) +
   xlab("Concentration (particles/L)")+
-  labs(title = "Concentration Cumulative Distribution",
-       subtitle = "Average of log-logical and log-normal Distributions Fit",
+  labs(title = "SF Bay 2017 Microplastics Concentration Cumulative Distribution Function",
+       subtitle = "Smoothing/95% CI ribbon based on average of log-logical and log-normal Distributions Fit",
        caption = "SFEI 2017 data; sampling corrected to 1-5,000 um") +
   coord_trans(x = "log10") +
   scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
-  geom_vline(xintercept = 75.6, color = "red") +
-  geom_text(x = 110, y = 0.04, label = "5 % Hazard Confidence Level", color = "red", size = 4) + #label for hazard conc
-  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = "red") +  #label for hazard conc
+  scale_color_manual(values = wes_palette("Cavalcanti1"))+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
+  geom_text(label = "5% HC: 95% LCL", color = '#972d14', x = 15, y = 0)+
+  geom_text(label = "5% hazard concentration", color = '#972d14', x = 110, y = 0.03)+
+  geom_text(label = "5% HC: 95% UCL", color = '#972d14', x = 400, y = 0)+
+  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = '#972d14') +  #label for hazard conc
+  geom_hline(yintercept = 0.925, linetype = 'twodash', color = "#A2A475") +
+  geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475")+
+  theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
-      plot.subtitle = element_text(hjust = 0.5))
+      plot.subtitle = element_text(hjust = 0.5))+
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+ECDF_model_occurrence
 
-gp2
+ggsave(ECDF_model_occurrence,
+       filename = "ECDF_model_occurrence.png",
+       path = "Concentration data/plots",
+       width = 8,
+       scale = 2,
+       dpi = 500)
 
 ggplotly(gp2)
+
 
