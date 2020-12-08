@@ -233,7 +233,9 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ui <- fluidPage(theme = shinytheme("flatly"),  
   
   # App title
-  titlePanel(h1("Microplastics Toxicity Database: Aquatic Organisms")),
+  titlePanel(tagList(span((h1("Microplastics Toxicity Database: Aquatic Organisms"))),
+                     span(actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right")))
+  ),
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
