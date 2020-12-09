@@ -446,39 +446,39 @@ tabPanel("2: Overview",
 
 column(width = 12,
         column(width = 12,
-        plotOutput(outputId = "exposure_plot"),
+        plotOutput(outputId = "tax_plot"),
         br())), 
        
 column(width = 12,
        column(width = 6,
-              plotOutput(outputId = "shape_plot"),
+              plotOutput(outputId = "vivo_plot"),
               br()), 
 
     
         column(width = 6,
-              plotOutput(outputId = "size_plot"),
+              plotOutput(outputId = "life_plot"),
               br())), 
        
 column(width = 12,
        
       column(width = 6,
-              plotOutput(outputId = "vivo_plot"),
+              plotOutput(outputId = "polymer_plot"),
               br()), 
 
         
 
       column(width = 6,
-              plotOutput(outputId = "life_plot"),
+              plotOutput(outputId = "exposure_plot"),
               br())), 
 
 column(width = 12,   
 
       column(width = 6,
-              plotOutput(outputId = "tax_plot"),
+              plotOutput(outputId = "shape_plot"),
               br()),
 
       column(width = 6,
-       plotOutput(outputId = "polymer_plot"),
+       plotOutput(outputId = "size_plot"),
        br()))),
 
 
