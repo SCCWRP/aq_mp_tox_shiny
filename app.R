@@ -342,8 +342,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
   
   # App title
   titlePanel(tagList(span((h1("Microplastics Toxicity Database: Aquatic Organisms"))),
-                     span(actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right")))
-  ),
+                     #span(actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right")))
+  )), #Remove one of these parentheses to add button to other app back in 
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),

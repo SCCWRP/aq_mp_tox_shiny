@@ -27,6 +27,8 @@ https://wincowger.shinyapps.io/OpenSpecy/
 
 Correlation between estiamted mass/volume vs. measured mass/volume
 
+Build BMD tab for human health https://efsa.onlinelibrary.wiley.com/doi/pdfdirect/10.2903/sp.efsa.2017.EN-1170 RPackage "bmdModeling"
+
 **Leah**
 
 *Leah* Effect metrics. Add type of effect threshold concentration metric as a categorial variable, but also add a column of assessment factors; ‘AF_dose descriptor’. This would allow users to align thresholds.
