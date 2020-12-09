@@ -898,7 +898,7 @@ server <- function(input, output) {
        labs(fill="Effect") +
        ggtitle("Polymer Type")+
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=22), plot.title = element_text(hjust = 0.5, face="bold",size=20))+
+       theme(text = element_text(size=17), plot.title = element_text(hjust = 0.5, face="bold",size=20))+
        theme(legend.position = "right",
              
              axis.ticks= element_blank(),
@@ -919,7 +919,7 @@ server <- function(input, output) {
        labs(fill="Effect") +
        ggtitle("In Vitro or In Vivo")+
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
+       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
@@ -959,7 +959,7 @@ server <- function(input, output) {
        labs(fill="Effect") +
        ggtitle("Plastic Shapes")+
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=18),plot.title = element_text(hjust = 0.5, face="bold"))+
+       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
@@ -979,7 +979,7 @@ server <- function(input, output) {
        ggtitle("Life Stage")+
        labs(fill="Effect") +
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=19),plot.title = element_text(hjust = 0.5, face="bold"))+
+       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
@@ -999,7 +999,7 @@ server <- function(input, output) {
        labs(fill="Effect") +
        ggtitle("Organism Group")+
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=25),plot.title = element_text(hjust = 0.5, face="bold"))+
+       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
@@ -1019,7 +1019,7 @@ server <- function(input, output) {
        labs(fill="Effect") +
        ggtitle("Exposure Route")+
        guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=8),plot.title = element_text(hjust = 0.5, face="bold"))+
+       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
