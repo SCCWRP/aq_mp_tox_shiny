@@ -445,37 +445,39 @@ tabPanel("2: Overview",
             #br(),
 
 column(width = 12,
-    column(width = 12,
         column(width = 12,
         plotOutput(outputId = "exposure_plot"),
         br())), 
        
-    column(width = 12,
-       column(width = 12,
+column(width = 12,
+       column(width = 6,
               plotOutput(outputId = "shape_plot"),
-              br())), 
+              br()), 
 
-      column(width = 12,
-        column(width = 12,
+    
+        column(width = 6,
               plotOutput(outputId = "size_plot"),
               br())), 
-
-      column(width = 12,
-        column(width = 12,
+       
+column(width = 12,
+       
+      column(width = 6,
               plotOutput(outputId = "vivo_plot"),
-              br())), 
+              br()), 
 
-      column(width = 12,
-        column(width = 12,
+        
+
+      column(width = 6,
               plotOutput(outputId = "life_plot"),
               br())), 
 
-    column(width = 12,
-        column(width = 12,
-              plotOutput(outputId = "tax_plot"),
-              br())),
+column(width = 12,   
 
-      column(width = 12,
+      column(width = 6,
+              plotOutput(outputId = "tax_plot"),
+              br()),
+
+      column(width = 6,
        plotOutput(outputId = "polymer_plot"),
        br()))),
 
@@ -890,10 +892,11 @@ server <- function(input, output) {
      ggplot(polyfinal,aes(fill=effect, y= logEndpoints, x= polymer, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("seagrass"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("Polymer Type")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -909,10 +912,11 @@ server <- function(input, output) {
      ggplot(vivofinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("lupinus"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("In Vitro or In Vivo")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -928,10 +932,11 @@ server <- function(input, output) {
      ggplot(sizefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("bigsur2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("Particle Size")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -947,10 +952,11 @@ server <- function(input, output) {
      ggplot(shapefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("vermillion"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("Plastic Shapes")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -966,9 +972,10 @@ server <- function(input, output) {
      ggplot(lifefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("lake"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
+       ggtitle("Life Stage")+
        labs(fill="Effect") +
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
@@ -985,10 +992,11 @@ server <- function(input, output) {
      ggplot(taxfinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
-       scale_fill_manual(values = cal_palette("wetland"))+
+       scale_fill_manual(values = cal_palette("superbloom2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("Organism Group")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -1008,6 +1016,7 @@ server <- function(input, output) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
+       ggtitle("Exposure Route")+
        guides(x = guide_axis(angle = 45))+
        theme(plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
