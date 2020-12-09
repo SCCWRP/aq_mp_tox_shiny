@@ -210,6 +210,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) #Renames for widget
+
   
 
 #### SSD AO Setup ####
@@ -463,7 +464,7 @@ uiOutput(outputId= "Emily_plot")),
                           choices = levels(aoc_setup$bio_f),
                           selected = levels(aoc_setup$bio_f),
                           options = list(`actions-box` = TRUE),
-                          multiple = TRUE))), 
+                          multiple = TRUE)), 
                       
                     #In vitro/in vivo widget - commented out for now
                        # column(width = 3,
@@ -471,8 +472,20 @@ uiOutput(outputId= "Emily_plot")),
                        #    label = "In Vitro or In Vivo:", 
                        #    choices = levels(aoc_setup$vivo_f),
                        #    selected = levels(aoc_setup$vivo_f),   
-                       #    options = list(`actions-box` = TRUE), 
+                       #    options = list(`actions-box` = TRUE),
                        #    multiple = TRUE))
+                    
+                    radioButtons(inputId = "particle_mass_check", # organism checklist
+                                 label = "Particles/mL or mg/L:",
+                                 choices = c("Particles/mL", "mg/L"),
+                                 selected = "mg/L"),
+                    conditionalPanel(condition = "input.particle_mass_check == 'mg/L'",
+                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                                     radioButtons(
+                                       inputId = "Reported_Converted_rad",
+                                       label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                       choices = list("reported", "converted", "all"),
+                                       selected = "all"))),
                        
                     # New row of widgets
                     column(width=12,
@@ -785,11 +798,23 @@ server <- function(input, output) {
       filter(shape_f %in% shape_c) %>% #filter by shape 
       filter(env_f %in% env_c) #%>% #filter by environment
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
+    
+    #determine if particles of mass will be used
+    particle_mass_check<- input$particle_mass_check #assign whether or not to use particles/mL or mass/mL
+    if(particle_mass_check == "Particles/mL"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.particles.mL.master)
+    }
+    if(particle_mass_check== "mg/L"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.mg.L.master)
+    }
+    
       
   })
      
   
-  brewer.pal(n = 9, name = "Oranges")
+ 
   
   
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
