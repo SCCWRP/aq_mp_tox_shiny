@@ -25,11 +25,13 @@ polyf<-as.data.frame(polydf)%>% #Makes data frame
 Endpoints<-xtabs(~polymer +effect ,aoc) #Pulls all study obs. for polymer from dataset
 polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
   rename(Endpoints='Freq.1')%>% #renames column
-  rename(category='polymer')#renames column
+  rename(category='polymer')%>%#renames column
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
 
 polyfinal
 
-
+count()
 
 sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
 sizef<-as.data.frame(sizedf)%>%
@@ -173,3 +175,19 @@ Final_effect_dataset2.0<-Final_effect_dataset%>%
 Final_effect_dataset2.0
 
 write.csv(Final_effect_dataset2.0, "Final_effect_dataset.csv")
+
+
+ggplot(polyfinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+  geom_bar(position="stack", stat="identity") +
+  geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+  scale_fill_manual(values = cal_palette("wetland"))+
+  theme_classic() +
+  ylab("Number of Endpoints Measured") +
+  labs(fill="Effect") +
+  guides(x = guide_axis(n.dodge = 2)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold"))+
+  theme(legend.position = "right",
+        axis.ticks= element_blank(),
+        axis.text.x = element_text(angle=45, size = 10),
+        axis.text.y = element_blank(),
+        axis.title.x = element_blank())
