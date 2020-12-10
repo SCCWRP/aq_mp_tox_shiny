@@ -618,17 +618,20 @@ column(width = 12,
                        #    options = list(`actions-box` = TRUE),
                        #    multiple = TRUE))
                     
-                    radioButtons(inputId = "particle_mass_check", # organism checklist
-                                 label = "Particles/mL or mg/L:",
-                                 choices = c("Particles/mL", "mg/L"),
+                    radioButtons(inputId = "dose_check", # dosing units
+                                 label = "particles/mL or mg/L:",
+                                 choices = c("particles/mL", 
+                                             "mg/L"),
                                  selected = "mg/L"),
-                    conditionalPanel(condition = "input.particle_mass_check == 'mg/L'",
-                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
-                                     radioButtons(
-                                       inputId = "Reported_Converted_rad",
-                                       label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                                       choices = list("reported", "converted", "all"),
-                                       selected = "all"))),
+                    
+                    # conditionalPanel(condition = "input.particle_mass_check == 'mg/L'",
+                    #                  p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    #                  radioButtons(
+                    #                    inputId = "Reported_Converted_rad",
+                    #                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                    #                    choices = list("reported", "converted", "all"),
+                    #                    selected = "all"))
+                    ),
                        
                     # New row of widgets
                     column(width=12,
@@ -1065,6 +1068,8 @@ server <- function(input, output) {
     shape_c <- input$shape_check # assign values to "shape_c" 
     size_c <- input$size_check # assign values to "size_c" 
     range_n <- input$range # assign values to "range_n"
+    dose_n <- input$dose_check #assign values to "dose_n" #renames selection from radio button
+    
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -1076,26 +1081,15 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
-      filter(env_f %in% env_c) #%>% #filter by environment
-      #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
+      filter(env_f %in% env_c) %>% #filter by environment
+      mutate(dose_select = ifelse(dose_n == "particles/mL",dose.particles.mL.master,dose.mg.L.master)) #creates new column based on radio button selection
+    
+    #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
     
     #determine if particles of mass will be used
-    particle_mass_check<- input$particle_mass_check #assign whether or not to use particles/mL or mass/mL
-    if(particle_mass_check == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    }
-    if(particle_mass_check== "mg/L"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.mg.L.master)
-    }
-    
-      
+
   })
      
-  
- 
-  
   
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
@@ -1103,7 +1097,7 @@ server <- function(input, output) {
   
   output$organism_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = org_f)) +
+    ggplot(aoc_filter(), aes(x = dose_select, y = org_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
