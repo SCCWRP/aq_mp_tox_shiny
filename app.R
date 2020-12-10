@@ -316,7 +316,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     life.stage == "Not Reported"~"Not Reported")))%>% #Renames for widget
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
-    environment == "Terrestrial" ~ "Terrestrial")))
+    environment == "Terrestrial" ~ "Terrestrial"))) %>% 
+  mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>% 
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
     
 
 
@@ -327,8 +329,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
   mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
-  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) %>% # order our different environments.
-  drop_na(dose.mg.L.master)  #must drop NAs or else nothing will work 
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
  
 # final cleanup and factoring  
 aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
@@ -608,7 +609,8 @@ column(width = 12,
                           choices = levels(aoc_setup$bio_f),
                           selected = levels(aoc_setup$bio_f),
                           options = list(`actions-box` = TRUE),
-                          multiple = TRUE)), 
+                          multiple = TRUE)
+                        ), #close out column 
                       
                     #In vitro/in vivo widget - commented out for now
                        # column(width = 3,
@@ -620,20 +622,17 @@ column(width = 12,
                        #    multiple = TRUE))
                     
                     radioButtons(inputId = "dose_check", # dosing units
-                                 label = "particles/mL or mg/L:",
-                                 choices = c("particles/mL", 
-                                             "mg/L"),
+                                 label = "Particles/mL or mg/L:",
+                                 choices = c("Particles/mL", "mg/L"),
                                  selected = "mg/L"),
                     
-                    # conditionalPanel(condition = "input.particle_mass_check == 'mg/L'",
-                    #                  p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
-                    #                  radioButtons(
-                    #                    inputId = "Reported_Converted_rad",
-                    #                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                    #                    choices = list("reported", "converted", "all"),
-                    #                    selected = "all"))
-                    ),
-                       
+                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    
+                    radioButtons(inputId = "Rep_Con_rad",
+                      label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                      choices = c("reported", "converted", "all"),
+                      selected = "all")),
+                    
                     # New row of widgets
                     column(width=12,
                         column(width = 3,
@@ -1069,8 +1068,37 @@ server <- function(input, output) {
     shape_c <- input$shape_check # assign values to "shape_c" 
     size_c <- input$size_check # assign values to "size_c" 
     range_n <- input$range # assign values to "range_n"
-    dose_n <- input$dose_check #assign values to "dose_n" #renames selection from radio button
+    dose_check <- input$dose_check #renames selection from radio button
+    Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     
+    #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
+    if(Rep_Con_rad == "reported" & dose_check == "mg/L"){
+      aoc_setup <- aoc_setup %>% 
+        filter(dose.mg.L.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.mg.L.master)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "mg/L"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.mg.L.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.mg.L.master)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "mg/L"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = dose.mg.L.master)}
+    
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.particles.mL.master)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.particles.mL.master)} 
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = dose.particles.mL.master)}
     
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
@@ -1082,13 +1110,9 @@ server <- function(input, output) {
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape 
-      filter(env_f %in% env_c) %>% #filter by environment
-      mutate(dose_select = ifelse(dose_n == "particles/mL",dose.particles.mL.master,dose.mg.L.master)) #creates new column based on radio button selection
+      filter(env_f %in% env_c) #filter by environment
+      #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
     
-    #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
-    
-    #determine if particles of mass will be used
-
   })
      
   
@@ -1098,7 +1122,7 @@ server <- function(input, output) {
   
   output$organism_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_select, y = org_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -1107,7 +1131,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
            y = "Organism",
            color = "Effect?",
            fill = "Effect?")
@@ -1119,7 +1143,7 @@ server <- function(input, output) {
   
   output$size_plot_react <- renderPlot({
 
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = size_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
@@ -1128,7 +1152,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
         y = "Size",
         color = "Effect?",
         fill = "Effect?")
@@ -1139,7 +1163,7 @@ server <- function(input, output) {
   
   output$shape_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = shape_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = shape_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -1148,7 +1172,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
         y = "Shape",
         color = "Effect?",
         fill = "Effect?")
@@ -1159,7 +1183,7 @@ server <- function(input, output) {
   
   output$poly_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = poly_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = poly_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -1168,7 +1192,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
         y = "Polymer",
         color = "Effect?",
         fill = "Effect?")
@@ -1179,7 +1203,7 @@ server <- function(input, output) {
   
   output$lvl_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl1_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
         labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -1188,7 +1212,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
         y = "Endpoint",
         color = "Effect?",
         fill = "Effect?")
@@ -1199,7 +1223,7 @@ server <- function(input, output) {
   
   output$lvl2_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose.mg.L.master, y = lvl2_f)) +
+    ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
@@ -1208,7 +1232,7 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size=18),
             legend.position = "right") +
-      labs(x = "Concentration (mg/L)",
+      labs(x = input$dose_check,
            y = "Specific Endpoint",
            color = "Effect?",
            fill = "Effect?")
@@ -1364,43 +1388,37 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
    
-    #determine if particles or mass will be used
-    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
-    if(particle_mass_check_ssd == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    }
-    if(particle_mass_check_ssd == "mg/L"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.mg.L.master)
-    }
-    
-    #filter out reported, calcualted, or all based on checkbox
-     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
+    #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "mg/L")
+        filter(dose.mg.L.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "mg/L")
+        filter(dose.mg.L.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(particle_mass_check_ssd == "mg/L")
+        mutate(dose_new = dose.mg.L.master)
     }
-     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "particles/mL"){
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "particles/mL")
+        filter(dose.particles.mL.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.particles.mL.master)
     } 
-     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "particles/mL"){
-       aoc_z <- aoc_z %>% 
-         filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "particles/mL")
-     } 
-     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "particles/mL"){
-       aoc_z <- aoc_z %>% 
-         filter(particle_mass_check_ssd == "particles/mL")
-     }
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.particles.mL.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.particles.mL.master)
+    } 
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL"){
+      aoc_z <- aoc_z %>% 
+        mutate(dose_new = dose.particles.mL.master)
+    }
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -1430,46 +1448,39 @@ server <- function(input, output) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign general endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
-    
-    #determine if particles or mass will be used
-    particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
-    if(particle_mass_check_ssd == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    }
-    if(particle_mass_check_ssd == "mg/L"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.mg.L.master)
-    }
-    
-    
-    #filter out reported, calcualted, or all based on checkbox
+
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
+    
+    #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "mg/L")
+        filter(dose.mg.L.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "mg/L")
+        filter(dose.mg.L.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(particle_mass_check_ssd == "mg/L")
+        mutate(dose_new = dose.mg.L.master)
     }
-    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "particles/mL"){
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "particles/mL")
+        filter(dose.particles.mL.master.converted.reported == "reported") %>% 
+        mutate(dose_new = dose.particles.mL.master)
     } 
-    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "particles/mL"){
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "particles/mL")
+        filter(dose.particles.mL.master.converted.reported == "converted") %>% 
+        mutate(dose_new = dose.particles.mL.master)
     } 
-    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "particles/mL"){
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(particle_mass_check_ssd == "particles/mL")
+        mutate(dose_new = dose.particles.mL.master)
     }
-    
     
     
     #right-hand table of just effect data
@@ -1506,7 +1517,7 @@ server <- function(input, output) {
   
   
   #print summarize filtered data in data table
-  output$aoc_filter_ssd_table <- DT::Table(server = FALSE,{ #server= FALSE prints ALL data, not just what's shown
+  output$aoc_filter_ssd_table <- DT::renderDataTable(server = FALSE,{ #server= FALSE prints ALL data, not just what's shown
     particle_mass_check_ssd <- input$particle_mass_check_ssd
     req(input$SSDgo)
     
@@ -1556,17 +1567,17 @@ server <- function(input, output) {
   }) 
   
   #Render table for goodness of fit
-  output$table_gof_react <- DT::renderDataTable({ #server= FALSE prints ALL data, not just what's shown 
+  output$table_gof_react <- DT::renderDataTable(server= FALSE,{  #prints ALL data, not just what's shown 
     req(gof())
     gof <- gof() %>% 
       mutate_if(is.numeric, ~ signif(., 3))
     
      datatable(gof,
-             # extensions = 'Buttons',
+              extensions = 'Buttons',
               options = list(
-                dom = 't'), #,
-                # buttons = c('copy', 'csv', 'excel')
-                # ),
+                dom = 'Brt', #buttons, processing display element, table
+                 buttons = c('copy', 'csv', 'excel')
+                 ),
               class = "compact",
               colnames = c("Distribution", "Anderson-Darling","Kolmogorv Smirnov", "Cramer-Von Mises", "Akaike's Information Criteria", "Akaike's Information Criteria (Corrected for sample size)", "Bayesian Information Criteria", "delta", "weight"),
               caption = "Distributions and their according fit paramaters are displayed",
