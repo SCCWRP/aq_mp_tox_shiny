@@ -24,6 +24,7 @@ library(viridis) #Colors
 library(scales) #To use "percent" function
 library(shinyjs) #Exploration tab - reset button
 library(tigerstats) #turns things into percents
+library(beeswarm) #plot all points
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -754,7 +755,7 @@ column(width = 12,
                                        label = "Particles/mL or mg/L:",
                                        choices = c("Particles/mL", "mg/L"),
                                        selected = "mg/L"),
-                    conditionalPanel(condition = "input.particle_mass_check_ssd == 'mg/L'",
+                    column(width = 4,
                                      p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                                      radioButtons(
                                               inputId = "Reported_Converted_rad",
@@ -1363,7 +1364,7 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
    
-    #determine if particles of mass will be used
+    #determine if particles or mass will be used
     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
     if(particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
@@ -1380,13 +1381,26 @@ server <- function(input, output) {
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "mg/L")
     } 
-    if(Reported_Converted_rad == "converted"){
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
         filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "mg/L")
     } 
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
-      aoc_z <- aoc_z 
+      aoc_z <- aoc_z %>% 
+        filter(particle_mass_check_ssd == "mg/L")
     }
+     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "particles/mL"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "particles/mL")
+    } 
+     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "particles/mL"){
+       aoc_z <- aoc_z %>% 
+         filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "particles/mL")
+     } 
+     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "particles/mL"){
+       aoc_z <- aoc_z %>% 
+         filter(particle_mass_check_ssd == "particles/mL")
+     }
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -1417,7 +1431,7 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     
-    #determine if particles of mass will be used
+    #determine if particles or mass will be used
     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
     if(particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
@@ -1428,19 +1442,35 @@ server <- function(input, output) {
         mutate(dose_new = dose.mg.L.master)
     }
     
-    #filter out reported, calcualted, or all based on checkbox FOR MASS
+    
+    #filter out reported, calcualted, or all based on checkbox
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "mg/L")
+    } 
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "converted")
+        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "mg/L")
     } 
-    if (Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported != "reported")
-    } 
-    if (Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
-        aoc_z <- aoc_z 
+        filter(particle_mass_check_ssd == "mg/L")
     }
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "particles/mL"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "converted" & particle_mass_check_ssd == "particles/mL")
+    } 
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "particles/mL"){
+      aoc_z <- aoc_z %>% 
+        filter(dose.mg.L.master.converted.reported != "reported" & particle_mass_check_ssd == "particles/mL")
+    } 
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "particles/mL"){
+      aoc_z <- aoc_z %>% 
+        filter(particle_mass_check_ssd == "particles/mL")
+    }
+    
+    
     
     #right-hand table of just effect data
     aoc_z %>% 
@@ -1476,7 +1506,7 @@ server <- function(input, output) {
   
   
   #print summarize filtered data in data table
-  output$aoc_filter_ssd_table <- DT::renderDataTable({
+  output$aoc_filter_ssd_table <- DT::Table(server = FALSE,{ #server= FALSE prints ALL data, not just what's shown
     particle_mass_check_ssd <- input$particle_mass_check_ssd
     req(input$SSDgo)
     
@@ -1526,9 +1556,17 @@ server <- function(input, output) {
   }) 
   
   #Render table for goodness of fit
-  output$table_gof_react <- DT::renderDataTable({
-    datatable(gof(),
-              options = list(dom = 't'), #only display the table and nothing else
+  output$table_gof_react <- DT::renderDataTable({ #server= FALSE prints ALL data, not just what's shown 
+    req(gof())
+    gof <- gof() %>% 
+      mutate_if(is.numeric, ~ signif(., 3))
+    
+     datatable(gof,
+             # extensions = 'Buttons',
+              options = list(
+                dom = 't'), #,
+                # buttons = c('copy', 'csv', 'excel')
+                # ),
               class = "compact",
               colnames = c("Distribution", "Anderson-Darling","Kolmogorv Smirnov", "Cramer-Von Mises", "Akaike's Information Criteria", "Akaike's Information Criteria (Corrected for sample size)", "Bayesian Information Criteria", "delta", "weight"),
               caption = "Distributions and their according fit paramaters are displayed",
@@ -1683,7 +1721,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   # SSD Table
 
-  output$ssd_pred_table <- DT::renderDataTable({
+  output$ssd_pred_table <- DT::renderDataTable(server = FALSE,{ #server= FALSE prints ALL data, not just what's shown
     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
      req(aoc_pred())
     aoc_pred <- aoc_pred() %>% 
