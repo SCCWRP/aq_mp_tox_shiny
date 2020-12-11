@@ -1127,10 +1127,20 @@ server <- function(input, output) {
   
   #Organism plot
   
+  
+  
+  
   output$organism_plot_react <- renderPlot({
     
+    aoc_org1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
     
-    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
+    
+    org1 <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
