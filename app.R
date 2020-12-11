@@ -6,6 +6,9 @@
 
 # Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
 
+
+ 
+
 # Load packages
 library(tidyverse) #General everything
 library(RColorBrewer)
@@ -198,9 +201,8 @@ routefinal<- data.frame(cbind(routef, study_r))%>%
   rename(category='exposure.route')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
-
-    
-
+  
+  
 #### Exploration AO Setup ####
 
 # Master dataset for scatterplots - for Heili's tab.
@@ -320,8 +322,6 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>% 
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
     
-
-
 
 #### SSD AO Setup ####
 
@@ -1113,6 +1113,13 @@ server <- function(input, output) {
       filter(env_f %in% env_c) #filter by environment
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
     
+    aoc_size1 <- aoc_filter() %>%
+      drop_na(dose.mg.L) %>%
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
   })
      
   
@@ -1122,12 +1129,18 @@ server <- function(input, output) {
   
   output$organism_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
+    
+    size2 <- ggplot(aoc_filter(), aes(x = dose.particles.mL, y = size_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
       scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
+      geom_text_repel(data = aoc_size1, 
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = -1,
+                      nudge_y = -0.25,
+                      segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
