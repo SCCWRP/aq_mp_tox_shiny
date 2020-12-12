@@ -1109,12 +1109,12 @@ server <- function(input, output) {
       filter(env_f %in% env_c) #filter by environment
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
     
-    aoc_size1 <- aoc_filter() %>%
-      drop_na(dose.mg.L) %>%
-      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
-      summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
-                measurements = n(),
-                studies = n_distinct(article))
+    # aoc_size1 <- aoc_filter() %>%
+    #   drop_na(dose.mg.L) %>%
+    #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+    #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
+    #             measurements = n(),
+    #             studies = n_distinct(article))
     
   })
      
@@ -1128,25 +1128,26 @@ server <- function(input, output) {
   
   output$organism_plot_react <- renderPlot({
     
-    aoc_org1 <- aoc_filter() %>%
-      drop_na(dose_new) %>%
-      group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
-      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
-                measurements = n(),
-                studies = n_distinct(article))
+    # aoc_org1 <- aoc_filter() %>%
+    #   drop_na(dose_new) %>%
+    #   group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
+    #   summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+    #             measurements = n(),
+    #             studies = n_distinct(article))
     
     
-    org1 <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
+    # org1 <- 
+      ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
       scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
                     labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
       scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
-      geom_text_repel(data = aoc_size1, 
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = -1,
-                      nudge_y = -0.25,
-                      segment.colour = NA) +
+      # geom_text_repel(data = aoc_size1, 
+      #                 aes(label = paste("(",measurements,",",studies,")")),
+      #                 nudge_x = -1,
+      #                 nudge_y = -0.25,
+      #                 segment.colour = NA) +
       theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
