@@ -344,8 +344,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
   
   # App title
   titlePanel(tagList(span((h1("Microplastics Toxicity Database: Aquatic Organisms"))),
-                     #span(actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right")))
-  )), #Remove one of these parentheses to add button to other app back in 
+                     span(actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right")))
+  ), #Remove one of these parentheses to add button to other app back in 
   
   # Title panel subtext
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
@@ -430,10 +430,7 @@ tabPanel("2: Overview",
          br(), 
          h3("Overview of Toxicological Effects in Aquatic Organisms", align = "center"),
          br(),
-         p("Check the boxes below to visualize figures. Each bar displays the total number of measured endpoints within the database. Measured endpoints where a statistically signifcant effect was detected as indicated by 'Y' or where a measurement was made but a significant effect was not detected 'N'."), 
-         br(),
-         p("Use the drop down menu at the top of the page to visualize different figures. Hover the cursor over each stacked bar to display the number of measured endpoints that are currently included in the database. 
-           Click on the legend to select data."),
+         p("Each bar displays the total number of measured endpoints where a statistically signifcant effect was detected (Y) or where a measurement was made but a significant effect was not detected (N)."), 
          br(), 
          p("Detailed descriptions of data categories may be found under the Resources tab."),
          br(),
@@ -490,18 +487,16 @@ column(width = 12,
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
                     h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
-                    br(), # line break
-                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively. All doses are displayed in mass per volume. Doses 
-                    were either reported in mass per volume or converted from doses originally presented as particle count per volume."),
+                    br(), 
+                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively."),
                     br(),
-                    p("The data displayed in these figures are not filtered for quality and only display data where doses were reported as 
-                      mass per volume or were converted from doses reported from counts per volume - other dosing units (e.g., particle mass/kg sediment) 
-                      are not displayed but are available in the complete database file."),
-                    br(), # line break
+                    p("The data displayed in these figures are not filtered for quality and only display data from in vitro studies or in vivo studies where doses were reported as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
+                    are not displayed but are available in the complete database file."),
+                    br(), 
                     p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
-                    br(), # line break
+                    br(), 
                     p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
-                    br(), # line break
+                    br(), 
                     
                     
                     # widget headers
@@ -750,17 +745,18 @@ column(width = 12,
                            column(width = 4,
                                   htmlOutput("polySelection")),# polymer selection based on other inputs
                            ),#close out column
+                    
                     radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
                                        label = "Particles/mL or mg/L:",
                                        choices = c("Particles/mL", "mg/L"),
                                        selected = "mg/L"),
-                    column(width = 4,
+                    
                                      p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                                      radioButtons(
                                               inputId = "Reported_Converted_rad",
                                               label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
                                               choices = list("reported", "converted", "all"),
-                                              selected = "all")),
+                                              selected = "all"),
                     br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
@@ -768,9 +764,9 @@ column(width = 12,
                     # "SSDgo" is the internal name to refer to the button
                     # "Update" is the title that appears on the app
                            
-                    br(), 
-                    p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices...", align = "center"),
-                    br(),
+                    # br(), 
+                    # p("Please wait a moment while maximum likelihood estimation is calculated data based on your choices...", align = "center"),
+                    # br(),
 
                     
                     mainPanel("Filtered Data Based on Choices Above:",
@@ -1134,7 +1130,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
            y = "Organism",
            color = "Effect?",
-           fill = "Effect?")
+           fill = "Effect?",
+           caption = (input$Rep_Con_rad))
     
   })
   
@@ -1155,7 +1152,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
         y = "Size",
         color = "Effect?",
-        fill = "Effect?")
+        fill = "Effect?",
+        caption = (input$Rep_Con_rad))
 
   })
   
@@ -1175,7 +1173,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
         y = "Shape",
         color = "Effect?",
-        fill = "Effect?")
+        fill = "Effect?",
+        caption = (input$Rep_Con_rad))
     
   })
   
@@ -1195,7 +1194,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
         y = "Polymer",
         color = "Effect?",
-        fill = "Effect?")
+        fill = "Effect?",
+        caption = (input$Rep_Con_rad))
     
   })
   
@@ -1215,7 +1215,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
         y = "Endpoint",
         color = "Effect?",
-        fill = "Effect?")
+        fill = "Effect?",
+        caption = (input$Rep_Con_rad))
     
   })
   
@@ -1235,7 +1236,8 @@ server <- function(input, output) {
       labs(x = input$dose_check,
            y = "Specific Endpoint",
            color = "Effect?",
-           fill = "Effect?")
+           fill = "Effect?",
+           caption = (input$Rep_Con_rad))
     
   })
   
