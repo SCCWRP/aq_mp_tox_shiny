@@ -1147,8 +1147,7 @@ server <- function(input, output) {
     
     # org1 <- 
       ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
       scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
@@ -1175,8 +1174,7 @@ server <- function(input, output) {
 
     ggplot(aoc_filter(), aes(x = dose_new, y = size_f)) +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       theme_classic() +
@@ -1195,8 +1193,7 @@ server <- function(input, output) {
   output$shape_plot_react <- renderPlot({
     
     ggplot(aoc_filter(), aes(x = dose_new, y = shape_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#C7EAE5","#35978F")) +
       scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
@@ -1216,8 +1213,7 @@ server <- function(input, output) {
   output$poly_plot_react <- renderPlot({
     
     ggplot(aoc_filter(), aes(x = dose_new, y = poly_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
@@ -1237,8 +1233,7 @@ server <- function(input, output) {
   output$lvl_plot_react <- renderPlot({
     
     ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-        labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
@@ -1258,8 +1253,7 @@ server <- function(input, output) {
   output$lvl2_plot_react <- renderPlot({
     
     ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f)) +
-      scale_x_log10(breaks = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000), 
-                    labels = c(0.00000001, 0.000001, 0.0001, 0.01, 1, 100, 10000, 1000000)) +
+      scale_x_log10() +
       geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
