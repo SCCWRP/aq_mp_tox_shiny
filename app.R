@@ -782,7 +782,7 @@ column(width = 12,
                               br(),
                               p("The best fitting model is that with the smallest Information Criteria value. Note that several informaiton criteria are listed ", a(href ="http://a100.gov.bc.ca/appsdata/acat/documents/r57400/2_1568399094009_8398900200.pdf", 'Schwarz and Tillmanns (2019)', .noOWs = "outside"),"."),
                               br(),
-                              p("Following ", a(href ="https://books.google.com/books?id=c45qtw7tDrsC&lpg=PA113&ots=Zn9Neau5aM&dq=burnham%20and%20anderson%20(2002)%20species%20sensitivity&lr&pg=PA113#v=onepage&q&f=false", 'Burnham and Anderson (2002)', .noOWs = "outside"),", the aicc is recommended for model selection (for which the lowest value is the best fitting model), and is the default information criteria used to predict confidence intervals (unless otherwise specified below). Options inlcude aicc (Akaike's Information Criteria Corrected for sample size; default), aic (Akaike's Information Criteria), or bic (Bayseian Information Criteria)"),
+                              p("Following ", a(href ="https://books.google.com/books?id=c45qtw7tDrsC&lpg=PA113&ots=Zn9Neau5aM&dq=burnham%20and%20anderson%20(2002)%20species%20sensitivity&lr&pg=PA113#v=onepage&q&f=false", 'Burnham and Anderson (2002)', .noOWs = "outside"),", the aicc is recommended for model selection (for which the lowest value is the best fitting model), and is the default information criteria used to predict confidence intervals (unless otherwise specified below). Options inlcude aicc (Akaike's Information Criteria Corrected for sample size; default), aic (Akaike's Information Criteria), or bic (Bayseian Information Criteria). Choose the information criteria used to estimate confidence intervals below:"),
                               br(),
                               column(width = 12,
                                      pickerInput(inputId = "pred_ic_ssd", # prediction model averaging checklist
@@ -792,7 +792,7 @@ column(width = 12,
                                                  options = list(`actions-box` = FALSE), # option to de/select all
                                                  multiple = FALSE)),
                               br(),
-                              p("Understanding that other distributions may fit the data almost as well as the 'best' distribution (as evidenced by delta values <2), it is recommended to average such fits based on the relative aicc weights of the distributions (indicated by the weight column in the goodness of fit table) ", a(href ="https://books.google.com/books?id=c45qtw7tDrsC&lpg=PA113&ots=Zn9Neau5aM&dq=burnham%20and%20anderson%20(2002)%20species%20sensitivity&lr&pg=PA113#v=onepage&q&f=false", 'Burnham and Anderson (2002)', .noOWs = "outside"),". Below, choose whether or not multiple distributions should be averaged (delta <2) or if a single distribution (chosen by lowest information criteria selected above) should be used."),
+                              p("Understanding that other distributions may fit the data almost as well as the 'best' distribution (as evidenced by delta values <2), it is recommended to average such fits based on the relative aicc weights of the distributions (indicated by the weight column in the goodness of fit table) ", a(href ="https://books.google.com/books?id=c45qtw7tDrsC&lpg=PA113&ots=Zn9Neau5aM&dq=burnham%20and%20anderson%20(2002)%20species%20sensitivity&lr&pg=PA113#v=onepage&q&f=false", 'Burnham and Anderson (2002)', .noOWs = "outside"),". Below, choose whether or not multiple distributions should be averaged (weighted according to above table) or if a single distribution should be used."),
                               br(),
                               column(width = 12,
                                      pickerInput(inputId = "pred_ave_ssd", # prediction model averaging checklist
@@ -801,6 +801,15 @@ column(width = 12,
                                                  selected = NULL,
                                                  options = list(`actions-box` = FALSE), # option to de/select all
                                                  multiple = FALSE)),
+                              br(),
+                              conditionalPanel("input.pred_ave_ssd == 'FALSE'",
+                                               p("Choose which distribution will be plotted below (llogis = log-logistic; lnorm = log-normal; lgumbel = log-Gumbel):"),
+                                               pickerInput(inputId = "dist",
+                                                           label = "Distribution:",
+                                                           choices = c("weibull", "llogis", "lnorm", "gamma", "lgumbel"),
+                                                           selected = NULL,
+                                                           options = list(`actions-box` = FALSE), # option to de/select all
+                                                           multiple = FALSE)),
                               br(),
                               p("Choose the hazard concentration (% of species affected)"),
                               numericInput(inputId = "pred_hc_ssd", #hazard concentration input
@@ -1619,13 +1628,28 @@ server <- function(input, output) {
     pred_c_ave_ssd <- as.logical(input$pred_ave_ssd) #assign prediction averaging choice
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
     nbootNum <- as.numeric(input$nbootInput) #assign  number of bootsrap samples
+    dist_c <- input$dist #assign input to selected distribution
     
+    if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     stats::predict(fit_dists(), #Predict fitdist. 
             average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
             ic = pred_c_ic_ssd, #tells which information criteria to use - user input
             nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
+    }
+    
+    else{
+      set.seed(99)
+      predict(fit_dists(), #Predict fitdist. 
+                     average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+                     ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+                     nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
+                     ci= TRUE) %>%  #estimates confidence intervals
+        as.data.frame() %>% 
+        filter(dist == dist_c)
+    }
+    
   }) 
  
 # **SSD Plot ----
@@ -1693,7 +1717,9 @@ output$downloadSsdPlot <- downloadHandler(
     pred_c_ic_ssd <- input$pred_ic_ssd #assign prediction information criteria choice
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
     nbootNum <- as.numeric(input$nbootInput) #assign  number of bootsrap samples
-    
+    dist_c <- input$dist
+  
+      if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     ssd_hc(fit_dists(), #dataset
            percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
@@ -1701,6 +1727,19 @@ output$downloadSsdPlot <- downloadHandler(
            average = pred_c_ave_ssd, #tells whether or not the average models
            ic = pred_c_ic_ssd, #tells which information criteria to use
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
+      }
+    
+    #create hc based on user choice of distribution
+    else{
+      ssd_hc(fit_dists(), #dataset
+             percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+             nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
+             average = pred_c_ave_ssd, #tells whether or not the average models
+             ic = pred_c_ic_ssd, #tells which information criteria to use
+             ci = TRUE) %>%  #flag to estimate confidence intervals using parametric bootstrapping
+        as.data.frame() %>% 
+        filter(dist == dist_c)
+        }
   })
   
 #Plot SSD data with ggplot
@@ -1733,7 +1772,9 @@ output$downloadSsdPlot <- downloadHandler(
       geom_text(data = aochc, aes(x = est, y = -0.09, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
       geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red", size = 5) + #label for hazard conc
       scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
-      scale_color_viridis(discrete = TRUE)  #make colors more differentiable 
+      scale_color_viridis(discrete = TRUE) +  #make colors more differentiable 
+      geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) #label for distribution
+      
   })
   
   
