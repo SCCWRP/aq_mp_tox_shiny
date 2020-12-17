@@ -7,6 +7,7 @@ library(plotly)
 library(gridExtra)
 library(grid)
 library(wesanderson)
+library(ggdark)
 
 ##### Concentration data prep ####
 #SFEI data is already prepped
@@ -276,6 +277,51 @@ samples %>%
         scale = 2,
         dpi = 500)
  
+ 
+ 
+ #histogram of SFEI concentrations 
+ hist.SFEI.occurrence <- df %>% 
+   filter(Conc < 10000000) %>%
+   filter(Sample.Type == "sample") %>% 
+   ggplot(aes(x = Conc, fill = Sample.Type, color = Sample.Type))+
+   geom_histogram(aes(x = Conc, y=..density..), bins = 15, alpha = 0.6,position = 'identity') +
+   geom_smooth(stat = 'density') +
+   scale_x_log10() +
+   #coord_cartesian(xlim = c(1,1000)) +
+   # scale_x_continuous(labels = scales::scientific) +
+   xlab("Concentration (particles/L)")+
+   scale_y_continuous(name = "Relative Density", labels = scales::percent)+
+   scale_fill_discrete(labels = c("Environmental Concentration")) +
+   scale_color_discrete(labels = c("Environmental Concentration")) +
+   labs(title = "Microplastics Concentrations in SFEI Dataset",
+        caption = "SFEI 2017 data; all data corrected to 1-5,000 um; nominal particle/L")
+ hist.SFEI.occurrence
+ 
+ 
+ #display
+ hist.SFEI.occurrence_white <- hist.SFEI.occurrence + 
+   theme(plot.title = element_text(hjust = 0.5, size = 20),
+         axis.title = element_text(size = 16),
+         axis.text =  element_text(size = 16),
+         legend.text = element_text(size =14),
+         legend.title = element_blank())
+ 
+hist.SFEI.occurrence_white
+#display
+hist.SFEI.occurrence_dark <- hist.SFEI.occurrence + 
+  dark_theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size = 16),
+        axis.text =  element_text(size = 16),
+        legend.text = element_text(size =14),
+        legend.title = element_blank())
+
+hist.SFEI.occurrence_dark
+ggsave(hist.SFEI.occurrence_dark, filename = "Histogram_SFEI_occurrence_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
+
+
+ 
 #### Plot SFEI with Tox ####
 #histogram of both tox and concentrations 
 hist.tox.occurrence <- df %>% 
@@ -293,47 +339,79 @@ hist.tox.occurrence <- df %>%
   labs(title = "Histograms of Concentrations in SFEI Dataset vs. Food Dilution LOECs",
        caption = "SFEI 2017 data; all data corrected to 1-5,000 um; nominal particle/L; SCCWRP tox dataset",
        fill = "Env. Conc. or Tox. Conc.",
-       color = "Env. Conc. or Tox. Conc.") +
+       color = "Env. Conc. or Tox. Conc.")
+ 
+
+#display
+hist.tox.occurrence_white <- hist.tox.occurrence + 
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+                                                         axis.title = element_text(size = 16),
+                                                         axis.text =  element_text(size = 16),
+                                                         legend.text = element_text(size =14),
+                                                       legend.title = element_blank())
+
+hist.tox.occurrence_white
+
+#save
+ggsave(hist.tox.occurrence_white, filename = "Histogram_SFEI_tox_occurrence_white.png", path = "Concentration data/plots",
+       width = 8, scale = 2, dpi = 500)
+
+#Dark mode
+hist.tox.occurrence_dark <- hist.tox.occurrence +
+  dark_mode()+
   theme(plot.title = element_text(hjust = 0.5, size = 20),
         axis.title = element_text(size = 16),
         axis.text =  element_text(size = 16),
         legend.text = element_text(size =14),
         legend.title = element_blank())
-#display
-hist.tox.occurrence
+hist.tox.occurrence_dark
+
 #save
-ggsave(hist.tox.occurrence,
-       filename = "Histogram_tox_occurrence.png",
-       path = "Concentration data/plots",
-       width = 8,
-       scale = 2,
-       dpi = 500)
+ggsave(hist.tox.occurrence_dark, filename = "Histogram_SFEI_tox_occurrence_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
+
 
 
 #ECDF by season
-ECDF.Season <- samples %>% 
+ECDF.Season <- samplesSFEI %>% 
   ggplot(aes(x = Particles.L_Corrected, color = Season))+
   stat_ecdf(geom = "point", size = 2) +
   stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
   scale_color_manual(values = wes_palette("GrandBudapest2"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
-  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
   scale_x_continuous(trans = "log10") +
-  annotation_logticks(sides = "b") + #log scale rick marks on bottom
-  theme_minimal() +
+  annotation_logticks(sides = "b") +  #log scale rick marks on bottom
   labs(title = "SFEI Concentrations ECDF by Season",
        subtitle = "Particles/L corrected to 1-5,000 um",
-       caption = "Hazard Concentration from Koelmans et al (2020)")+
+       caption = "Hazard Concentration from Koelmans et al (2020)")
+
+#white mode
+ECDF.Season_SFEI_white <- ECDF.Season +
+  theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
         plot.subtitle = element_text(hjust = 0.5, size = 14))
-ECDF.Season
+ECDF.Season_SFEI_white
+
+#save
+ggsave(ECDF.Season_SFEI_white, filename = "ECDF.Season_SFEI_white.png", path = "Concentration data/plots",
+       width = 8, scale = 2, dpi = 500)
+#dark mode
+ECDF.Season_SFEI_dark <- ECDF.Season +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.Season_SFEI_dark
+#save
+ggsave(ECDF.Season_SFEI_dark, filename = "ECDF.Season_SFEI_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
 
 #ECDF by sample type
 ECDF.SampleType <- SFEI %>% 
@@ -341,24 +419,39 @@ ECDF.SampleType <- SFEI %>%
   stat_ecdf(geom = "point", size = 2) +
   stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
   scale_color_manual(values = wes_palette("FantasticFox1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
-  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
   scale_x_continuous(trans = "log10") +
   annotation_logticks(sides = "b")+ #log scale rick marks on bottom
-  theme_minimal() +
   labs(title = "SFEI Concentrations ECDF by Sample Type",
        subtitle = "Particles/L corrected to 1-5,000 um",
-       caption = "Hazard Concentration from Koelmans et al (2020)")+
+       caption = "Hazard Concentration from Koelmans et al (2020)")
+
+ECDF.SampleType_white<- ECDF.SampleType +
+  theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
         plot.subtitle = element_text(hjust = 0.5, size = 14))
-ECDF.SampleType
+ECDF.SampleType_white
+#save
+ggsave(ECDF.SampleType_white, filename = "ECDF.SampleType_white.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 500)
+
+#dark
+ECDF.SampleType_dark<- ECDF.SampleType +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.SampleType_dark
+#save
+ggsave(ECDF.SampleType_dark, filename = "ECDF.SampleType_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, units = "in", scale = 2, dpi = 320)
 
 #ECDF by location
 ECDF.Location <- SFEI %>% 
@@ -367,24 +460,39 @@ ECDF.Location <- SFEI %>%
   stat_ecdf(geom = "point", size = 2) +
   stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
   scale_color_manual(values = wes_palette("Cavalcanti1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
-  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
   scale_x_continuous(trans = "log10") +
   annotation_logticks(sides = "b")+ #log scale rick marks on bottom
-  theme_minimal() +
   labs(title = "SFEI Concentrations ECDF by Location",
        subtitle = "Particles/L corrected to 1-5,000 um",
-       caption = "Hazard Concentration from Koelmans et al (2020)")+
+       caption = "Hazard Concentration from Koelmans et al (2020)")
+
+ECDF.Location_white <- ECDF.Location +
+  theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
         plot.subtitle = element_text(hjust = 0.5, size = 14))
-ECDF.Location
+ECDF.Location_white
+#save
+ggsave(ECDF.Location_white, filename = "ECDF.Location_white.png", path = "Concentration data/plots",
+       width = 8, scale = 2, dpi = 500)
+
+#dark
+ECDF.Location_dark<- ECDF.Location +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+ECDF.Location_dark
+#save
+ggsave(ECDF.Location_dark, filename = "ECDF.Location_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
 
 ECDF.Location.Type.Season <- grid.arrange(ECDF.SampleType, ECDF.Season, ECDF.Location,
                                        ncol = 2,
@@ -397,7 +505,7 @@ ggsave(ECDF.Location.Type.Season,
        dpi = 500)
 
 #modelling
-sample_dists <- ssd_fit_dists(samples, #data frame
+sample_dists <- ssd_fit_dists(samplesSFEI, #data frame
                            left = "Conc", #string of the column in data with the concentrations
                            # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
                            dists = c("weibull", "llogis", "lnorm", "gamma", "lgumbel"), #char vector of distribution anmes
@@ -405,7 +513,19 @@ sample_dists <- ssd_fit_dists(samples, #data frame
                            silent = FALSE) #flag indicating whether fits should fail silently
 
 autoplot(sample_dists) #plots the distribution in ggplot2
-ssd_gof(sample_dists) #check the goodness of fit
+sample_gof<- as.data.frame(ssd_gof(sample_dists)) %>% mutate_if(is.numeric, ~ signif(., 3))
+
+datatable(sample_gof,
+          extensions = 'Buttons',
+          options = list(
+            dom = 'Brt', #buttons, processing display element, table
+            buttons = c('copy', 'csv', 'excel')),
+          class = "compact",
+          colnames = c("Distribution", "Anderson-Darling","Kolmogorv Smirnov", "Cramer-Von Mises", "Akaike's Information Criteria", "Akaike's Information Criteria (Corrected for sample size)", "Bayesian Information Criteria", "delta", "weight"),
+          caption = "Distributions and their according fit paramaters are displayed",
+          selection = list(c(6), target = 'column'))
+
+
 #there are multiple fitting distributions, so check which fits best
 sample_gof <- ssd_gof(sample_dists)
 sample_gof[order(sample_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
@@ -433,8 +553,8 @@ sample_pred %>% mutate_if(is.numeric, ~ signif(., 3)) %>%
   )
 
 #order data
-sampleSSD <- samples[order(samples$Conc), ]
-sampleSSD$frac <- ppoints(samples$Conc, 0.5)
+sampleSSD <- samplesSFEI[order(samplesSFEI$Conc), ]
+sampleSSD$frac <- ppoints(samplesSFEI$Conc, 0.5)
 
 aoc_hc5 <- c(75.6)
 
@@ -451,33 +571,63 @@ ECDF_model_occurrence <- ggplot(sample_pred,aes_string(x = "est")) +
        caption = "SFEI 2017 data; sampling corrected to 1-5,000 um") +
   coord_trans(x = "log10") +
   scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
-  scale_color_manual(values = wes_palette("Cavalcanti1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "5% HC: 95% LCL", color = '#972d14', x = 15, y = 0)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = 110, y = 0.03)+
-  geom_text(label = "5% HC: 95% UCL", color = '#972d14', x = 400, y = 0)+
-  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = '#972d14') +  #label for hazard conc
+  scale_color_manual(values = wes_palette("Darjeeling2"))
+ 
+  #white mode
+ECDF_model_occurrence_white <- ECDF_model_occurrence +
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "5% HC: 95% LCL", color = 'red', x = 15, y = 0)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = 110, y = 0.03)+
+  geom_text(label = "5% HC: 95% UCL", color = 'red', x = 400, y = 0)+
+  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = 'red') +  #label for hazard conc
   geom_hline(yintercept = 0.925, linetype = 'twodash', color = "#A2A475") +
-  geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475")+
+  geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-      plot.subtitle = element_text(hjust = 0.5))+
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5, size = 12),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 12))
-ECDF_model_occurrence
+ECDF_model_occurrence_white
 
-ggsave(ECDF_model_occurrence,
-       filename = "ECDF_model_occurrence.png",
+ggsave(ECDF_model_occurrence_white,
+       filename = "ECDF_model_occurrence_white.png",
        path = "Concentration data/plots",
        width = 8,
        scale = 2,
        dpi = 500)
+
+#dark mode
+ECDF_model_occurrence_dark <- ECDF_model_occurrence +
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "5% HC: 95% LCL", color = 'red', x = 17, y = 0, size = 6)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = 130, y = 0.1, size = 6)+
+  geom_text(label = "5% HC: 95% UCL", color = 'red', x = 350, y = 0.05, size = 6)+
+  geom_text(x = 120, y = 0.05, label = "75.6 particles/L", color = 'red', size = 6) +  #label for hazard conc
+  geom_hline(yintercept = 0.925, linetype = 'twodash', color = "yellow") +
+  geom_text(label = "92.5%", x = 3.0, y = 0.96, color = "yellow", size = 6) +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+ECDF_model_occurrence_dark
+
+ggsave(ECDF_model_occurrence_dark,
+       filename = "ECDF_model_occurrence_dark.png",
+       path = "Concentration data/plots",
+       width = 7,
+       height = 4,
+       scale = 2,
+       units = 'in',
+       dpi = 320)
 
 #### Plot Adam Data ####
 
@@ -533,12 +683,12 @@ filter(System != "") %>%
   stat_ecdf(geom = "point", size = 2) +
   stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
   scale_color_manual(values = wes_palette("Darjeeling1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "95% LCL", color = '#972d14', x = log10(13), y = 0.07)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = log10(105), y = 0.07)+
-  geom_text(label = "95% UCL", color = '#972d14', x = log10(440), y = 0.07)+
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.07)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.07)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+
