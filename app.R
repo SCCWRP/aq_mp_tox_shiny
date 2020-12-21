@@ -27,7 +27,7 @@ library(viridis) #Colors
 library(scales) #To use "percent" function
 library(shinyjs) #Exploration tab - reset button
 library(tigerstats) #turns things into percents
-library(beeswarm) #plot all points
+library(ggbeeswarm) #plot all points
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -212,7 +212,7 @@ aoc_v1 <- aoc %>% # start with original dataset
     effect == "N" ~ "No"),
     levels = c("No", "Yes"))) %>%
   # removing NAs to make data set nicer
-  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) 
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported"))
 
 aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
@@ -221,7 +221,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     size.category == 3 ~ "1µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
-    size.category == 0 ~ "Not Reported"), 
+    size.category == 0 ~ "Not Reported"),
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape_f = factor(case_when(
@@ -248,7 +248,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PLA" ~ "Polylactic Acid",
     polymer == "Not Reported" ~ "Not Reported"))) %>%
   # taxonomic category data tidying.
-  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea", 
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea",
                                                    "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
     lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
@@ -318,8 +318,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     life.stage == "Not Reported"~"Not Reported")))%>% #Renames for widget
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
-    environment == "Terrestrial" ~ "Terrestrial"))) %>% 
-  mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>% 
+    environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
     
 
@@ -488,13 +488,18 @@ column(width = 12,
                     
                     h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
                     br(), 
-                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, and polymer, respectively."),
+                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, 
+                      and polymer, respectively.The values in the parentheses represent the number of measurements and studies, respectively, of each metric along the y-axis."),
                     br(),
-                    p("The data displayed in these figures are not filtered for quality and only display data from in vitro studies or in vivo studies where doses were reported as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
+                    p("The data displayed in these figures are not filtered for quality and only display data from in vitro studies or in vivo studies where doses were reported 
+                    as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
                     are not displayed but are available in the complete database file."),
                     br(), 
-                    p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button to refresh the data displayed according to your selections."),
-                    br(), 
+                    p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button 
+                      to refresh the data displayed according to your selections."),
+                    br(),
+                    p("Change the plot type: The data may be visualized as a boxplot, violin plot or beeswarm plot using the drop-down menu below. Users may also visualize all individual data points by using the checkbox."),
+                    br(),
                     p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
                     br(), 
                     
@@ -627,6 +632,11 @@ column(width = 12,
                       label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
                       choices = c("reported", "converted", "all"),
                       selected = "all")),
+                    
+                    selectInput(inputId = "plot.type", "Plot Type:", 
+                                list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm") #need to fix, just comment out for now
+                    ),
+                    checkboxInput(inputId = "show.points", "Show All Points", FALSE),
                     
                     # New row of widgets
                     column(width=12,
@@ -899,7 +909,7 @@ server <- function(input, output) {
     # generate plot
      ggplot(polyfinal,aes(fill=effect, y= logEndpoints, x= polymer, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("seagrass"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -920,7 +930,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(vivofinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("lupinus"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -940,7 +950,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(sizefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("bigsur2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -960,7 +970,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(shapefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("vermillion"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -980,7 +990,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(lifefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("lake"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -1000,7 +1010,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(taxfinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("superbloom2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -1020,7 +1030,7 @@ server <- function(input, output) {
      # generate plot
      ggplot(routefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black") +
+       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("wetland"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
@@ -1117,45 +1127,48 @@ server <- function(input, output) {
       filter(shape_f %in% shape_c) %>% #filter by shape 
       filter(env_f %in% env_c) #filter by environment
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
-    
-    # aoc_size1 <- aoc_filter() %>%
-    #   drop_na(dose.mg.L) %>%
-    #   group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
-    #   summarize(dose.mg.L = quantile(dose.mg.L, .1), # need for recognized "x"
-    #             measurements = n(),
-    #             studies = n_distinct(article))
-    
+
   })
      
+  output$caption<-renderText({ #rename plot types in UI
+    switch(input$plot.type,
+           "boxplot" 	= 	"Boxplot",
+           "violin" = "Violin Plot",
+           "beeswarm" = "Beeswarm",
+           "bar" 		=	"Bar graph")
+  })
   
   # Use newly created dataset from above to generate plots for size, shape, polymer, and endpoint plots on four different rows.
   
   #Organism plot
   
-  
-  
-  
   output$organism_plot_react <- renderPlot({
     
-    # aoc_org1 <- aoc_filter() %>%
-    #   drop_na(dose_new) %>%
-    #   group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
-    #   summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
-    #             measurements = n(),
-    #             studies = n_distinct(article))
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
-    
-    # org1 <- 
-      ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
+    #Mini data set for measurement and study labels
+    aoc_org1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+   
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
+      plot.type + #adds user-defined geom()
       scale_x_log10() +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
       scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
       scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
-      # geom_text_repel(data = aoc_size1, 
-      #                 aes(label = paste("(",measurements,",",studies,")")),
-      #                 nudge_x = -1,
-      #                 nudge_y = -0.25,
-      #                 segment.colour = NA) +
+      geom_text_repel(data = aoc_org1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
@@ -1163,8 +1176,18 @@ server <- function(input, output) {
            y = "Organism",
            color = "Effect?",
            fill = "Effect?",
-           caption = (input$Rep_Con_rad))
+           caption = (input$Rep_Con_rad))%>%
+        req(nrow(aoc_filter()) > 0)
     
+    if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    }
+    
+    else {
+      p
+    }
+    print(p)
+   
   })
   
   
@@ -1172,11 +1195,32 @@ server <- function(input, output) {
   
   output$size_plot_react <- renderPlot({
 
-    ggplot(aoc_filter(), aes(x = dose_new, y = size_f)) +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+    
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    
+    #Mini data set for measurement and study labels
+    aoc_size1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = size_f)) +
+      plot.type + #adds user-defined geom()
       scale_x_log10() +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
+      geom_text_repel(data = aoc_size1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
@@ -1184,19 +1228,49 @@ server <- function(input, output) {
         y = "Size",
         color = "Effect?",
         fill = "Effect?",
-        caption = (input$Rep_Con_rad))
+        caption = (input$Rep_Con_rad))%>%
+      req(nrow(aoc_filter()) > 0)
 
+    if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    }
+    
+    else {
+      p
+    }
+    print(p)
+    
   })
   
   # Shape Plot
   
   output$shape_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_new, y = shape_f)) +
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    
+    #Mini data set for measurement and study labels
+    aoc_shape1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(shape_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = shape_f)) +
       scale_x_log10() +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#C7EAE5","#35978F")) +
       scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
+      geom_text_repel(data = aoc_shape1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
@@ -1204,19 +1278,48 @@ server <- function(input, output) {
         y = "Shape",
         color = "Effect?",
         fill = "Effect?",
-        caption = (input$Rep_Con_rad))
+        caption = (input$Rep_Con_rad))%>%
+      req(nrow(aoc_filter()) > 0)
     
+    if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    }
+    
+    else {
+      p
+    }
+    print(p)
   })
   
   # Polymer Plot
   
   output$poly_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_new, y = poly_f)) +
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    
+    #Mini data set for measurement and study labels
+    aoc_poly1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(poly_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = poly_f)) +
       scale_x_log10() +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
+      geom_text_repel(data = aoc_poly1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
@@ -1224,7 +1327,17 @@ server <- function(input, output) {
         y = "Polymer",
         color = "Effect?",
         fill = "Effect?",
-        caption = (input$Rep_Con_rad))
+        caption = (input$Rep_Con_rad))%>%
+      req(nrow(aoc_filter()) > 0)
+    
+    if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    }
+    
+    else {
+      p
+    }
+    print(p)
     
   })
   
@@ -1232,11 +1345,31 @@ server <- function(input, output) {
   
   output$lvl_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f)) +
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    
+    #Mini data set for measurement and study labels
+    aoc_lvl1_1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(lvl1_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f)) +
       scale_x_log10() +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      geom_text_repel(data = aoc_lvl1_1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
@@ -1244,7 +1377,17 @@ server <- function(input, output) {
         y = "Endpoint",
         color = "Effect?",
         fill = "Effect?",
-        caption = (input$Rep_Con_rad))
+        caption = (input$Rep_Con_rad))%>%
+      req(nrow(aoc_filter()) > 0)
+    
+    if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    }
+    
+    else {
+      p
+    }
+    print(p)
     
   })
   
@@ -1252,11 +1395,31 @@ server <- function(input, output) {
   
   output$lvl2_plot_react <- renderPlot({
     
-    ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f)) +
+    #plot types
+    plot.type<-switch(input$plot.type,
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                                                    method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    
+    #Mini data set for measurement and study labels
+    aoc_lvl2_1 <- aoc_filter() %>%
+      drop_na(dose_new) %>%
+      group_by(lvl2_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(article))
+    
+  p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f)) +
       scale_x_log10() +
-      geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)) +
+      plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      geom_text_repel(data = aoc_lvl2_1,
+                      aes(label = paste("(",measurements,",",studies,")")),
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18),
             legend.position = "right") +
@@ -1264,11 +1427,19 @@ server <- function(input, output) {
            y = "Specific Endpoint",
            color = "Effect?",
            fill = "Effect?",
-           caption = (input$Rep_Con_rad))
-    
+           caption = (input$Rep_Con_rad))%>%
+      req(nrow(aoc_filter()) > 0)
+  
+  if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
+    p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+  }
+  
+  else {
+    p
+  }
+  print(p)
+  
   })
-  
-  
   
   # Create downloadable csv of filtered dataset.
   # Removed columns created above so the dataset matches Leah's original dataset.
