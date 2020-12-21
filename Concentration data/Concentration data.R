@@ -8,10 +8,15 @@ library(gridExtra)
 library(grid)
 library(wesanderson)
 library(ggdark)
+library(broom)
 
 ##### Concentration data prep ####
 #SFEI data is already prepped
-SFEI <- read.csv("Concentration data/SFEI.csv", stringsAsFactors = TRUE)
+SFEI <- read.csv("Concentration data/SFEI.csv", stringsAsFactors = TRUE) %>% 
+  mutate(Location = case_when(
+    Location == "Bay\n" ~ "Bay",
+    Location == "Sanctuary" ~ "Sanctuary"
+  ))
 
 # Adam et al (2019) data needs correcting
 adam <- read.csv("Concentration data/adam2019.csv", na.strings = "N.A.") %>% 
@@ -294,19 +299,23 @@ samples %>%
    scale_fill_discrete(labels = c("Environmental Concentration")) +
    scale_color_discrete(labels = c("Environmental Concentration")) +
    labs(title = "Microplastics Concentrations in SFEI Dataset",
-        caption = "SFEI 2017 data; all data corrected to 1-5,000 um; nominal particle/L")
+        caption = "SFEI 2019 data; all data corrected to 1-5,000 um; nominal particle/L")
  hist.SFEI.occurrence
  
  
  #display
  hist.SFEI.occurrence_white <- hist.SFEI.occurrence + 
+   theme_minimal()+
    theme(plot.title = element_text(hjust = 0.5, size = 20),
          axis.title = element_text(size = 16),
          axis.text =  element_text(size = 16),
          legend.text = element_text(size =14),
-         legend.title = element_blank())
+         legend.title = element_blank(),
+         legend.position = "none")
  
 hist.SFEI.occurrence_white
+ggsave(hist.SFEI.occurrence_white, filename = "Histogram_SFEI_occurrence_white.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
 #display
 hist.SFEI.occurrence_dark <- hist.SFEI.occurrence + 
   dark_theme_minimal()+
@@ -337,7 +346,7 @@ hist.tox.occurrence <- df %>%
   scale_fill_discrete(labels = c("Environmental Concentration", "LOEC")) +
   scale_color_discrete(labels = c("Environmental Concentration", "LOEC")) +
   labs(title = "Histograms of Concentrations in SFEI Dataset vs. Food Dilution LOECs",
-       caption = "SFEI 2017 data; all data corrected to 1-5,000 um; nominal particle/L; SCCWRP tox dataset",
+       caption = "SFEI 2019 data; all data corrected to 1-5,000 um; nominal particle/L; SCCWRP tox dataset",
        fill = "Env. Conc. or Tox. Conc.",
        color = "Env. Conc. or Tox. Conc.")
  
@@ -566,9 +575,9 @@ ECDF_model_occurrence <- ggplot(sample_pred,aes_string(x = "est")) +
   scale_y_continuous("Cumulative Distribution (%)", labels = scales::percent) +
   #expand_limits(y = c(0, 1)) +
   xlab("Concentration (particles/L)")+
-  labs(title = "SF Bay 2017 Microplastics Concentration Cumulative Distribution Function",
+  labs(title = "SF Bay 2019 Microplastics Concentration Cumulative Distribution Function",
        subtitle = "Smoothing/95% CI ribbon based on average of log-logical and log-normal Distributions Fit",
-       caption = "SFEI 2017 data; sampling corrected to 1-5,000 um") +
+       caption = "SFEI 2019 data; sampling corrected to 1-5,000 um") +
   coord_trans(x = "log10") +
   scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
   scale_color_manual(values = wes_palette("Darjeeling2"))
@@ -628,6 +637,48 @@ ggsave(ECDF_model_occurrence_dark,
        scale = 2,
        units = 'in',
        dpi = 320)
+
+#### SFEI Binomial Test ####
+#Use median HC5 (75.6 particles/L) and 5% CI (11 particles/L)
+SFEI_Summary <- data.frame(SFEI %>% 
+                             filter(Sample.Type == "sample") %>% 
+                             group_by(Location) %>% 
+                             summarize(total = n(),
+                             n_gtHC5 = sum(Particles.L_Corrected > 75.6),
+                             p_gtHC5 = 100 * (n_gtHC5 / total), #Percentage above median HC5
+                             n_gtHC5_5pCI = sum(Particles.L_Corrected > 11),
+                             p_gtHC5_5pCI = 100 * (n_gtHC5_5pCI / total))) #percentage above 5% CI HC5
+#3 samples above, 49 below,  5.77% above HC5
+
+## Table 3.1 of the 'Listing Policy'  https://www.waterboards.ca.gov/water_issues/programs/tmdl/303d_listing.html
+# Null Hypothesis: ACtual exceedance proportion <= 3 %
+# Alternative hypothesis: ACtual exceedance proportion > 18 percent
+# minimum effect size is 15%
+# *Application of the binomial test requires a minimum sample size of 16. The number of exceedances required using the binomial test at a sample size of 16 is extended to smaller sample sizes.	
+# Table 3.1 states that if the sample size is between 48-59, List if the number of exceedances are equal to or greater than 5
+
+SFEI_binom <- SFEI_Summary %>% 
+  group_by(Location) %>% 
+  do(tidy(binom.test(.$n_gtHC5, .$total, alternative = "two.sided", p =0.03)))
+
+#join to make final table
+SFEI_binom_table <- left_join(SFEI_Summary, SFEI_binom, by = "Location") %>% 
+  select(-c(parameter, method, alternative, statistic, estimate)) %>% 
+  mutate_if(is.numeric, round,3) %>% 
+  rename(Num.Samples = total,
+         Num.Exceedances.HC5 = n_gtHC5,
+         Percent.Exceedances.HC5 = p_gtHC5,
+         Num.Exceedances.HC5.5.Percent.CI = n_gtHC5_5pCI,
+         Percent.Exceedances.HC5.5.Percent.CI = p_gtHC5_5pCI)
+write.csv(SFEI_binom_table, "Concentration data/SFEI_binom_table.csv")
+# Total
+binom.test(3, 3 + 48, p =0.03)
+
+# Bay
+Bay.Binom <- binom.test(1, 1 + 30, p =0.03) 
+
+#Sanctuary
+binom.test(2, 2 + 20, p =0.04, "g") 
 
 #### Plot Adam Data ####
 
