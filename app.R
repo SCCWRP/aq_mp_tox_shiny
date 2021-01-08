@@ -28,6 +28,7 @@ library(scales) #To use "percent" function
 library(shinyjs) #Exploration tab - reset button
 library(tigerstats) #turns things into percents
 library(ggbeeswarm) #plot all points
+library(fitdistrplus) #alt SSD 
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -859,6 +860,13 @@ column(width = 12,
                               h4("SSD Table", align = "center"),
                               DT::dataTableOutput(outputId = "ssd_pred_table"),
                               br(),
+                              h4("Additional Diagnostics"),
+                              br(),
+                              plotOutput(outputId = "ssd_CF_plot"),
+                              br(),
+                              plotOutput(outputId = "ssd_qq_plot"),
+                              plotOutput(outputId = "ssd_pp_plot"),
+                              plotOutput(outputId = "ssd_dens_plot"),
                               h4(align = "center", "Credits"),
                               p(align = "center", style = "font-size: 12px;", "This app is built using the R package ", a(href = "https://github.com/bcgov/ssdtools", 'ssdtools', .noWS = "outside"), " version 0.3.2 and share the same functionality."),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
@@ -1984,7 +1992,112 @@ output$downloadSsdPlot <- downloadHandler(
                 caption = "Predicted species sensitivity distribution concentrations with uncertanties."
                 )
   })
-
+  
+  # Cullen and Frey Graph
+  output$ssd_CF_plot <- renderPlot({
+    req(aoc_filter_ssd())
+    #reactive to static
+    aoc_SSD <- aoc_filter_ssd()
+    
+    #log10 transform vector
+    logConc <- log10(subset(aoc_SSD)$Conc) 
+    
+    #print plot
+    descdist(logConc,boot=1000)
+  })
+  
+  #alt fits with fitdistrplus package
+  aocSSDFitLNorm <- reactive({
+    #reactive to static
+    aocSSD <- aoc_filter_ssd()
+    #subset and define variable
+    Conc <- aocSSD$Conc
+    
+    #fit log-normal distribution
+    fitdist(Conc, "lnorm")
+  })
+  
+  #alt fits with fitdistrplus package
+  aocSSDFitLlogis <- reactive({
+    #reactive to static
+    aocSSD <- aoc_filter_ssd()
+    #subset and define variable
+    Conc <- aocSSD$Conc
+    
+    #fit logistic distribution
+    fitdist(Conc, "logis")
+  })
+  
+  #alt fits with fitdistrplus package
+  aocSSDFitWeibull <- reactive({
+    #reactive to static
+    aocSSD <- aoc_filter_ssd()
+    #subset and define variable
+    Conc <- aocSSD$Conc
+    
+    #fit logistic distribution
+    fitdist(Conc, "weibull")
+  })
+  
+  #QQ plot
+  output$ssd_qq_plot <- renderPlot({
+    #req
+    req(aoc_filter_ssd())
+    
+    #reactive to static
+    aocFitLNorm <- aocSSDFitLNorm()
+   # aocFitLogis <- aocSSDFitLogis() #not working right now
+    aocFitWeibull <- aocSSDFitWeibull()
+    
+    #plot
+    qqcomp(list(aocFitLNorm,
+      #aocFitLogis,
+      aocFitWeibull),
+           legendtext=c("log-normal", "Weibull"))
+  })
+  
+  #pp plot
+  output$ssd_pp_plot <- renderPlot({
+    #req
+    req(aoc_filter_ssd())
+    
+    #reactive to static
+    aocFitLNorm <- aocSSDFitLNorm()
+    # aocFitLogis <- aocSSDFitLogis()
+    aocFitWeibull <- aocSSDFitWeibull()
+    #plot
+  ppcomp(list(aocFitLNorm, 
+              #aocFitLogis, 
+              aocFitWeibull),
+         legendtext=c("log-normal",
+                      #"logistic",
+                      "weibull"))
+  })
+  
+  #Histogram
+  output$ssd_dens_plot <- renderPlot({
+    #req
+    req(aoc_filter_ssd())
+    
+    #reactive report x-axis
+    particle_mass_check_ssd <- input$particle_mass_check_ssd
+    
+    #reactive to static
+    aocSSD <- aoc_filter_ssd()
+    #subset and define variable
+    logConc <- log10(aocSSD$Conc)
+    
+    #fit  distributions to log10 data
+    aocFitNorm <- fitdist(logConc, "norm")
+    #aocFitlogis <- fitdist(logConc, "logis")
+    
+    
+    #plot densities
+  denscomp(list(aocFitNorm),#, aocFitLogis),
+           legendtext=c("log-normal"),#,"log-logistic"),
+           xlab = paste0("log10 ",particle_mass_check_ssd))
+  })
+  
   } #Server end
 
 #### Full App ####

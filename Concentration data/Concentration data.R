@@ -187,6 +187,10 @@ food.dilution <- aoc_z %>%
   mutate(Conc = particle.L) %>% 
   drop_na(particle.L)
 
+
+
+
+
 # read in concentration data
 samplesSFEI <- SFEI %>% 
   filter(Sample.Type == "sample") %>% 
@@ -727,6 +731,22 @@ ggsave(hist.tox.occurrence_ADAM,
        scale = 2,
        dpi = 500)
 
+
+#Dark mode
+hist.tox.occurrence_ADAM_dark <- hist.tox.occurrence_ADAM +
+  dark_mode()+
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size = 16),
+        axis.text =  element_text(size = 16),
+        legend.text = element_text(size =14),
+        legend.title = element_blank())
+hist.tox.occurrence_ADAM_dark
+
+#save
+ggsave(hist.tox.occurrence_ADAM_dark, filename = "hist.tox.occurrence_ADAM_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
+
+
 #ECDF by System
 ECDF.System.ADAM <- adam %>% 
 filter(System != "") %>% 
@@ -759,6 +779,23 @@ ggsave(ECDF.System.ADAM,
        width = 8,
        scale = 2,
        dpi = 500)
+
+
+#Dark mode
+ECDF.System.ADAM_dark <- ECDF.System.ADAM +
+  dark_mode()+
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size = 16),
+        axis.text =  element_text(size = 16),
+        legend.text = element_text(size =14),
+        legend.title = element_blank())
+ECDF.System.ADAM_dark
+
+#save
+ggsave(ECDF.System.ADAM_dark, filename = "ECDF.System.ADAM_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
+
+
 
 #modelling
 sample_dists_ADAM <- ssd_fit_dists(samplesADAM, #data frame
@@ -813,7 +850,6 @@ sampleSSDADAM$frac <- ppoints(samplesADAM$Conc, 0.5)
 
 aoc_hc5 <- c(75.6) #hazard concentration manually from Koelmans
 
-#plot occurence with 95% Ci
 ECDF_model_occurrence_ADAM <- ggplot(sample_pred_ADAM,aes_string(x = "est")) +
   geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "#81a88d", fill = "#81a88d") +
   geom_line(aes_string(y = "percent/100"), linetype = 'dashed', alpha = 0.8) +
@@ -827,30 +863,57 @@ ECDF_model_occurrence_ADAM <- ggplot(sample_pred_ADAM,aes_string(x = "est")) +
        caption = "Adam et al 2019 data; sampling corrected to 1-5,000 um") +
   coord_trans(x = "log10") +
   scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
-  scale_color_manual(values = wes_palette("Cavalcanti1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 11, linetype = 'dashed', color = '#972d14') +
-  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'#972d14') +
-  geom_text(label = "5% HC: 95% LCL", color = '#972d14', x = 15, y = 0)+
-  geom_text(label = "5% hazard concentration", color = '#972d14', x = 110, y = 0.03)+
-  geom_text(label = "5% HC: 95% UCL", color = '#972d14', x = 400, y = 0)+
-  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = '#972d14') +  #label for hazard conc
+  scale_color_manual(values = wes_palette("Darjeeling2"))
+
+#white mode
+ECDF_model_occurrence_ADAM_white <- ECDF_model_occurrence_ADAM +
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "5% HC: 95% LCL", color = 'red', x = 15, y = 0)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = 110, y = 0.03)+
+  geom_text(label = "5% HC: 95% UCL", color = 'red', x = 400, y = 0)+
+  geom_text(x = 110, y = 0, label = "75.6 particles/L", color = 'red') +  #label for hazard conc
   geom_hline(yintercept = 0.925, linetype = 'twodash', color = "#A2A475") +
-  geom_text(label = "92% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475")+
+  #geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475") +
   theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))+
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5, size = 12),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 12))
-ECDF_model_occurrence_ADAM
+ECDF_model_occurrence_ADAM_white
 
-ggsave(ECDF_model_occurrence_ADAM,
-       filename = "ECDF_model_occurrence_ADAM.png",
+ggsave(ECDF_model_occurrence_ADAM_white,
+       filename = "ECDF_model_occurrence_ADAM_white.png",
        path = "Concentration data/plots",
        width = 8,
        scale = 2,
        dpi = 500)
+
+#dark mode
+ECDF_model_occurrence_ADAM_dark <- ECDF_model_occurrence_ADAM +
+  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = 2, y = 0, size = 5)+
+  geom_text(label = "5% HC", color = 'red', x = 80, y = 0, size = 5)+
+  geom_text(label = "95% UCL", color = 'red', x = 3500, y = 0, size = 5)+
+  geom_text(x = 120, y = 0.1, label = "75.6 particles/L", color = 'red', size =5) +  #label for hazard conc
+  #geom_hline(yintercept = 0.925, linetype = 'twodash', color = "yellow") +
+  #geom_text(label = "92.5%", x = 3.0, y = 0.96, color = "yellow", size = 6) +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+ECDF_model_occurrence_ADAM_dark
+
+
+#save
+ggsave(ECDF_model_occurrence_ADAM_dark, filename = "ECDF_model_occurrence_ADAM_dark.png", path = "Concentration data/plots",
+       height = 4, width = 7, scale = 2, dpi = 320)
+
