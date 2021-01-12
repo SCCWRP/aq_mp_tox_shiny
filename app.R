@@ -68,7 +68,7 @@ polyf<-as.data.frame(polydf)%>% #Makes data frame
     polymer == "PMMA" ~ "Polymethylmethacrylate",
     polymer == "PP" ~ "Polypropylene",
     polymer == "PS" ~ "Polystyrene",
-    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PUR" ~ "Polyurethane",
     polymer == "PVC" ~ "Polyvinylchloride",
     polymer == "PLA" ~ "Polylactic Acid"))%>%
   mutate_if(is.numeric, round,0) #rounds percents 
@@ -244,7 +244,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "PMMA" ~ "Polymethylmethacrylate",
     polymer == "PP" ~ "Polypropylene",
     polymer == "PS" ~ "Polystyrene",
-    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PUR" ~ "Polyurethane",
     polymer == "PVC" ~ "Polyvinylchloride",
     polymer == "PLA" ~ "Polylactic Acid",
     polymer == "Not Reported" ~ "Not Reported"))) %>%
