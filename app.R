@@ -1457,7 +1457,7 @@ server <- function(input, output) {
     },
     content = function(file) {
       write.csv(aoc_filter() %>%
-          select(-c(effect_f, size_f, shape_f, poly_f, org_f, lvl1_f, lvl2_f, bio_f, vivo_f, life_f, env_f)), 
+          dplyr::select(-c(effect_f, size_f, shape_f, poly_f, org_f, lvl1_f, lvl2_f, bio_f, vivo_f, life_f, env_f)), 
         file, row.names = FALSE)
     }
   )
