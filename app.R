@@ -1224,11 +1224,10 @@ server <- function(input, output) {
       scale_x_log10() +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      geom_text_repel(data = aoc_size1,
+      geom_label_repel(data = aoc_size1,
                       aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                      min.segment.length = unit(0, 'lines'), 
+                      nudge_x = 1000) +
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
