@@ -1154,9 +1154,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1167,12 +1167,12 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
    
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f)) +
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
       scale_x_log10() +
       scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
       scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
-      geom_text_repel(data = aoc_org1,
+      geom_label_repel(data = aoc_org1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
@@ -1188,7 +1188,7 @@ server <- function(input, output) {
         req(nrow(aoc_filter()) > 0)
     
     if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+      p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
     }
     
     else {
@@ -1206,9 +1206,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1219,15 +1219,16 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = size_f)) +
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = size_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
       scale_x_log10() +
       scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       geom_label_repel(data = aoc_size1,
                       aes(label = paste("(",measurements,",",studies,")")),
-                      min.segment.length = unit(0, 'lines'), 
-                      nudge_x = 1000) +
+                      nudge_x = 1000,
+                      nudge_y = 0,
+                      segment.colour = NA, size = 5) +
       theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
@@ -1239,7 +1240,7 @@ server <- function(input, output) {
       req(nrow(aoc_filter()) > 0)
 
     if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+      p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
     }
     
     else {
@@ -1255,9 +1256,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1268,12 +1269,12 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = shape_f)) +
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = shape_f, fill = effect_f)) +
       scale_x_log10() +
       plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#C7EAE5","#35978F")) +
       scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
-      geom_text_repel(data = aoc_shape1,
+      geom_label_repel(data = aoc_shape1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
@@ -1289,7 +1290,7 @@ server <- function(input, output) {
       req(nrow(aoc_filter()) > 0)
     
     if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+      p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
     }
     
     else {
@@ -1304,9 +1305,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1317,12 +1318,12 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = poly_f)) +
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = poly_f, fill = effect_f)) +
       scale_x_log10() +
       plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#FAB455", "#A5683C")) +
       scale_fill_manual(values = c("#FAB455", "#A5683C")) +
-      geom_text_repel(data = aoc_poly1,
+      geom_label_repel(data = aoc_poly1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
@@ -1338,7 +1339,7 @@ server <- function(input, output) {
       req(nrow(aoc_filter()) > 0)
     
     if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+      p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
     }
     
     else {
@@ -1354,9 +1355,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1367,12 +1368,12 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f)) +
+    p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f, fill = effect_f)) +
       scale_x_log10() +
       plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
-      geom_text_repel(data = aoc_lvl1_1,
+      geom_label_repel(data = aoc_lvl1_1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
@@ -1388,7 +1389,7 @@ server <- function(input, output) {
       req(nrow(aoc_filter()) > 0)
     
     if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-      p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+      p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
     }
     
     else {
@@ -1404,9 +1405,9 @@ server <- function(input, output) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f, fill = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f, fill = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Mini data set for measurement and study labels
@@ -1417,12 +1418,12 @@ server <- function(input, output) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-  p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f)) +
+  p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f, fill = effect_f)) +
       scale_x_log10() +
       plot.type + #adds user-defined geom()
       scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
-      geom_text_repel(data = aoc_lvl2_1,
+      geom_label_repel(data = aoc_lvl2_1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
@@ -1438,7 +1439,7 @@ server <- function(input, output) {
       req(nrow(aoc_filter()) > 0)
   
   if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-    p<-p+geom_point(aes(color = effect_f, fill = effect_f), alpha=0.8, position = 'jitter')
+    p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
   }
   
   else {
