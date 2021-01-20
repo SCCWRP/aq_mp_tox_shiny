@@ -517,7 +517,7 @@ ggsave(ECDF.Location.Type.Season,
        scale = 2,
        dpi = 500)
 
-#modelling
+###### --modelling ####
 sample_dists <- ssd_fit_dists(samplesSFEI, #data frame
                            left = "Conc", #string of the column in data with the concentrations
                            # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
@@ -542,7 +542,7 @@ datatable(sample_gof,
 #there are multiple fitting distributions, so check which fits best
 sample_gof <- ssd_gof(sample_dists)
 sample_gof[order(sample_gof$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
-write.csv(sample_gof,"Concentration data/sample_gof.csv")
+#write.csv(sample_gof,"Concentration data/sample_gof.csv")
 set.seed(99)
 sample_pred <- predict(sample_dists,
                                 average = TRUE,
@@ -591,12 +591,14 @@ ECDF_model_occurrence_white <- ECDF_model_occurrence +
   geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
   geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
   geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
+  geom_vline(xintercept = 71.5, linetype = 'dotdash', color = "#50C878", size = 2) +
+  geom_text(label = "Limit of Detection", color = "#50C878", x = 45, y = 0.08)+
   geom_text(label = "5% HC: 95% LCL", color = 'red', x = 15, y = 0)+
   geom_text(label = "5% hazard concentration", color = 'red', x = 110, y = 0.03)+
   geom_text(label = "5% HC: 95% UCL", color = 'red', x = 400, y = 0)+
   geom_text(x = 110, y = 0, label = "75.6 particles/L", color = 'red') +  #label for hazard conc
-  geom_hline(yintercept = 0.925, linetype = 'twodash', color = "#A2A475") +
-  geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475") +
+  geom_hline(yintercept = 0.925, linetype = 'twodash', color ='red') +
+  geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = 'red') +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5, size = 12),
