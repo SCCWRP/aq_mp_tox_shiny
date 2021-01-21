@@ -6,9 +6,6 @@
 
 # Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
 
-
- 
-
 # Load packages
 library(tidyverse) #General everything
 library(RColorBrewer)
@@ -29,6 +26,8 @@ library(shinyjs) #Exploration tab - reset button
 library(tigerstats) #turns things into percents
 library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
+library(ggdark) #dark mode ggplot
+library(ggsci) #color palettes
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -321,7 +320,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
-  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) #calculate volume/mL
     
 
 #### SSD AO Setup ####
@@ -623,8 +623,8 @@ column(width = 12,
                        #    multiple = TRUE))
                     
                     radioButtons(inputId = "dose_check", # dosing units
-                                 label = "Particles/mL or mg/L:",
-                                 choices = c("Particles/mL", "mg/L"),
+                                 label = "Particles/mL, mg/L, or um3/mL:",
+                                 choices = c("Particles/mL", "mg/L", "um3/mL"),
                                  selected = "mg/L"),
                     
                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
@@ -758,8 +758,8 @@ column(width = 12,
                            ),#close out column
                     
                     radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
-                                       label = "Particles/mL or mg/L:",
-                                       choices = c("Particles/mL", "mg/L"),
+                                       label = "Particles/mL, mg/L, or volume(um3)/mL?:",
+                                       choices = c("Particles/mL", "mg/L", "um3/mL"),
                                        selected = "mg/L"),
                     
                                      p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
@@ -853,6 +853,10 @@ column(width = 12,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
                               br(),
+                              selectInput(inputId = "theme.type", "Dark or Light Mode:", 
+                                          list(light = "light", dark = "dark")),
+                              selectInput(inputId = "color.type", "Color Theme:", 
+                                          list(viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")),
                               p("The model-averaged 95% confidence interval is indicated by the shaded band and the model-averaged Hazard Concentration (user input value) by the dotted line."),
                               br(),
                               p("Model predictions can also be viewed in tabular format."),
@@ -1109,6 +1113,7 @@ server <- function(input, output) {
       aoc_setup <- aoc_setup %>%
         mutate(dose_new = dose.mg.L.master)}
     
+    #repeat for particles
     if(Rep_Con_rad == "reported" & dose_check == "Particles/mL"){
       aoc_setup <- aoc_setup %>%
         filter(dose.particles.mL.master.converted.reported == "reported") %>% 
@@ -1123,6 +1128,22 @@ server <- function(input, output) {
       aoc_setup <- aoc_setup %>%
         mutate(dose_new = dose.particles.mL.master)}
     
+    #repeat for volume
+    if(Rep_Con_rad == "reported" & dose_check == "um3/mL"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+
+    if(Rep_Con_rad == "converted" & dose_check == "um3/mL"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+
+    if(Rep_Con_rad == "all" & dose_check == "um3/mL"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = dose.um3.mL.master)}
+  
+    # new dataset based on filtering
     aoc_setup %>% # take original dataset
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
@@ -1612,6 +1633,7 @@ server <- function(input, output) {
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.mg.L.master)
+      #repeat for particles
     }
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
@@ -1627,6 +1649,20 @@ server <- function(input, output) {
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.particles.mL.master)
     }
+    #repeat for volume
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "um3/mL"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "um3/mL"){
+      aocz <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "um3/mL"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = dose.um3.mL.master)}
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -1689,6 +1725,20 @@ server <- function(input, output) {
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.particles.mL.master)
     }
+    #repeat for volume
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "um3/mL"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "um3/mL"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = dose.um3.mL.master)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "um3/mL"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = dose.um3.mL.master)}
     
     
     #right-hand table of just effect data
@@ -1828,7 +1878,7 @@ server <- function(input, output) {
 # **SSD Plot ----
 #Create the plot for species sensitivity distribution
 SSD_plot_react <- reactive({
-    req(input$ssdPred) #won't start until button is pressed for prediction
+    req(aoc_pred()) #won't start until prediction is complete
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
     #determine if particles of mass will be used
     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
@@ -1916,7 +1966,33 @@ output$downloadSsdPlot <- downloadHandler(
   })
   
 #Plot SSD data with ggplot
-   ssd_ggplot <- eventReactive(list(input$ssdPred),{
+   ssd_ggplot <- reactive({
+     
+     req(input$ssdPred) #won't start until button is pressed for prediction
+     
+     #Theme type
+     theme.type<-switch(input$theme.type,
+                       "light" 	= theme_gray(),
+                       "dark" = dark_theme_bw()) 
+     #color selection
+     fill.type <- switch(input$color.type,
+                         "viridis" = scale_fill_viridis(discrete = TRUE),
+                           "brewer" =  scale_fill_brewer(palette = "Paired"),
+                         "tron" = scale_fill_tron(),
+                         "locusZoom" = scale_fill_locuszoom(),
+                         "d3" = scale_fill_d3(),
+                         "Nature" = scale_fill_npg(),
+                         "JAMA" = scale_fill_jama())
+     #color selection
+     color.type <- switch(input$color.type,
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+
      
      particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
      # calculate fraction
@@ -1931,12 +2007,12 @@ output$downloadSsdPlot <- downloadHandler(
     aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
     
     ggplot(aoc_pred(),aes_string(x = "est")) +
-      geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2) +
-      geom_line(aes_string(y = "percent/100")) +
+      geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "grey") +
+      geom_line(aes_string(y = "percent/100"), color = "gray") +
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
       geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
-      scale_y_continuous("Species Affected (%)", labels = scales::percent) +
-      expand_limits(x = c(0.000000001, 100000),y = c(0, 1)) + #ensure species labels fit
+      scale_y_continuous("Species Affected (%)", labels = scales::percent, limits = c(0,1)) +
+      expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
       xlab(particle_mass_check_ssd)+
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
@@ -1944,10 +2020,10 @@ output$downloadSsdPlot <- downloadHandler(
       geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = 1) + #hazard conc line horizontal
       geom_text(data = aochc, aes(x = est, y = -0.09, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
       geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red", size = 5) + #label for hazard conc
-      scale_fill_viridis(discrete = TRUE) +  #make colors more differentiable 
-      scale_color_viridis(discrete = TRUE) +  #make colors more differentiable 
-      geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) #label for distribution
-      
+      fill.type + #user-selected
+      color.type + #user-selected
+      geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) + #label for distribution
+      theme.type
   })
   
   
