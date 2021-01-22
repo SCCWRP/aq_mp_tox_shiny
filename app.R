@@ -321,8 +321,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
-  mutate(effect.metric = factor(effect.metric)) %>% 
-  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) #calculate volume/mL
+  mutate(effect.metric = factor(effect.metric)) %>% #factorize
+  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master)   #calculate volume/mL
+  
     
 
 #### SSD AO Setup ####
@@ -715,6 +716,8 @@ column(width = 12,
                     h3("Species Sensitivity Distribution", align = "center"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
                     br(), # line break
+                    p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).')),
+                    br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     
                     # widget 1
@@ -768,7 +771,7 @@ column(width = 12,
                                        choices = c("Particles/mL", "mg/L", "um3/mL"),
                                        selected = "mg/L"),
                     
-                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in ", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                                      radioButtons(
                                               inputId = "Reported_Converted_rad",
                                               label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
