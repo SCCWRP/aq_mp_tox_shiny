@@ -2023,7 +2023,7 @@ output$downloadSsdPlot <- downloadHandler(
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
       geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent, limits = c(0,1)) +
-      expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
+      #expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
       xlab(particle_mass_check_ssd)+
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
