@@ -321,6 +321,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+  mutate(effect.metric = factor(effect.metric)) %>% 
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) #calculate volume/mL
     
 
@@ -755,6 +756,11 @@ column(width = 12,
                            #Polymer widget
                            column(width = 4,
                                   htmlOutput("polySelection")),# polymer selection based on other inputs
+                           column(width = 4,
+                                  radioButtons(inputId = "effect.metric_rad_ssd", # organism checklist
+                                              label = "Effect Metric:",
+                                              choices = levels(aoc_z$effect.metric),
+                                              selected = "HONEC")), # allows for multiple inputs
                            ),#close out column
                     
                     radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
@@ -1616,6 +1622,7 @@ server <- function(input, output) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign broad endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    
    
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
@@ -1633,6 +1640,7 @@ server <- function(input, output) {
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.mg.L.master)
+      
       #repeat for particles
     }
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
@@ -1666,14 +1674,14 @@ server <- function(input, output) {
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
-      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
-      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
-      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
-      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
-      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
-      filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
-      filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
-      filter(dose_new > 0) %>% #clean out no dose data
+      dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      dplyr::filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
+      dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
+      dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
+      dplyr::filter(dose_new > 0) %>% #clean out no dose data
       group_by(Species) %>% 
             summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
       mutate_if(is.numeric, ~ signif(., 4)) %>% 
@@ -1692,19 +1700,19 @@ server <- function(input, output) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign general endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
-
+    effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported == "reported") %>% 
+        dplyr::filter(dose.mg.L.master.converted.reported == "reported") %>% 
         mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
-        filter(dose.mg.L.master.converted.reported == "converted") %>% 
+        dplyr::filter(dose.mg.L.master.converted.reported == "converted") %>% 
         mutate(dose_new = dose.mg.L.master)
     } 
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "mg/L"){
@@ -1713,12 +1721,12 @@ server <- function(input, output) {
     }
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(dose.particles.mL.master.converted.reported == "reported") %>% 
+        dplyr::filter(dose.particles.mL.master.converted.reported == "reported") %>% 
         mutate(dose_new = dose.particles.mL.master)
     } 
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL"){
       aoc_z <- aoc_z %>% 
-        filter(dose.particles.mL.master.converted.reported == "converted") %>% 
+        dplyr::filter(dose.particles.mL.master.converted.reported == "converted") %>% 
         mutate(dose_new = dose.particles.mL.master)
     } 
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL"){
@@ -1728,12 +1736,12 @@ server <- function(input, output) {
     #repeat for volume
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "um3/mL"){
       aoc_z <- aoc_z %>%
-        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        dplyr::filter(dose.particles.mL.master.converted.reported == "reported") %>%
         mutate(dose_new = dose.um3.mL.master)}
     
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "um3/mL"){
       aoc_z <- aoc_z %>%
-        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        dplyr::filter(dose.particles.mL.master.converted.reported == "converted") %>%
         mutate(dose_new = dose.um3.mL.master)}
     
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "um3/mL"){
@@ -1743,18 +1751,18 @@ server <- function(input, output) {
     
     #right-hand table of just effect data
     aoc_z %>% 
-      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
-      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
-      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
-      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
-      filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by generic endpoints inputs
-      filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
-      filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
-      filter(effect_f == "Yes") %>% #only select observed effects
+      dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      dplyr::filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by generic endpoints inputs
+      dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
+      dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
+      dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
+      drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       group_by(Species, Group) %>%
       summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
-      mutate_if(is.numeric, ~ signif(., 3)) %>% 
-      drop_na(Conc) #must drop NAs or else nothing will work
+      mutate_if(is.numeric, ~ signif(., 3))
      })
   
   #Join
