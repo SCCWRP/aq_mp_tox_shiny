@@ -23,6 +23,9 @@ https://wincowger.shinyapps.io/OpenSpecy/
 
 ## To-do List
 
+Add species filter widget to Exploration Tab.
+Add DOI filter to SSD and Exploration.
+
 **Scott**
 
 Correlation between estiamted mass/volume vs. measured mass/volume
