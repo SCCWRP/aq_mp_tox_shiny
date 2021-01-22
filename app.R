@@ -1934,7 +1934,7 @@ output$downloadSsdPlot <- downloadHandler(
   },
   content = function(file) {
     device <- function(..., width, height) {
-      grDevices::png(..., width = 12, height = 16, res = 600, units = "in")
+      grDevices::png(..., width = 14, height = 16, res = 300, units = "in")
     }
     ggsave(file, plot = ssd_ggplot(), device = device)
   })
@@ -2017,6 +2017,7 @@ output$downloadSsdPlot <- downloadHandler(
     
     aochc$est_format <-format(aochc$est, digits = 3, scientific = TRUE)
     
+    #build ggplot
     ggplot(aoc_pred(),aes_string(x = "est")) +
       geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "grey") +
       geom_line(aes_string(y = "percent/100"), color = "gray") +
@@ -2026,15 +2027,16 @@ output$downloadSsdPlot <- downloadHandler(
       #expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
       xlab(particle_mass_check_ssd)+
       coord_trans(x = "log10") +
-      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 15),
+                         labels = trans_format("log10", scales::math_format(10^.x))) + #comma_signif)+
       geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = 1) + #hazard conc line vertical
       geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = 1) + #hazard conc line horizontal
-      geom_text(data = aochc, aes(x = est, y = -0.09, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
-      geom_text(data = aochc, aes(x = est, y = -0.05, label = est_format), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = 0.15, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = est, y = 0.10, label = paste0(est_format, " ", particle_mass_check_ssd)), color = "red", size = 5) + #label for hazard conc
+      geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) + #label for distribution
       fill.type + #user-selected
       color.type + #user-selected
-      geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) + #label for distribution
-      theme.type
+      theme.type #user theme
   })
   
   
