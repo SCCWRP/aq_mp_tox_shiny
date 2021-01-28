@@ -323,7 +323,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master)   #calculate volume/mL
-  
+
+aoc_setup$Species <- as.factor(paste(aoc_setup$genus,aoc_setup$species)) #must make value 'Species" (uppercase)
     
 
 #### SSD AO Setup ####
@@ -335,7 +336,7 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
  
 # final cleanup and factoring  
-aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
+
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
@@ -538,7 +539,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "organism_check", # organismal checklist
+                      pickerInput(inputId = "organism_check", # organismal group checklist
                         label = "Organisms:", 
                         choices = levels(aoc_setup$org_f),
                         selected = levels(aoc_setup$org_f),
@@ -565,7 +566,10 @@ column(width = 12,
                         choices = levels(aoc_setup$env_f),
                         selected = levels(aoc_setup$env_f),
                         options = list(`actions-box` = TRUE), 
-                        multiple = TRUE))), 
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                             htmlOutput("SpeciesSelection_exp"))), # dependent checklist
                       
                     # New row of widgets
                     column(width = 12,
@@ -635,10 +639,15 @@ column(width = 12,
                       choices = c("reported", "converted", "all"),
                       selected = "all")),
                     
+                    #aesthethics
                     selectInput(inputId = "plot.type", "Plot Type:", 
                                 list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm") #need to fix, just comment out for now
                     ),
                     checkboxInput(inputId = "show.points", "Show All Points", FALSE),
+                    selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
+                                list(light = "light", dark = "dark")),
+                    selectInput(inputId = "color.type_exp", "Color Theme:", 
+                                list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")),
                     
                     # New row of widgets
                     column(width=12,
@@ -1085,6 +1094,26 @@ server <- function(input, output) {
       selected = levels(aoc_new$lvl2_f_new),
       options = list(`actions-box` = TRUE),
       multiple = TRUE)})
+   
+   #Create dependent dropdown checklists: select Species by env and group
+   output$SpeciesSelection_exp <- renderUI({
+     
+     #Assign user inputs to variables for this reactive
+     env_c <- input$env_check #assign environments
+     org_f_c <- input$organism_check # assign organism input values to "org_c"
+     #filter based on user input
+     aoc_new <- aoc_setup %>% # take original dataset
+       filter(env_f %in% env_c) %>% #filter by environment inputs
+       filter(org_f %in% org_f_c) %>% # filter by organism inputs
+       mutate(Species_new = factor(as.character(Species))) # new subset of factors
+     
+     pickerInput(inputId = "Species_check_exp", 
+                 label = "Species:", 
+                 choices = levels(aoc_new$Species_new),
+                 selected = levels(aoc_new$Species_new),
+                 options = list(`actions-box` = TRUE),
+                 multiple = TRUE)})
+   
 
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
@@ -1188,6 +1217,31 @@ server <- function(input, output) {
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#FD8D3C", "#7F2704")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#FD8D3C", "#7F2704")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+    
     #Mini data set for measurement and study labels
     aoc_org1 <- aoc_filter() %>%
       drop_na(dose_new) %>%
@@ -1198,15 +1252,21 @@ server <- function(input, output) {
    
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
-      scale_x_log10() +
-      scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
-      scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
+      #scale_x_log10() +
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                         labels = trans_format("log10", scales::math_format(10^.x))) +
+      color.type +
+      fill.type +
+      # scale_color_manual(values = c("#FD8D3C", "#7F2704")) +
+      # scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       geom_label_repel(data = aoc_org1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+      theme.type +
+      #theme_classic() +
       theme(text = element_text(size=18), 
             legend.position = "right") +
       labs(x = input$dose_check,
@@ -1240,6 +1300,31 @@ server <- function(input, output) {
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#A1CAF6", "#4C6FA1")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+    
     #Mini data set for measurement and study labels
     aoc_size1 <- aoc_filter() %>%
       drop_na(dose_new) %>%
@@ -1250,15 +1335,20 @@ server <- function(input, output) {
     
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = size_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
-      scale_x_log10() +
-      scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
-      scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
+     # scale_x_log10() +
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                         labels = trans_format("log10", scales::math_format(10^.x))) +
+      fill.type + #user fill 
+      color.type + #user color
+      #scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
+      #scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       geom_label_repel(data = aoc_size1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+      theme.type + #user theme
       theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = input$dose_check,
@@ -1289,6 +1379,30 @@ server <- function(input, output) {
                       "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#C7EAE5","#35978F")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#C7EAE5","#35978F")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
     
     #Mini data set for measurement and study labels
     aoc_shape1 <- aoc_filter() %>%
@@ -1299,16 +1413,22 @@ server <- function(input, output) {
                 studies = n_distinct(article))
     
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = shape_f, fill = effect_f)) +
-      scale_x_log10() +
+      #scale_x_log10() +
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                         labels = trans_format("log10", scales::math_format(10^.x))) +
       plot.type + #adds user-defined geom()
-      scale_color_manual(values = c("#C7EAE5","#35978F")) +
-      scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
+      fill.type + #user color
+      color.type + #user color
+      # scale_color_manual(values = c("#C7EAE5","#35978F")) +
+      #scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
       geom_label_repel(data = aoc_shape1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+      theme.type + #user theme
+      #theme_classic() +
       theme(text = element_text(size=18), 
         legend.position = "right") +
       labs(x = input$dose_check,
@@ -1339,6 +1459,31 @@ server <- function(input, output) {
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#FAB455", "#A5683C")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#FAB455", "#A5683C")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+    
     #Mini data set for measurement and study labels
     aoc_poly1 <- aoc_filter() %>%
       drop_na(dose_new) %>%
@@ -1348,16 +1493,22 @@ server <- function(input, output) {
                 studies = n_distinct(article))
     
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = poly_f, fill = effect_f)) +
-      scale_x_log10() +
+      #scale_x_log10() +
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                         labels = trans_format("log10", scales::math_format(10^.x))) +
       plot.type + #adds user-defined geom()
-      scale_color_manual(values = c("#FAB455", "#A5683C")) +
-      scale_fill_manual(values = c("#FAB455", "#A5683C")) +
+      color.type +
+      fill.type +
+      #scale_color_manual(values = c("#FAB455", "#A5683C")) +
+      #scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       geom_label_repel(data = aoc_poly1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+     theme.type +
+      # theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = input$dose_check,
@@ -1389,6 +1540,31 @@ server <- function(input, output) {
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#A99CD9", "#6C568C")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#A99CD9", "#6C568C")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+    
     #Mini data set for measurement and study labels
     aoc_lvl1_1 <- aoc_filter() %>%
       drop_na(dose_new) %>%
@@ -1398,16 +1574,22 @@ server <- function(input, output) {
                 studies = n_distinct(article))
     
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f, fill = effect_f)) +
-      scale_x_log10() +
+      #scale_x_log10() +
+      coord_trans(x = "log10") +
+      scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                         labels = trans_format("log10", scales::math_format(10^.x))) +
       plot.type + #adds user-defined geom()
-      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
-      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+      color.type +
+      fill.type +
+      # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl1_1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+      theme.type +
+      #theme_classic() +
       theme(text = element_text(size=18),
         legend.position = "right") +
       labs(x = input$dose_check,
@@ -1439,6 +1621,31 @@ server <- function(input, output) {
                       "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
+    #Theme type
+    theme.type<-switch(input$theme.type_exp,
+                       "light" 	= theme_classic(),
+                       "dark" = dark_theme_bw()) 
+    #color selection
+    fill.type <- switch(input$color.type_exp,
+                        "default" =  scale_fill_manual(values = c("#A99CD9", "#6C568C")),
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_exp,
+                         "default" =  scale_color_manual(values = c("#A99CD9", "#6C568C")),
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+    
     #Mini data set for measurement and study labels
     aoc_lvl2_1 <- aoc_filter() %>%
       drop_na(dose_new) %>%
@@ -1448,16 +1655,22 @@ server <- function(input, output) {
                 studies = n_distinct(article))
     
   p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f, fill = effect_f)) +
-      scale_x_log10() +
+     # scale_x_log10() +
+    coord_trans(x = "log10") +
+    scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
+                       labels = trans_format("log10", scales::math_format(10^.x))) +
       plot.type + #adds user-defined geom()
-      scale_color_manual(values = c("#A99CD9", "#6C568C")) +
-      scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
+    color.type +
+    fill.type +
+      # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
+      # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl2_1,
                       aes(label = paste("(",measurements,",",studies,")")),
                       nudge_x = 1000,
                       nudge_y = 0,
                       segment.colour = NA, size = 5) +
-      theme_classic() +
+      # theme_classic() +
+    theme.type +
       theme(text = element_text(size=18),
             legend.position = "right") +
       labs(x = input$dose_check,
