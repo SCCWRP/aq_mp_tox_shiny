@@ -319,7 +319,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
-  mutate(species_f = as.factor(paste(aoc_setup$genus,aoc_setup$species))) %>% 
+  mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
@@ -1668,7 +1668,7 @@ server <- function(input, output) {
     p
   }
   print(p)
-  
+ 
   })
   
   # Create downloadable csv of filtered dataset.
