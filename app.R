@@ -330,11 +330,13 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
+  
   mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
   mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
  
 # final cleanup and factoring  
 
+aoc_z$Species <- as.factor(paste(aoc_setup$genus,aoc_setup$species)) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
@@ -1696,6 +1698,7 @@ server <- function(input, output) {
     shinyjs::reset("size_check")
     shinyjs::reset("life_check")
     shinyjs::reset("bio_check")
+    shinyjs::reset("species_check")
   }) #If we add more widgets, make sure they get added here. 
 
 #### SSD AO S ####
