@@ -319,13 +319,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(species_f = as.factor(paste(aoc_setup$genus,aoc_setup$species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
-  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master)   #calculate volume/mL
-
-aoc_setup$Species <- as.factor(paste(aoc_setup$genus,aoc_setup$species)) #must make value 'Species" (uppercase)
-    
+  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) #calculate volume/mL
 
 #### SSD AO Setup ####
 
@@ -339,8 +337,6 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
 
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
-
-# Create Shiny app. Anything in the sections below (user interface & server) should be the reactive/interactive parts of the shiny application.
 
 #### User Interface ####
 
@@ -545,6 +541,14 @@ column(width = 12,
                         choices = levels(aoc_setup$org_f),
                         selected = levels(aoc_setup$org_f),
                         options = list(`actions-box` = TRUE), 
+                        multiple = TRUE)), 
+                      
+                      column(width = 3, 
+                      pickerInput(inputId = "bio_check", # bio org checklist
+                        label = "Level of Biological Organization", 
+                        choices = levels(aoc_setup$bio_f),
+                        selected = levels(aoc_setup$bio_f),
+                        options = list(`actions-box` = TRUE),
                         multiple = TRUE))), 
                       
                     # New row of widgets
@@ -598,36 +602,7 @@ column(width = 12,
                         selected = levels(aoc_setup$life_f),
                         options = list(`actions-box` = TRUE), 
                         multiple = TRUE))),
-                    
-                    # New row of widgets
-                    column(width=12,
-                      
-                        column(width = 3),
-                      
-                        #Slider Widget - commented out for now
-                        #column(width = 3,
-                        #sliderInput("range", # Allows for max input
-                          #label = "Particle Size (µm):", #Labels widget
-                          #min = 0, max = 4000, value = 4000)),
-                      
-                        column(width = 3, offset = 3,
-                        pickerInput(inputId = "bio_check", # bio org checklist
-                          label = "Level of Biological Organization", 
-                          choices = levels(aoc_setup$bio_f),
-                          selected = levels(aoc_setup$bio_f),
-                          options = list(`actions-box` = TRUE),
-                          multiple = TRUE)
-                        ), #close out column 
-                      
-                    #In vitro/in vivo widget - commented out for now
-                       # column(width = 3,
-                       # pickerInput(inputId = "vivo_check", 
-                       #    label = "In Vitro or In Vivo:", 
-                       #    choices = levels(aoc_setup$vivo_f),
-                       #    selected = levels(aoc_setup$vivo_f),   
-                       #    options = list(`actions-box` = TRUE),
-                       #    multiple = TRUE))
-                    
+
                     radioButtons(inputId = "dose_check", # dosing units
                                  label = "Particles/mL, mg/L, or um3/mL:",
                                  choices = c("Particles/mL", "mg/L", "um3/mL"),
@@ -638,7 +613,7 @@ column(width = 12,
                     radioButtons(inputId = "Rep_Con_rad",
                       label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
                       choices = c("reported", "converted", "all"),
-                      selected = "all")),
+                      selected = "all"),
                     
                     #aesthethics
                     selectInput(inputId = "plot.type", "Plot Type:", 
