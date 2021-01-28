@@ -1076,17 +1076,17 @@ server <- function(input, output) {
      
      #Assign user inputs to variables for this reactive
      env_c <- input$env_check #assign environments
-     org_f_c <- input$organism_check # assign organism input values to "org_c"
+     org_c <- input$organism_check # assign organism input values to "org_c"
      #filter based on user input
      aoc_new <- aoc_setup %>% # take original dataset
        filter(env_f %in% env_c) %>% #filter by environment inputs
-       filter(org_f %in% org_f_c) %>% # filter by organism inputs
-       mutate(Species_new = factor(as.character(Species))) # new subset of factors
+       filter(org_f %in% org_c) %>% # filter by organism inputs
+       mutate(species_new = factor(as.character(species_f))) # new subset of factors
      
-     pickerInput(inputId = "Species_check_exp", 
+     pickerInput(inputId = "species_check", 
                  label = "Species:", 
-                 choices = levels(aoc_new$Species_new),
-                 selected = levels(aoc_new$Species_new),
+                 choices = levels(aoc_new$species_new),
+                 selected = levels(aoc_new$species_new),
                  options = list(`actions-box` = TRUE),
                  multiple = TRUE)})
    
@@ -1106,7 +1106,8 @@ server <- function(input, output) {
     env_c <- input$env_check #assign values to "env_c"
     poly_c <- input$poly_check # assign values to "poly_c"
     shape_c <- input$shape_check # assign values to "shape_c" 
-    size_c <- input$size_check # assign values to "size_c" 
+    size_c <- input$size_check # assign values to "size_c"
+    species_c <- input$species_check #assign values to "species_c"
     range_n <- input$range # assign values to "range_n"
     dose_check <- input$dose_check #renames selection from radio button
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
@@ -1166,7 +1167,8 @@ server <- function(input, output) {
       filter(life_f %in% life_c) %>% #filter by life stage
       filter(poly_f %in% poly_c) %>% #filter by polymer
       filter(size_f %in% size_c) %>% #filter by size class
-      filter(shape_f %in% shape_c) %>% #filter by shape 
+      filter(shape_f %in% shape_c) %>% #filter by shape
+      filter(species_f %in% species_c) %>%  #filter by species
       filter(env_f %in% env_c) #filter by environment
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
 
