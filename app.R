@@ -350,6 +350,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
   titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
 
   # Title panel subtext
+  tags$div("Logo created by J.C. Leapman.", tags$a(href="https://twitter.com/jcleapman", tags$img(src="twitter.png", width="2%", height="2%"))),
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
   actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right"),
   
