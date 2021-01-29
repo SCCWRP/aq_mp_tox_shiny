@@ -28,7 +28,6 @@ library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
-library(gmodels) #easy confidence interval calculations
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
