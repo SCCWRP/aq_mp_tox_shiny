@@ -28,6 +28,7 @@ library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
+library(gmodels) #easy confidence interval calculations
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -323,7 +324,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
-  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) #calculate volume/mL
+  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
+  mutate(acute.chronic_f = factor(case_when(af.time == 10 ~ "Acute",
+                                   af.time == 1 ~ "Chronic")))  #factorize assesment factor time into chronic/acute
 
 #### SSD AO Setup ####
 
@@ -603,7 +606,15 @@ column(width = 12,
                         choices = levels(aoc_setup$life_f),
                         selected = levels(aoc_setup$life_f),
                         options = list(`actions-box` = TRUE), 
-                        multiple = TRUE))),
+                        multiple = TRUE)),
+                      
+                      column(width = 3,
+                             pickerInput(inputId = "acute.chronic_check", # chronic/acute checklist
+                                         label = "Exposure Duration Type:", 
+                                         choices = levels(aoc_setup$acute.chronic_f),
+                                         selected = levels(aoc_setup$acute.chronic_f),
+                                         options = list(`actions-box` = TRUE), 
+                                         multiple = TRUE))),
 
                     radioButtons(inputId = "dose_check", # dosing units
                                  label = "Particles/mL, mg/L, or um3/mL:",
@@ -745,6 +756,14 @@ column(width = 12,
                            #Polymer widget
                            column(width = 4,
                                   htmlOutput("polySelection")),# polymer selection based on other inputs
+                           #acute/chronic widget
+                           column(width = 4,
+                                  pickerInput(inputId = "acute.chronic_check_ssd", # chronic/acute checklist
+                                              label = "Exposure Duration Type:", 
+                                              choices = levels(aoc_z$acute.chronic_f),
+                                              selected = levels(aoc_z$acute.chronic_f),
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)),
                            column(width = 4,
                                   radioButtons(inputId = "effect.metric_rad_ssd", # organism checklist
                                               label = "Effect Metric:",
@@ -1113,6 +1132,7 @@ server <- function(input, output) {
     range_n <- input$range # assign values to "range_n"
     dose_check <- input$dose_check #renames selection from radio button
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    acute.chronic.c <- input$acute.chronic_check #acute chronic checkbox
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Rep_Con_rad == "reported" & dose_check == "mg/L"){
@@ -1171,7 +1191,8 @@ server <- function(input, output) {
       filter(size_f %in% size_c) %>% #filter by size class
       filter(shape_f %in% shape_c) %>% #filter by shape
       filter(species_f %in% species_c) %>%  #filter by species
-      filter(env_f %in% env_c) #filter by environment
+      filter(env_f %in% env_c) %>% #filter by environment
+      filter(acute.chronic_f %in% acute.chronic.c) #acute/chronic
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
 
   })
@@ -1818,6 +1839,7 @@ server <- function(input, output) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign broad endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     
    
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
@@ -1878,6 +1900,7 @@ server <- function(input, output) {
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
+      dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       group_by(Species) %>% 
             summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
       mutate_if(is.numeric, ~ signif(., 4)) %>% 
@@ -1899,6 +1922,7 @@ server <- function(input, output) {
     effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
+    acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
@@ -1955,9 +1979,10 @@ server <- function(input, output) {
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
+      dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       group_by(Species, Group) %>%
-      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
+      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
       mutate_if(is.numeric, ~ signif(., 3))
      })
   
@@ -1969,7 +1994,7 @@ server <- function(input, output) {
     #join datasets (final)
     aoc_z_join <- right_join(aoc_z_L(), aoc_z_R(), by = "Species") 
     #order list
-    col_order <- c("Group", "Species", "Conc", "MinEffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
+    col_order <- c("Group", "Species", "Conc", "MinEffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CI95_LCL", "CI95_UCL", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
     #reorder
     aoc_z_join_order <- aoc_z_join[, col_order]
     
@@ -1991,7 +2016,7 @@ server <- function(input, output) {
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
-              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "95% Lower CI Concentration", "95% Upper CI Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
         "Conc",
