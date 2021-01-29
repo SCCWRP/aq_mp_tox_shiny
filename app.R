@@ -324,17 +324,19 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
-  mutate(acute.chronic_f = factor(case_when(af.time == 10 ~ "Acute",
-                                   af.time == 1 ~ "Chronic")))   #factorize assesment factor time into chronic/acute
+  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
+  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
+                                            af.time_noNA == 1 ~ "Chronic",
+                                            af.time_noNA == "Unavailable" ~ "Unavailable")))   #factorize assesment factor time into chronic/acute
 
-  
+
 #### SSD AO Setup ####
 
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
   mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
-  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported")))
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
  
 # final cleanup and factoring  
 
