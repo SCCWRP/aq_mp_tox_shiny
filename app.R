@@ -325,16 +325,16 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
   mutate(acute.chronic_f = factor(case_when(af.time == 10 ~ "Acute",
-                                   af.time == 1 ~ "Chronic")))  #factorize assesment factor time into chronic/acute
+                                   af.time == 1 ~ "Chronic")))   #factorize assesment factor time into chronic/acute
 
+  
 #### SSD AO Setup ####
 
 # Master dataset for SSDs
 aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
   # environment category data tidying.
-  
   mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
-  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported")))
  
 # final cleanup and factoring  
 
@@ -763,24 +763,51 @@ column(width = 12,
                                               selected = levels(aoc_z$acute.chronic_f),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
-                           column(width = 4,
-                                  radioButtons(inputId = "effect.metric_rad_ssd", # organism checklist
+                           ),#close out column
+                    column(width = 12,
+                           column(width = 2,
+                                  pickerInput(inputId = "effect.metric_rad_ssd", # effect metric checklist
                                               label = "Effect Metric:",
                                               choices = levels(aoc_z$effect.metric),
-                                              selected = "HONEC")), # allows for multiple inputs
-                           ),#close out column
-                    
-                    radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
+                                              selected = "HONEC",
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)), # allows for multiple inputs
+                           column(width = 2,
+                           radioButtons(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
+                                        label = "Apply Assessment Factor for acute and sub-chronic to chronic?:",
+                                        choices = c("yes", "no"),
+                                        selected = "no")),
+                           
+                           column(width = 2,
+                           radioButtons(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
+                                        label = "Apply Assessment Factor to convert dose descriptors into NOECs?:",
+                                        choices = c("yes", "no"),
+                                        selected = "no")),
+                          
+                           column(width = 2,
+                                  radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
                                        label = "Particles/mL, mg/L, or volume(um3)/mL?:",
                                        choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                       selected = "mg/L"),
-                    
+                                       selected = "mg/L")),
+                           
+                           column(width = 2,
                                      p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in ", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                                      radioButtons(
                                               inputId = "Reported_Converted_rad",
                                               label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
                                               choices = list("reported", "converted", "all"),
-                                              selected = "all"),
+                                              selected = "all")),
+                           
+                           #concentration selector (minimum, lower 95% CI, median, mean)
+                           column(width = 2,
+                                  radioButtons(
+                                    inputId = "conc.select.rad",
+                                    label = "What shuold be considered the 'sensitive' concentration for each species?",
+                                    choices = list("minimum", "lower 95% CI", "median", "mean"),
+                                    selected = "minimum")),
+                            
+                    ), #closes out column
+                    
                     br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
@@ -1839,10 +1866,11 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
-    
-   
+    AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
+    AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
+    
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
@@ -1900,6 +1928,10 @@ server <- function(input, output) {
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
+      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
+                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new * af.time,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new * af.noec,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       group_by(Species) %>% 
             summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
       mutate_if(is.numeric, ~ signif(., 4)) %>% 
@@ -1919,9 +1951,12 @@ server <- function(input, output) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
+    AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
+    AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
+    conc.select.r <- input$conc.select.rad #concentration selector (minimum, lower 95% CI, median, mean)
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
@@ -1969,7 +2004,7 @@ server <- function(input, output) {
     
     
     #right-hand table of just effect data
-    aoc_z %>% 
+    aoc_ssd <- aoc_z %>% 
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -1980,9 +2015,33 @@ server <- function(input, output) {
       dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
+      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
+                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new * af.time,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new * af.noec,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       group_by(Species, Group) %>%
       summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
       mutate_if(is.numeric, ~ signif(., 3))
+   
+    #dynamically change concentrations used based on user input
+    if(conc.select.r == "minimum"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = Conc)
+    } 
+    if(conc.select.r == "CI95_LCL"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = CI95_LCL)
+    }
+    if(conc.select.r == "median"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = medianConcEffect)
+    }
+    if(conc.select.r == "mean"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = meanConcEffect)
+    }
+    #final table
+    aoc_ssd
      })
   
   #Join
@@ -2027,6 +2086,7 @@ server <- function(input, output) {
   #create distribution based on newly created dataset
   fit_dists <- reactive({
     req(input$SSDgo) #won't run unless submit button is pressed
+    aoc_ssd <- aoc_filter_ssd() #static
     
     ssd_fit_dists(aoc_filter_ssd(), #data frame
                   left = "Conc", #string of the column in data with the concentrations
@@ -2110,10 +2170,8 @@ SSD_plot_react <- reactive({
     pred_c_hc_ssd <- as.numeric(input$pred_hc_ssd) #assign hazard concentration from numeric input
     #determine if particles of mass will be used
     particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
-    
-    #reactive -> static data
-    aoc_ssd <- aoc_filter_ssd() %>% 
-      arrange(Conc)
+  
+    aoc_ssd <- aoc_filter_ssd() %>% arrange(Conc) #static
     
     aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
     #convert hazard concentration to sig digits
@@ -2223,10 +2281,9 @@ output$downloadSsdPlot <- downloadHandler(
 
      
      particle_mass_check_ssd <- input$particle_mass_check_ssd #assign whether or not to use particles/mL or mass/mL
-     # calculate fraction
-    aoc_ssd <- aoc_filter_ssd() %>% 
-      arrange(Conc)
+     aoc_ssd <- aoc_filter_ssd() %>% arrange(Conc) #static
     
+     #calcualte fraction
     aoc_ssd$frac <- ppoints(aoc_ssd$Conc, 0.5)
     
     #convert hazard concentration to sig digits
