@@ -611,11 +611,14 @@ column(width = 12,
                       
                       column(width = 3,
                              pickerInput(inputId = "acute.chronic_check", # chronic/acute checklist
-                                         label = "Exposure Duration Type:", 
+                                         label = "Exposure Duration*:", 
                                          choices = levels(aoc_setup$acute.chronic_f),
                                          selected = levels(aoc_setup$acute.chronic_f),
                                          options = list(`actions-box` = TRUE), 
-                                         multiple = TRUE))),
+                                         multiple = TRUE)),
+                      
+                      column(width = 3,offset = 9,  
+                             p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
 
                     radioButtons(inputId = "dose_check", # dosing units
                                  label = "Particles/mL, mg/L, or um3/mL:",
@@ -720,7 +723,7 @@ column(width = 12,
                     
                     # widget 1
                     column(width = 12,
-                           column(width = 4,
+                           column(width = 3,
                                   # alternative to fully listed checklists
                                   # requires shinyWidgets package
                                   pickerInput(inputId = "env_check_ssd", # environment checklist
@@ -730,17 +733,17 @@ column(width = 12,
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
                            # Organism widget
-                           column(width = 4,
+                           column(width = 3,
                                   htmlOutput("GroupSelection")), # organism checklist
-                           column(width = 4,
+                           column(width = 3,
                                   htmlOutput("SpeciesSelection"))), # dependent Species checklist
                            br(),
                            p("Advanced options. Suggest using defaults."),
                            br(),
                     
-                           column(width = 12,
+                    column(width = 12,
                            #Size widget
-                           column(width = 4,
+                           column(width = 3,
                                   pickerInput(inputId = "size_check_ssd", # organism checklist
                                               label = "Sizes:",
                                               choices = levels(aoc_z$size_f),
@@ -749,50 +752,68 @@ column(width = 12,
                                               multiple = TRUE)), # allows for multiple inputs
                           
                             #Endpoint widget
-                           column(width = 4,
+                           column(width = 3,
                                   htmlOutput("lvl1Selection")), # allows for multiple inputs
-                           column(width = 4,
+                           column(width = 3,
                                   htmlOutput("lvl2Selection")), #specific endpoint based on previous checkbox
-                           
+                    
+                            ), #closes out column
+                       
+                    column(width = 12,    
                            #Polymer widget
-                           column(width = 4,
+                           column(width = 3,
                                   htmlOutput("polySelection")),# polymer selection based on other inputs
                            #acute/chronic widget
-                           column(width = 4,
+                           column(width = 3,
                                   pickerInput(inputId = "acute.chronic_check_ssd", # chronic/acute checklist
-                                              label = "Exposure Duration Type:", 
+                                              label = "Exposure Duration Type*:", 
                                               choices = levels(aoc_z$acute.chronic_f),
                                               selected = levels(aoc_z$acute.chronic_f),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
-                           ),#close out column
-                    column(width = 12,
-                           column(width = 2,
+                           
+                           column(width = 3,
                                   pickerInput(inputId = "effect.metric_rad_ssd", # effect metric checklist
                                               label = "Effect Metric:",
                                               choices = levels(aoc_z$effect.metric),
                                               selected = "HONEC",
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)), # allows for multiple inputs
-                           column(width = 2,
+                           
+                           ),#close out column
+                    
+                    column(width = 3,offset = 3,  
+                           p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+                    
+                    br(),
+                    br(),
+                    
+                    column(width = 12,
+
+                           column(width = 3,
                            radioButtons(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
-                                        label = "Apply Assessment Factor for acute and sub-chronic to chronic?:",
+                                        label = "Apply Assessment Factor for acute and sub-chronic to chronic?",
                                         choices = c("yes", "no"),
                                         selected = "no")),
                            
-                           column(width = 2,
+                           column(width = 3,
                            radioButtons(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
-                                        label = "Apply Assessment Factor to convert dose descriptors into NOECs?:",
+                                        label = "Apply Assessment Factor to convert dose descriptors into NOECs?",
                                         choices = c("yes", "no"),
                                         selected = "no")),
-                          
-                           column(width = 2,
+                    ),#close out column
+                    
+                    br(),
+                    br(),
+                    
+                    column(width = 12,
+                           column(width = 3,
                                   radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
-                                       label = "Particles/mL, mg/L, or volume(um3)/mL?:",
+                                       label = "Particles/mL, mg/L, or volume(um3)/mL?",
                                        choices = c("Particles/mL", "mg/L", "um3/mL"),
                                        selected = "mg/L")),
                            
-                           column(width = 2,
+                           column(width = 3,
                                      p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in ", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
                                      radioButtons(
                                               inputId = "Reported_Converted_rad",
@@ -801,7 +822,7 @@ column(width = 12,
                                               selected = "all")),
                            
                            #concentration selector (minimum, lower 95% CI, median, mean)
-                           column(width = 2,
+                           column(width = 3,
                                   radioButtons(
                                     inputId = "conc.select.rad",
                                     label = "What shuold be considered the 'sensitive' concentration for each species?",
