@@ -2211,7 +2211,7 @@ output$downloadSsdPlot <- downloadHandler(
   },
   content = function(file) {
     device <- function(..., width, height) {
-      grDevices::png(..., width = 14, height = 16, res = 300, units = "in")
+      grDevices::png(..., width = 12, height = 12, res = 250, units = "in")
     }
     ggsave(file, plot = ssd_ggplot(), device = device)
   })
@@ -2260,8 +2260,8 @@ output$downloadSsdPlot <- downloadHandler(
      
      #Theme type
      theme.type<-switch(input$theme.type,
-                       "light" 	= theme_gray(),
-                       "dark" = dark_theme_bw()) 
+                       "light" 	= theme_gray(base_size = 20),
+                       "dark" = dark_theme_bw(base_size = 20)) 
      #color selection
      fill.type <- switch(input$color.type,
                          "viridis" = scale_fill_viridis(discrete = TRUE),
