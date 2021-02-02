@@ -28,6 +28,10 @@ library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
+#library(bslib) #better themes
+#library(thematic) #complete control over themes (including plots)
+
+
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -345,8 +349,17 @@ aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
 #### User Interface ####
-
-ui <- fluidPage(theme = shinytheme("flatly"),  
+#custom themes (EXPERIMENTAL, COMMENT OUT UNTIL SHINY UPDATES BUGS)
+# light <- bs_theme()
+# dark <- bs_theme(bg = "black", fg = "white", primary = "purple")
+# build UI
+ui <- fluidPage(theme = shinytheme("flatly"), #light, 
+                
+                  # div(class = "custom-control custom-switch", 
+                  #   tags$input(id = "dark_mode", type = "checkbox", class = "custom-control-input",
+                  #     onclick = HTML("Shiny.setInputValue('dark_mode', document.getElementById('dark_mode').value);")),
+                  #   tags$label("Dark mode", `for` = "dark_mode", class = "custom-control-label")
+                  #   ),  
   
   # App title
   titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
@@ -968,7 +981,12 @@ tabPanel("6: Contact",
      
 
 #### Server ####
-server <- function(input, output) {
+server <- function (input, output){  #dark mode: #(input, output, session) {
+
+  # # Theme Switch (comment out until Shiny updates)
+  # observe({session$setCurrentTheme(
+  #   if (isTRUE(input$dark_mode)) dark else light)
+  #   })
 
 #### Introduction S ####
 
@@ -1876,7 +1894,8 @@ server <- function(input, output) {
                 selected = levels(aoc_new$poly_f_new),
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)}) 
-  
+
+    
   # Create new all tested dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_z_L <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
@@ -2043,7 +2062,7 @@ server <- function(input, output) {
                                   AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new * af.noec,
                                   AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       group_by(Species, Group) %>%
-      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
+      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
       mutate_if(is.numeric, ~ signif(., 3))
    
     #dynamically change concentrations used based on user input
@@ -2075,7 +2094,7 @@ server <- function(input, output) {
     #join datasets (final)
     aoc_z_join <- right_join(aoc_z_L(), aoc_z_R(), by = "Species") 
     #order list
-    col_order <- c("Group", "Species", "Conc", "MinEffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CI95_LCL", "CI95_UCL", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
+    col_order <- c("Group", "Species", "Conc", "MinEffectType", "Minlvl2EffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CI95_LCL", "CI95_UCL", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
     #reorder
     aoc_z_join_order <- aoc_z_join[, col_order]
     
@@ -2097,7 +2116,7 @@ server <- function(input, output) {
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
-              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive Effect", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "95% Lower CI Concentration", "95% Upper CI Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive General Endpoint", "Most Sensitive Specific Endpoint", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "95% Lower CI Concentration", "95% Upper CI Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
         "Conc",
@@ -2486,7 +2505,10 @@ output$downloadSsdPlot <- downloadHandler(
   
   } #Server end
 
+
+
 #### Full App ####
 shinyApp(ui = ui, server = server)
+
 
 # End of R Shiny app script.
