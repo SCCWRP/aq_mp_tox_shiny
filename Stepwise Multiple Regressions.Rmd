@@ -176,9 +176,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
+### Full
 
 ```{r, echo = FALSE}
-
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -192,7 +192,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -241,8 +245,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -254,7 +259,11 @@ y<- na.omit(x)
 
 #Fit the full model
 Full_Model <- lm(effect ~., data = y)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 summary(Full_Model)
 
 #Stepwise model
@@ -303,8 +312,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -318,7 +328,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -365,8 +379,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -380,7 +395,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -509,9 +528,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
+### Full
 
 ```{r, echo = FALSE}
-
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -525,7 +544,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -582,8 +605,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -597,7 +621,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -652,8 +680,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full 
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -667,7 +696,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -722,8 +755,9 @@ aoc_setup_selected <- aoc_setup %>%
 
 ```
 
-```{r, echo = FALSE}
+### Full 
 
+```{r, echo = FALSE}
 #Convert all data to numerical data
 aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
 
@@ -737,7 +771,11 @@ y<- na.omit(x)
 Full_Model <- lm(effect ~., data = y)
 
 summary(Full_Model)
+```
 
+### Stepwise
+
+```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)

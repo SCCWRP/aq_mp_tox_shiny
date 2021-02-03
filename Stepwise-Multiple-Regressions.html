@@ -389,6 +389,8 @@ summary {
 <p>#Model</p>
 <p>Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) 5. Size (binned) 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization 10. Charge (negative/positive) 11. Particle Source 12. Organism Group - substitute for body right now</p>
+<div id="full" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -418,6 +420,9 @@ summary {
 ## Residual standard error: 0.4541 on 599 degrees of freedom
 ## Multiple R-squared:  0.1365, Adjusted R-squared:  0.1221 
 ## F-statistic: 9.469 on 10 and 599 DF,  p-value: 1.068e-14</code></pre>
+</div>
+<div id="stepwise" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ dose.particles.mL.master + dose.mg.L.master + 
@@ -450,6 +455,12 @@ summary {
 <p>##Remove Charge</p>
 <p>Complete charge data are limited to PS and PC spheres - remove to include for complete data.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) 5. Size (binned) 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-1" class="section level3">
+<h3>Full</h3>
+</div>
+<div id="stepwise-1" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -509,6 +520,9 @@ summary {
 <p>##Remove Charge + Size (binned)</p>
 <p>Size (binned) had the highest p value in the last model - remove.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) <del>5. Size (binned)</del> 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-2" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -536,6 +550,9 @@ summary {
 ## Residual standard error: 0.458 on 4365 degrees of freedom
 ## Multiple R-squared:  0.05206,    Adjusted R-squared:  0.04989 
 ## F-statistic: 23.97 on 10 and 4365 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="stepwise-2" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ dose.particles.mL.master + dose.mg.L.master + 
@@ -567,6 +584,9 @@ summary {
 <p>##Remove Charge + Size (binned) + Shape</p>
 <p>Shape had the highest p value in the last model - remove.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) <del>5. Size (binned)</del> <del>6. Shape</del> 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-3" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -593,6 +613,9 @@ summary {
 ## Residual standard error: 0.458 on 4366 degrees of freedom
 ## Multiple R-squared:  0.05191,    Adjusted R-squared:  0.04996 
 ## F-statistic: 26.56 on 9 and 4366 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="stepwise-3" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ dose.particles.mL.master + dose.mg.L.master + 
@@ -627,6 +650,9 @@ summary {
 <p>#Model - Log Transformed</p>
 <p>Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) 5. Size (binned) 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization 10. Charge (negative/positive) 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-4" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -670,6 +696,9 @@ summary {
 ## Residual standard error: 0.4691 on 599 degrees of freedom
 ## Multiple R-squared:  0.07834,    Adjusted R-squared:  0.06295 
 ## F-statistic: 5.091 on 10 and 599 DF,  p-value: 3.763e-07</code></pre>
+</div>
+<div id="stepwise-4" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ size_f + `log10(size.length.um.used.for.conversions)` + 
@@ -707,6 +736,9 @@ summary {
 <p>##Remove Charge</p>
 <p>Complete charge data are limited to PS and PC spheres - remove to include for complete data.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) 5. Size (binned) 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-5" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -748,6 +780,9 @@ summary {
 ## Residual standard error: 0.4563 on 4364 degrees of freedom
 ## Multiple R-squared:  0.05919,    Adjusted R-squared:  0.05682 
 ## F-statistic: 24.96 on 11 and 4364 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="stepwise-5" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ `log10(dose.particles.mL.master)` + `log10(dose.mg.L.master)` + 
@@ -795,6 +830,9 @@ summary {
 <p>##Remove Charge + Size (binned)</p>
 <p>Size (binned) had the highest p value in the last model - removed.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) <del>5. Size (binned)</del> 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> 11. Particle Source 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-6" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -834,6 +872,9 @@ summary {
 ## Residual standard error: 0.4564 on 4365 degrees of freedom
 ## Multiple R-squared:  0.05872,    Adjusted R-squared:  0.05656 
 ## F-statistic: 27.23 on 10 and 4365 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="stepwise-6" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ `log10(dose.particles.mL.master)` + `log10(dose.mg.L.master)` + 
@@ -879,6 +920,9 @@ summary {
 <p>##Remove Charge + Size (binned) + Particle Source</p>
 <p>Particle source had the highest p value in the last model - removed.</p>
 <p>The model starts with the following independent variables: 1. Dose (count) 2. Dose (mass) 3. Dose (volume) 4. Size (continuous) <del>5. Size (binned)</del> 6. Shape 7. Polymer 8. Exposure Duration 9. Level of Biological Organization <del>10. Charge (negative/positive)</del> <del>11. Particle Source</del> 12. Organism Group - substitute for body right now</p>
+</div>
+<div id="full-7" class="section level3">
+<h3>Full</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ ., data = y)
@@ -916,6 +960,9 @@ summary {
 ## Residual standard error: 0.4564 on 4366 degrees of freedom
 ## Multiple R-squared:  0.05815,    Adjusted R-squared:  0.05621 
 ## F-statistic: 29.95 on 9 and 4366 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div id="stepwise-7" class="section level3">
+<h3>Stepwise</h3>
 <pre><code>## 
 ## Call:
 ## lm(formula = effect ~ `log10(dose.particles.mL.master)` + `log10(dose.mg.L.master)` + 
@@ -956,6 +1003,7 @@ summary {
 ## Residual standard error: 0.4564 on 4366 degrees of freedom
 ## Multiple R-squared:  0.05815,    Adjusted R-squared:  0.05621 
 ## F-statistic: 29.95 on 9 and 4366 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
 </div>
 
 
