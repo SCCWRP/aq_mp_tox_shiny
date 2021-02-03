@@ -259,12 +259,13 @@ y<- na.omit(x)
 
 #Fit the full model
 Full_Model <- lm(effect ~., data = y)
+
+summary(Full_Model)
 ```
 
 ### Stepwise
 
 ```{r, echo = FALSE}
-summary(Full_Model)
 
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
