@@ -36,7 +36,7 @@ library(RColorBrewer)       # Color selection for fancy tree plot
 library(party)                  # Alternative decision tree algorithm
 # library(partykit)               # Convert rpart object to BinaryTree
 library(pROC)   #for ROC curves
-
+library(uwot) #umap
 library(ISLR)  #for the Carseat Data
 ```
 ## Data import
@@ -379,7 +379,8 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                    effect.metric, #NOEC LOEC
                                     functional.group, #factor
                                     charge, #positive or negatibe
-                                    zetapotential.mV) %>%  # numeric   
+                                    zetapotential.mV, # numeric   
+                                   max.size.ingest.mm) %>%  #max ingestible size
   filter(!size_f == "Not Reported")  #take out not reported 
 
 #recode variables
@@ -458,7 +459,7 @@ pheatmap(MissingMatrix_environment,
 
 ```{r}
 ## Estimate an OLS Regression
-fitols <- lm(effect_10 ~ size.length.um.used.for.conversions + particle.volume.um3 + exposure.duration.d + media.temp + dose.particles.mL.master, 
+fitols <- lm(effect_10 ~ size.length.um.used.for.conversions + particle.volume.um3 + exposure.duration.d + media.temp + dose.particles.mL.master +mouth, 
              na.action = na.omit, 
              data = multiVar)
 summary(fitols)
@@ -483,6 +484,87 @@ multiVar %>%
 
 
 ## PCA
+
+# UMAP
+
+```{r}
+require(uwot)
+require(Rtsne)
+require(vizier) #devtools::install_github("jlmelville/vizier")
+
+
+
+# For some functions we need to strip out non-numeric columns and convert data to matrix
+x2m <- function(X) {
+  if (!methods::is(X, "matrix")) {
+    m <- as.matrix(X[, which(vapply(X, is.numeric, logical(1)))])
+  }
+  else {m <- X} 
+  m}
+
+
+#choose values with most completeness
+multiVar2 <- multiVar %>% 
+  filter(!environment == "Terrestrial") %>% 
+  dplyr::select(size_f, size.length.um.used.for.conversions, shape, polymer, particle.volume.um3, density.mg.um.3, organism.group, bio.org, treatments, effect, exposure.duration.d, exposure.route, lvl1_f, dose.mg.L.master) %>% 
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na() #drop missing
+
+#convert discrete variables to numeric
+multiVar2[] <- data.matrix(multiVar2)
+
+# build umap for small dataset (<10,000 points)
+multiVar_map  <- umap(multiVar2, pca = 10)
+
+# Remove duplicates for t-SNE
+#multiVar2_noNa_dup <- multiVar2_noNa[-which(duplicated(x2m(multiVar2_noNa))), ]
+ 
+#build t-SNE
+#multiVar_tsne <- Rtsne::Rtsne(multiVar2_noNa_dup, perplexity = 15, initial_dims = 100, partical_pca = TRUE, exaggeration_factor = 4)
+
+# Non-numeric columns are ignored, so in a lot of cases you can pass a data
+# frame directly to umap
+#iris_umap <- umap(iris, n_neighbors = 50, learning_rate = 0.5, init = "random")
+
+#visualize umap
+embed_img <- function(X, Y, k = 15, ...) {
+  args <- list(...)
+  args$coords <- Y
+  args$x <- X
+
+  do.call(vizier::embed_plot, args)
+}
+
+#plot
+embed_img(multiVar2, multiVar_map, pc_axes = TRUE, equal_axes = TRUE, alpha_scale = 0.5, title = "Tox UMAP", cex = 1)
+```
+
+```{r}
+#PCA
+pca <- stats::prcomp(multiVar2[,-5], retx = TRUE, rank. = 2)
+#build color pallete
+my_colors = colorRampPalette(c("red", "yellow", "green"))(nrow(multiVar2))
+#plot
+embed_plot(pca$x, multiVar2$polymer, color_scheme = palette.colors(palette = "Okabe-Ito"), #turbo, #rainbow, #my_colors, 
+           title = "Polymer PCA", alpha_scale = 0.5, equal_axes = TRUE)
+```
+
+```{r}
+require(plotly)
+#PCA for discrete variables
+multiVar_discrete <- multiVar %>% 
+  select(size.length.um.used.for.conversions, polymer, dose.mg.L.master, exposure.duration.d) %>% 
+  drop_na %>% 
+  mutate_if(~is.numeric(.) && (.) > 0, log10)
+
+#buildPCA
+pca_discrete <- stats::prcomp(multiVar_discrete[,-2], retx = TRUE, rank. = 2)
+
+embed_plotly(pca_discrete$x, multiVar_discrete$polymer, color_scheme = palette.colors(palette = "Okabe-Ito"), 
+           title = "Polymer PCA", alpha_scale = 0.5, equal_axes = TRUE,
+           tooltip = paste("Polymer:", multiVar_discrete$polymer))
+```
+
 
 ## Random Forest
 ### Recursive Partitioning And Regression Trees
@@ -731,4 +813,6 @@ tab <- round(cbind(by(rpart.prob[,2], INDICES=t1$where, mean), by(crf.prob[,2], 
 colnames(tab) <- c("rpart", "cforest")
 kable(tab)
 ```
+# Non-linear Dose Response
+If we hold all paramaters constant except for dose, we should observe a non-linear dose-response behavior that can be best predicted by a 3- or 4-parameter Hill Equation. The most available information is likely for polystyrene spheres in crustaceans.There are 21 studies available.
 
