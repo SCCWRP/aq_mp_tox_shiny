@@ -38,11 +38,27 @@ library(party)                  # Alternative decision tree algorithm
 library(pROC)   #for ROC curves
 library(uwot) #umap
 library(ISLR)  #for the Carseat Data
+library(quantregForest)
+library(caret)
+library(tidyverse)
+library(tidymodels)
+library(skimr)
+library(sf)
+library(ggspatial)
+library(nhdplusTools)
+library(patchwork)
+library(Metrics)
+library(gt)
 ```
 ## Data import
 ```{r data import}
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
+
+#assign row ID
+aoc <- rowid_to_column(aoc, "ID")
+aoc <- aoc %>% 
+  mutate(ID = paste0(ID, "ID"))
 
 #### Introduction Setup ####
 
@@ -332,7 +348,13 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
-  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
+  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
+                                            af.time_noNA == 1 ~ "Chronic",
+                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>%    #factorize assesment factor time into chronic/acute
+  mutate(dose.mg.L.master.AF.noec = dose.mg.L.master * af.noec) %>% #converts ECxx, LC50, HONEC, LOEC, NOEC all to NOEC
+  mutate(dose.particles.mL.master.AF.noec = dose.particles.mL.master * af.noec)  #converts ECxx, LC50, HONEC, LOEC, NOEC all to NOEC
     
 
 #### SSD AO Setup ####
@@ -350,8 +372,8 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ```
 ```{r}
 # subset data to selected variables
-
 multiVar <- aoc_z %>% dplyr::select(#doi, size.category, 
+                                    ID,
                                     size_f,
                                     size.length.um.used.for.conversions, 
                                     shape, 
@@ -363,7 +385,7 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     bio.org, #biological level of organization
                                     #af.time, #assessment factor based on exposure time
                                     treatments, #number of doses (no including control)
-                                    effect, #yes no
+                                    effect_f, #yes no
                                     exposure.duration.d, 
                                     exposure.route, #Factor
                                     organism.group, #factor
@@ -380,16 +402,19 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     functional.group, #factor
                                     charge, #positive or negatibe
                                     zetapotential.mV, # numeric   
-                                   max.size.ingest.mm) %>%  #max ingestible size
-  filter(!size_f == "Not Reported")  #take out not reported 
+                                   max.size.ingest.mm,#max ingestible size
+                                   acute.chronic_f,
+                                   dose.mg.L.master.AF.noec,
+                                   dose.particles.mL.master.AF.noec) %>%  
+  filter(!size_f == "Not Reported") %>%   #take out not reported 
+  mutate_if(is.character, as.factor)
+  
 
-#recode variables
-multiVar <- multiVar %>% mutate(effect_10 = case_when(
-    effect == "Y" ~ 1,
-    effect == "N" ~ 0
-  ))# %>% 
-  #mutate_all(is.character, ~as.factor())
-                                    
+# #recode variables
+# multiVar <- multiVar %>% mutate(effect_10 = case_when(
+#     effect_f == "Y" ~ 1,
+#     effect_f == "N" ~ 0
+#   ))# 
 ```
 
 # Analysis
@@ -407,7 +432,7 @@ CompletenessSummary_size
 ```{r}
 require()
 #convert to matrix and transpose
-transposed_size <- as.data.frame(t(as.matrix(CompletenessSummary_size[2:25]))) %>% #1 is category, 2-6 are variables
+transposed_size <- as.data.frame(t(as.matrix(CompletenessSummary_size[2:28]))) %>% #1 is category, 2-6 are variables
   arrange('1nm < 100nm')
 #reassign column names
 colnames(transposed_size) <- c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm")
@@ -438,7 +463,7 @@ CompletenessSummary_environment
 ```{r}
 require()
 #convert to matrix and transpose
-transposed_environment <- as.data.frame(t(as.matrix(CompletenessSummary_environment[2:25])))
+transposed_environment <- as.data.frame(t(as.matrix(CompletenessSummary_environment[2:28])))
 #reassign column names
 colnames(transposed_environment) <- c("Freshwater", "Marine", "Terrestrial")
 #transposedTag
@@ -541,7 +566,7 @@ embed_img(multiVar2, multiVar_map, pc_axes = TRUE, equal_axes = TRUE, alpha_scal
 
 ```{r}
 #PCA
-pca <- stats::prcomp(multiVar2[,-5], retx = TRUE, rank. = 2)
+pca <- stats::prcomp(multiVar2[,-4], retx = TRUE, rank. = 2)
 #build color pallete
 my_colors = colorRampPalette(c("red", "yellow", "green"))(nrow(multiVar2))
 #plot
@@ -553,25 +578,37 @@ embed_plot(pca$x, multiVar2$polymer, color_scheme = palette.colors(palette = "Ok
 require(plotly)
 #PCA for discrete variables
 multiVar_discrete <- multiVar %>% 
-  select(size.length.um.used.for.conversions, polymer, dose.mg.L.master, exposure.duration.d) %>% 
+  select(size.length.um.used.for.conversions, polymer, dose.mg.L.master, exposure.duration.d, effect) %>% 
   drop_na %>% 
-  mutate_if(~is.numeric(.) && (.) > 0, log10)
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  mutate(effect_10 = case_when(
+    effect == "Y" ~ 1,
+    effect == "N" ~ 0
+  )) %>% 
+  select(-effect)
 
 #buildPCA
-pca_discrete <- stats::prcomp(multiVar_discrete[,-2], retx = TRUE, rank. = 2)
+pca_discrete <- stats::prcomp(multiVar_discrete[,-2], retx = TRUE, rank. = 5, scale. = TRUE)
+
+embed_plot(pca_discrete$x, multiVar_discrete$polymer)
 
 embed_plotly(pca_discrete$x, multiVar_discrete$polymer, color_scheme = palette.colors(palette = "Okabe-Ito"), 
            title = "Polymer PCA", alpha_scale = 0.5, equal_axes = TRUE,
            tooltip = paste("Polymer:", multiVar_discrete$polymer))
+
+#embed_plotly also option
 ```
 
 
-## Random Forest
-### Recursive Partitioning And Regression Trees
+# Random Forest
+## Recursive Partitioning And Regression Trees
 
 The rpart algorithm works by splitting the dataset recursively, which means that the subsets that arise from a split are further split until a predetermined termination criterion is reached.  At each step, the split is made based on the independent variable that results in the largest possible reduction in heterogeneity of the dependent (predicted) variable.
 
 It is important to note that the algorithm works by making the best possible choice at each particular stage, without any consideration of whether those choices remain optimal in future stages. That is, the algorithm makes a locally optimal decision at each stage. It is thus quite possible that such a choice at one stage turns out to be sub-optimal in the overall scheme of things.  In other words,  the algorithm does not find a globally optimal tree.
+
+
+The size of the data set usually imposes a hard limit on how many features may be considered due to Curse of Dimensionality, i.e. your data becomes sparser and sparser as you increase the number of features considered, which usually leads to overfitting. While there is no rule of thumb relating to how many features vs.  the number of observations you should use, I try to keep $e^Nf < No$ (Nf = number of features, No = number of observations) to minimise overfitting [this is not always possible and it does not ensure that we won’t overfit]. In this case, our training set has 3200, which suggests that using 8 features (e^8 ~ 2980) is not entirely absurd. Obviously, this depends on your data, so we will cover some further overfitting checks later on.
 ```{r}
 #trim data so effect is always known
 multiVar_sub <- multiVar %>% 
@@ -648,7 +685,7 @@ Next, we prune the tree using the cost complexity criterion. Basically, the inte
 
 As described earlier, we choose the appropriate pruning parameter (aka cost-complexity parameter) \alpha by picking the value that results in the lowest prediction error. Note that all relevant computations have already been carried out by R when we built the original tree (the call to rpart in the code above). All that remains now is to pick the value of \alpha:
 
-#### Pruning
+### Pruning
 
 ```{r}
 #cost-complexity pruning
@@ -729,7 +766,7 @@ sd(pruned_set)
 ```
 
 
-### CForest
+## CForest
 ```{r run model}
 require(party)
 crf <- cforest(as.factor(effect_10) ~ size.length.um.used.for.conversions + particle.volume.um3 + exposure.duration.d +
@@ -813,6 +850,487 @@ tab <- round(cbind(by(rpart.prob[,2], INDICES=t1$where, mean), by(crf.prob[,2], 
 colnames(tab) <- c("rpart", "cforest")
 kable(tab)
 ```
+# Random Forest Package
+
+## Preparation
+```{r}
+library(quantregForest)
+library(caret)
+library(tidyverse)
+library(tidymodels)
+library(skimr)
+library(sf)
+library(ggspatial)
+library(nhdplusTools)
+library(patchwork)
+library(Metrics)
+library(gt)
+```
+
+```{r}
+multiVar <- multiVar %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(effect_10 = case_when( #convert ordinal to numeric
+     effect_f == "Yes" ~ 1,
+     effect_f == "No" ~ 0))
+  
+#choose relevant predictors and log-transform
+multiVar_small_log <- multiVar %>% 
+  dplyr::select(ID, size_f, size.length.um.used.for.conversions, shape, polymer, particle.volume.um3, density.mg.um.3, organism.group, bio.org, treatments, effect_f, exposure.duration.d, exposure.route, lvl1_f, dose.mg.L.master) %>% 
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na() %>%  #drop missing
+ mutate(effect_10 = case_when( #convert ordinal to numeric
+     effect_f == "Yes" ~ 1,
+     effect_f == "No" ~ 0
+   ))# %>% 
+ #  select(-effect_f)
+
+#no log transform for comparison
+multiVar_small <- multiVar %>% 
+  dplyr::select(ID, size_f, size.length.um.used.for.conversions, shape, polymer, particle.volume.um3, density.mg.um.3, organism.group, bio.org, treatments, effect_f, #effect_10 , 
+                exposure.duration.d, exposure.route, lvl1_f, dose.mg.L.master) %>% 
+  drop_na() #%>%  #drop missing
+# mutate(effect_10 = case_when( #convert ordinal to numeric
+#     effect == "Y" ~ 1,
+#     effect == "N" ~ 0
+#   )) %>% 
+  # select(-effect)
+
+#ensure completeness
+skim(multiVar_small)
+```
+## Training Data
+
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+multiVar_small_split <- multiVar_small %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+multiVar_small_train <- training(multiVar_small_split)
+multiVar_small_test <- testing(multiVar_small_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+# Create a separate dataset of available IDs that were not used in the training dataset.
+notTrain <- aoc %>% # all COMIDS from StreamCat data, sampled or not
+  filter(!ID %in% aoc$ID) # Removing sites used to train the model. n = 140,097
+```
+## Kitchen Sink Model
+
+```{r}
+# Step Three - Kitchen Sink model -----------------------------------------
+
+# Create finalized training dataset and include all possible variables. 
+rf_dat <- multiVar_small_train %>%
+  select(-ID)
+
+# Random forest -- 
+# a decision tree model, using predictors to answer dichotomous questions to create nested splits.
+# no pruning happens - rather, multiple trees are built (the forest) and then you are looking for consensus across trees
+# training data goes down the tree and ends up in a terminal node.
+# if testing data goes down the same route, then this upholds our conclusions. Or, if it goes awry, this allows us to look for patterns in how it goes awry.
+
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+myrf <- randomForest(y = rf_dat$effect_f, # dependent variable
+  x = rf_dat %>%
+    select(-effect_f), # selecting all predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+myrf # examine the results.
+```
+~20% error rate. Let's compare this with the same model with log-transformed values.
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+multiVar_small_log_split <- multiVar_small_log %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+multiVar_small_log_train <- training(multiVar_small_log_split)
+multiVar_small_log_test <- testing(multiVar_small_log_split)
+
+# Create finalized training dataset and include all possible variables. 
+rf_dat_log <- multiVar_small_log_train %>%
+  select(-ID, -effect_10)
+
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+myrf_log <- randomForest(y = rf_dat_log$effect_f, # dependent variable
+  x = rf_dat_log %>%
+    select(-effect_f), # selecting all predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+myrf_log # examine the results.
+```
+No performance enhancement with log-transformed values.
+
+## Continuous Predictors
+Repeat with continous variables whenever possible, and max of 8 predictors.
+```{r}
+skim(multiVar)
+```
+```{r}
+acute <- multiVar %>% filter(acute.chronic_f == "Chronic") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!exposure.route == "food") %>% 
+  select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d,bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master)) %>% 
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na()
+skim(acute)
+```
+With a complete dataset for just acute studies in aquatic organisms with aqueous route of exposure, we are left with 453 complete cases with 6 predictor variables, 1 response variable (effect y/n), and an ID. Let's determine if we have enough data for ML. 
+```{r}
+exp(1)^6
+```
+$e^6$ is less than n (453), so we may proceed.
+
+```{r}
+plot(myrf)
+# model performance appears to improve most at ~75 trees
+```
+
+```{r}
+varImpPlot(myrf)
+# displays which variables are most important
+# helps to winnow down list of predictors
+# recommended to weigh left pane more
+# right pane also shows how evenly things split based on the list of predictors
+# values close to 0 can be dropped, but don't have to be
+```
+Dose, organism group, exposure duration are important.
+
+```{r}
+importance <- myrf$importance
+View(importance)
+# displays the data plotted in the plot above
+```
+
+```{r}
+# predict()
+# returns out of bag predictions for training data
+# in the bag: every time a tree is built, it uses ~80% of the original 75% we set aside from the original dataset used to create a tree to assure random data selection
+# out of bag: looking at the remaining 20% of the training data to predict, when you want to know what your model does at the training location sites
+
+# # Predict CRAM scores state-wide for all COMIDs.
+# notTrain_prediction <- notTrain %>% # taking all available IDs, that haven't been used in training
+#   na.omit() %>% # remove NAs
+#   mutate(effect_predicted = predict(myrf, newdata = notTrain %>% na.omit())) # using developed model (myrf), inputting predictor variables (notTrain - which contains IDs and associated  data) to predict output/dependent variable (effect_predicted a.k.a. effect).
+
+# rePredict CRAM scores for training data.
+multiVar_small_train$effect_predicted <- predict(myrf) # Add column of predicted CRAM values to training dataset.
+
+# Creates new dataset of bound rows for both ...
+# effect_predictions <- bind_rows(nottrain_prediction %>%
+#                             mutate(Set = "Non-training"), # statewide COMIDs (not used for training)
+#                             multiVar_smal_train %>%
+#                             mutate(Set = "Training")) # COMIDS from training dataset
+# This creates the dataset that will be plotted to create a state-wide plot of predicted CRAM scores.
+
+# Plot the data.
+multiVar_small_train %>% 
+  mutate(effect_10 = case_when( #convert ordinal to numeric
+     effect_predicted == "Yes" ~ 1,
+     effect_predicted == "No" ~ 0
+   )) %>% 
+  ggplot(aes(x = log10(dose.mg.L.master), y = effect_10)) +
+  geom_point(alpha = 0.7) +#color = "black") +
+  labs(x = "Density",
+    y = "Predicted CRAM Score") +
+  theme_dark() #+
+  #facet_wrap(.~polymer)
+```
+### Predictor Selector
+```{r}
+# Using caret to select the best predictors
+# What are the parameters you want to use to run recursive feature elimination (rfe)?
+my_ctrl <- rfeControl(functions = rfFuncs,
+                      method = "cv",
+                      verbose = FALSE,
+                      returnResamp = "all")
+
+# rfe = recursive feature elimination
+# THIS STEP TAKES FOR-EV-ER!!!
+set.seed(22)
+my_rfe <- rfe(y = rf_dat$effect_f, # set dependent variable
+              x = rf_dat %>% select(-effect_f), # set predictor variables
+              size = c(1:2, 4, 6, 8, 10, 13), # sets how many variables are in the overall model
+              # I have 13 total possible variables, so I've chosen increments of 3 to look at.
+              rfeControl = my_ctrl) # pull in control from above
+
+# can you make your model even simpler?
+# the following will pick a model with the smallest number of predictor variables based on the tolerance ("tol") that you specify (how much less than the best are you willing to tolerate?)
+my_size <- pickSizeTolerance(my_rfe$results, metric = "Accuracy", tol = 1, maximize = F)
+# higher tol (~10) gives you less variables
+# lower tol (~1) gives you more variables - "I'd like the simplest model within 1% of the best model."
+pickVars(my_rfe$variables, size = my_size)
+```
+
+```{r}
+# Predict scores using the above 2 variables:
+
+# Create re-finalized training dataset and include all possible variables. 
+rf_dat2 <- multiVar_small_train %>%  select(dose.mg.L.master, organism.group, effect_f) 
+
+set.seed(4) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+myrf2 <- randomForest(y = rf_dat2$effect_f, # dependent variable
+  x = rf_dat2 %>%
+    select(-effect_f),
+  importance = T, 
+  proximity = T, 
+  ntrees = 500)  
+
+myrf2 # examine the results. 
+```
+
+
+```{r}
+importance <- as.data.frame(as.table(myrf$importance))
+
+# Nicer ggplot variable importance plot.
+vip_plot_a <- importance %>%
+ filter(Var2 == "MeanDecreaseAccuracy") %>%
+  mutate(Var1 = factor(Var1)) %>%
+  mutate(Var1_f = fct_reorder(Var1, Freq)) %>%
+  ggplot(aes(x = Freq, y = Var1_f)) +
+  geom_point(size = 3, alpha = 0.75, color = "black") +
+  labs(x = "Importance",
+    y = "Variables") +
+  theme_bw()
+
+# vip_plot_b <- importance %>%
+#   filter(Var2 == "MeanDecreaseGini") %>%
+#   mutate(Var1 = factor(Var1)) %>%
+#   mutate(Var1_f = fct_reorder(Var1, Freq)) %>%
+#   ggplot(aes(x = Freq, y = Var1_f)) +
+#   geom_point(size = 3, alpha = 0.75, color = "black") +
+#   labs(x = "Node Purity",
+#     y = "Variables") +
+#   theme_bw()
+
+vip_plot <- vip_plot_a #+ vip_plot_b
+
+vip_plot
+# ggsave("cram_vip_plot.png",
+#      path = "/Users/heilil/Desktop/R_figures",
+#      width = 25,
+#      height = 10,
+#      units = "cm"
+#    )
+```
+GINI importance measures the average gain of purity by splits of a given variable. If the variable is useful, it tends to split mixed labeled nodes into pure single class nodes. Splitting by a permuted variables tend neither to increase nor decrease node purities. Permuting a useful variable, tend to give relatively large decrease in mean gini-gain. GINI importance is closely related to the local decision function, that random forest uses to select the best available split. Therefore, it does not take much extra time to compute. On the other hand, mean gini-gain in local splits, is not necessarily what is most useful to measure, in contrary to change of overall model performance. Gini importance is overall inferior to (permutation based) variable importance as it is relatively more biased, more unstable and tend to answer a more indirect question.
+
+
+### Quantile Regression model
+```{r}
+# Quantile random forest regression mode, instead of looking at the mode of trees, can compare to 10th, 50th, 90th percentiles etc.
+
+# Need to make a new dataset taking the above results of pickVars into account.
+# Create finalized training dataset and include all possible variables. 
+qrf_dat <- multiVar_small_train  %>%
+  select(-effect_predicted, -ID)
+#   select(asci, RdCrsWs, PctAgWs, PctUrbWsRp100, PctOpWsRp100, PctOpWs, DamDensWs, RdDensWs, NABD_DensWs, PctUrbWs, PctUrbCatRp100, RdDensWsRp100, PctOpCat, PctUrbCat, RdDensCat, CBNFWs, PctOpCatRp100, PctAgWsRp100, TRIDensWs, AgKffactWs, FertWs) 
+
+ set.seed(20)
+ myqrf <- quantregForest(y = qrf_dat$effect_f, # dependent variable
+              x = qrf_dat %>%
+                  select(-effect_f),
+              importance = T,
+              proximity = T,
+              keep.inbag=T,
+              ntrees = 500)
+
+#predict(myqrf) # automatically presents 10th %tile, median, and 90th %tile
+```
+
+```{r}
+#predict(myqrf, what=c(0.2, 0.3, 0.999)) # to print specific quantiles
+```
+
+
+```{r}
+plot(myqrf) # plots the results.
+```
+# Again appears to improve after ~100 trees.
+
+### Model Validation
+#### Categorical Response
+
+
+#### Continuous Response
+```{r}
+# Compare predicted vs. actual results, including by size.
+# Adding lines of slope=1 and linear models to each plot.
+val1 <- multiVar_small_train %>% 
+  ggplot(aes(x = effect_predicted, y = effect_f)) +
+  geom_point(color = "#2A3927", alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "#2A3927") +
+  labs(x = "Predicted Effect",
+    y = "Effect measured",
+    title = "Training Data\nn=613") +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+
+val1
+
+lm1 <- lm(cram~cram_predicted, data = mydf2_train2)
+summary(lm1)
+
+val2 <- ggplot(mydf2_test2, aes(x = cram_predicted, y = cram)) +
+  geom_point(color = "#3793EC", alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "#3793EC") +
+  scale_x_continuous(breaks = c(0.5, 0.7, 0.9)) +
+  labs(x = "CRAM predicted",
+    y = "CRAM measured",
+    title = "Testing Data\nn=202") +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+
+val2
+
+lm2 <- lm(cram~cram_predicted, data = mydf2_test2)
+summary(lm2)
+
+# Create the full testing + training dataset to plot together.
+mydf2_test2$set <- "Testing"
+mydf2_train2$set <- "Training"
+full_train_test <- bind_rows(mydf2_test2, mydf2_train2) %>%
+  mutate(set_f = factor(set, levels = c("Training", "Testing")))
+
+val3 <- ggplot(full_train_test, aes(x = cram_predicted, y = cram, color = set_f)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(name = "Set", values = c("#2A3927", "#3793EC"), drop = FALSE) +
+  labs(x = "CRAM predicted",
+    y = "CRAM measured",
+    title = "All Data\nn=815") +
+  geom_abline(intercept = 0, slope = 1, color = "black") +
+  facet_wrap(~PSA6) +
+  theme_bw()
+
+val3
+
+val_fig <- (val1 + val2) /
+  (val3)
+
+val_fig + plot_annotation(
+  title = 'CRAM Random Forest Results',
+  subtitle = 'All modeling performed using StreamCAT datasets.',
+  caption = 'Linear models are colored according to dataset. Lines of slope = 1 are denoted in black.'
+)
+
+# Save figure.
+# ggsave("cram_rfmodel_validation.png",
+#      path = "/Users/heilil/Desktop/R_figures",
+#      width = 35,
+#      height = 25,
+#      units = "cm"
+#    )
+
+lm3 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Central_Valley") %>%
+    filter(set_f == "Training"))
+
+lm4 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Central_Valley") %>%
+    filter(set_f == "Testing"))
+
+lm5 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Chaparral") %>%
+    filter(set_f == "Training"))
+
+lm6 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Chaparral") %>%
+    filter(set_f == "Testing"))
+
+lm7 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Deserts_Modoc") %>%
+    filter(set_f == "Training"))
+
+lm8 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Deserts_Modoc") %>%
+    filter(set_f == "Testing"))
+
+lm9 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "North_Coast") %>%
+    filter(set_f == "Training"))
+
+lm10 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "North_Coast") %>%
+    filter(set_f == "Testing"))
+
+lm11 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Sierra") %>%
+    filter(set_f == "Training"))
+
+lm12 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "Sierra") %>%
+    filter(set_f == "Testing"))
+
+lm13 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "South_Coast") %>%
+    filter(set_f == "Training"))
+
+lm14 <- lm(cram~cram_predicted, 
+  data = full_train_test %>%
+    filter(PSA6 == "South_Coast") %>%
+    filter(set_f == "Testing"))
+
+# Chose not to compute confusion matrix / accuracy score since this is more applicable to categorical ouputs from random forest models -
+# Instead, calculated Root Mean Squared Error (RMSE) of both training and test datasets.
+# If test RMSE values are much greater than training, then possible the model has been over fit.
+
+predtest <- predict(myrf2, mydf2_test2)
+rmse(mydf2_test2$cram,predtest)
+# 9.03
+
+predtrain <- predict(myrf2, mydf2_train2)
+rmse(mydf2_train2$cram,predtrain)
+# 4.20
+
+# Double checking using the original random forest dataset (rf_dat) with all 35 possible variables included to see where the error in number of predictors starts to increase dramatically (to help double check our decision to include 25 parameters).
+dc <- rfcv(rf_dat %>%
+    select(-cram), 
+  rf_dat$cram,
+  step = 0.7, # default is 0.5
+  scale="log")
+
+dc$error.cv
+#34        24        17        12         8         6         4         3         2 
+# 96.28062  97.29366  99.08743 102.93752 115.52580 120.63049 122.09563 123.74425 139.30181 
+# 1 
+# 206.58921 
+
+# Appears between 34 and 24 variables, there is an insignificant increase in error.
+# However, this model is much larger than the CSCI (20) and ASCI (10) models, so we may decide to trim this down in the future.
+
+```
+
+# Works Cited
+
+
+
 # Non-linear Dose Response
 If we hold all paramaters constant except for dose, we should observe a non-linear dose-response behavior that can be best predicted by a 3- or 4-parameter Hill Equation. The most available information is likely for polystyrene spheres in crustaceans.There are 21 studies available.
 
