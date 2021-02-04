@@ -170,8 +170,12 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect ~., data = y,
+                 na.action = na.omit)
+summary(Full_Model)
+```
 
+```{r}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
