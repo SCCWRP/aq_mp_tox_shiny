@@ -1321,6 +1321,21 @@ require(gridExtra)
 grid.arrange(nofilter, all, acute, chronic,
              ncol = 4)
 ```
+```{r}
+require(pROC)
+require(tidyverse)
+require(ggdark)
+require(ggsci)
+ggroc(list(all = roc.nofilter, organisms = roc.all, acute = roc.acute, chronic = roc.chronic), aes = c("linetype", "color")) +
+  labs(title = "ROC Curves for Aquatic Toxicity RF",
+       subtitle = "n = 4615",
+       color = "Dataset",
+       linetype = "Dataset") +
+  scale_color_tron()+
+  dark_theme_bw(base_size = 20)# +
+  #theme(plot.title.position = element_text(hjust = 0.5),
+   #     plot.subtitle.position = element_text(hjust = 0.5))
+```
 
 Make a classification tree.
 
