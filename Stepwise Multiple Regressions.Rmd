@@ -147,8 +147,6 @@ aoc_setup <- aoc %>%
 
 #Model
 
-Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results. 
-
 The model starts with the following independent variables: 
 1. Dose (count)
 2. Dose (mass)
@@ -179,7 +177,7 @@ aoc_setup_selected <- aoc_setup %>%
          charge_f, 
          particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -212,7 +210,7 @@ summary(step.model)
 
 ```
 
-#Model Refining
+##Model Refining
 
 ##Remove Charge 
 
@@ -408,6 +406,283 @@ summary(Full_Model)
 ### Stepwise
 
 ```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+#Model - Interaction
+
+The response variable is the interaction between effect and effect score
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+3. Dose (volume)
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+10. Charge (negative/positive)
+11. Particle Source
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity.
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(dose.particles.mL.master, 
+         dose.mg.L.master, 
+         size_f, 
+         size.length.um.used.for.conversions, 
+         shape_f, 
+         poly_f, 
+         dose.um3.mL.master, 
+         exposure.duration.d, 
+         bio_f, 
+         charge_f, 
+         particle_source_f,
+         org_f,
+         effect.score,
+         effect_f)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+#Model Refining
+
+##Remove Charge 
+
+Complete charge data are limited to PS and PC spheres - remove to include for complete data. 
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+3. Dose (volume)
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+~~10. Charge (negative/positive)~~
+11. Particle Source
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity.
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(dose.particles.mL.master, 
+         dose.mg.L.master, 
+         size_f, 
+         size.length.um.used.for.conversions, 
+         shape_f, 
+         poly_f, 
+         dose.um3.mL.master, 
+         exposure.duration.d, 
+         bio_f, 
+         # charge_f, 
+         particle_source_f,
+         org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+## Remove Charge + Dose (volume)
+
+Remove dose(volume) - highest p value 
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+~~3. Dose (volume)~~
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+~~10. Charge (negative/positive)~~
+11. Particle Source
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity.
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(dose.particles.mL.master, 
+         dose.mg.L.master, 
+         size_f, 
+         size.length.um.used.for.conversions, 
+         shape_f, 
+         poly_f, 
+         # dose.um3.mL.master, 
+         exposure.duration.d, 
+         bio_f, 
+         # charge_f, 
+         particle_source_f,
+         org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+## Remove Charge + Dose (volume) + Dose (mass)
+
+Remove dose(volume) - highest p value 
+
+The model starts with the following independent variables: 
+1. Dose (count)
+~~2. Dose (mass)~~
+~~3. Dose (volume)~~
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+~~10. Charge (negative/positive)~~
+11. Particle Source
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity.
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(dose.particles.mL.master, 
+         # dose.mg.L.master, 
+         size_f, 
+         size.length.um.used.for.conversions, 
+         shape_f, 
+         poly_f, 
+         # dose.um3.mL.master, 
+         exposure.duration.d, 
+         bio_f, 
+         # charge_f, 
+         particle_source_f,
+         org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
@@ -777,6 +1052,221 @@ y<- na.omit(x)
 
 #Fit the full model
 Full_Model <- lm(effect_f ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+
+#Model - Log Transformed + Interaction
+
+Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results. The response variable is the interaction between effect and effect score.  
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+3. Dose (volume)
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+10. Charge (negative/positive)
+11. Particle Source
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Log transform numeric values 
+aoc_setup <- aoc_setup %>% 
+  mutate(log10(dose.particles.mL.master)) %>% 
+  mutate(log10(dose.mg.L.master)) %>%
+  mutate(log10(dose.um3.mL.master)) %>%
+  mutate(log10(size.length.um.used.for.conversions)) %>%
+  mutate(log10(exposure.duration.d)) 
+
+#Select the columns that we want to feed into the model for simplicity and log transform data according to histogram results. 
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(`log10(dose.particles.mL.master)`, 
+         `log10(dose.mg.L.master)`, 
+         size_f, 
+         `log10(size.length.um.used.for.conversions)`, 
+         shape_f, 
+         poly_f, 
+         `log10(dose.um3.mL.master)`, 
+        `log10(exposure.duration.d)`, 
+         bio_f, 
+         charge_f, 
+         particle_source_f,
+         org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+#Model Refining
+
+##Remove Particle Source
+
+Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results. The response variable is the interaction between effect and effect score.  
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+3. Dose (volume)
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+10. Charge (negative/positive)
+~~11. Particle Source~~
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity and log transform data according to histogram results. 
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(`log10(dose.particles.mL.master)`, 
+         `log10(dose.mg.L.master)`, 
+         size_f, 
+         `log10(size.length.um.used.for.conversions)`, 
+         shape_f, 
+         poly_f, 
+         `log10(dose.um3.mL.master)`, 
+        `log10(exposure.duration.d)`, 
+         bio_f, 
+         charge_f, 
+         # particle_source_f,
+         org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
+
+summary(Full_Model)
+```
+
+### Stepwise
+
+```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+summary(step.model)
+
+```
+
+##Remove Particle Source + Organism Group
+
+Doses (count, mass and volume), size (continuous), and exposure duration are all log transformed given histogram results. The response variable is the interaction between effect and effect score.  
+
+The model starts with the following independent variables: 
+1. Dose (count)
+2. Dose (mass)
+3. Dose (volume)
+4. Size (continuous)
+5. Size (binned)
+6. Shape
+7. Polymer
+8. Exposure Duration
+9. Level of Biological Organization
+10. Charge (negative/positive)
+~~11. Particle Source~~
+12. Organism Group - substitute for body right now
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity and log transform data according to histogram results. 
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(`log10(dose.particles.mL.master)`, 
+         `log10(dose.mg.L.master)`, 
+         size_f, 
+         `log10(size.length.um.used.for.conversions)`, 
+         shape_f, 
+         poly_f, 
+         `log10(dose.um3.mL.master)`, 
+        `log10(exposure.duration.d)`, 
+         bio_f, 
+         charge_f, 
+         # particle_source_f,
+         # org_f,
+         effect_f,
+         effect.score)
+
+```
+
+### Full
+
+```{r, echo = FALSE}
+#Convert all data to numerical data
+aoc_setup_selected_num <- data.matrix(aoc_setup_selected)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_selected_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y)
 
 summary(Full_Model)
 ```
