@@ -25,7 +25,7 @@ aoc_setup <- aoc %>%
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
     levels = c("No", "Yes"))) %>%
-  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported", charge = "Not Reported")) %>% 
   mutate(size_f = factor(case_when(
     size.category == 1 ~ "1nm < 100nm",
     size.category == 2 ~ "100nm < 1µm",
@@ -126,6 +126,13 @@ aoc_setup <- aoc %>%
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(charge_f = factor(case_when(charge == "negative" ~ "Negative",
+                                     charge == "positive" ~ "Positive",
+                                     charge == "Not Reported" ~ "Not Reported"))) %>%
+  mutate(particle_source_f = factor(case_when(particle.source == "commercial" ~ "Commercial",
+                                              particle.source == "lab" ~ "Lab",
+                                              particle.source == "modified" ~ "Modified",
+                                              particle.source == "N" ~ "Not Reported"))) %>% 
   mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
@@ -169,8 +176,8 @@ aoc_setup_selected <- aoc_setup %>%
          dose.um3.mL.master, 
          exposure.duration.d, 
          bio_f, 
-         charge, 
-         particle.source,
+         charge_f, 
+         particle_source_f,
          org_f,
          effect)
 
@@ -189,7 +196,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -238,10 +245,10 @@ aoc_setup_selected <- aoc_setup %>%
          dose.um3.mL.master, 
          exposure.duration.d, 
          bio_f, 
-         # charge, 
-         particle.source,
+         # charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -258,7 +265,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -306,10 +313,10 @@ aoc_setup_selected <- aoc_setup %>%
          dose.um3.mL.master, 
          exposure.duration.d, 
          bio_f, 
-         # charge, 
-         particle.source,
+         # charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -326,7 +333,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -373,10 +380,10 @@ aoc_setup_selected <- aoc_setup %>%
          dose.um3.mL.master, 
          exposure.duration.d, 
          bio_f, 
-         # charge, 
-         particle.source,
+         # charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -393,7 +400,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -522,10 +529,10 @@ aoc_setup_selected <- aoc_setup %>%
          `log10(dose.um3.mL.master)`, 
         `log10(exposure.duration.d)`, 
          bio_f, 
-         charge, 
-         particle.source,
+         charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -542,7 +549,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -599,10 +606,10 @@ aoc_setup_selected <- aoc_setup %>%
          `log10(dose.um3.mL.master)`, 
         `log10(exposure.duration.d)`, 
          bio_f, 
-         # charge, 
-         particle.source,
+         # charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -619,7 +626,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -674,10 +681,10 @@ aoc_setup_selected <- aoc_setup %>%
          `log10(dose.um3.mL.master)`, 
         `log10(exposure.duration.d)`, 
          bio_f, 
-         # charge, 
-         particle.source,
+         # charge_f, 
+         particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -694,7 +701,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -749,10 +756,10 @@ aoc_setup_selected <- aoc_setup %>%
          `log10(dose.um3.mL.master)`, 
         `log10(exposure.duration.d)`, 
          bio_f, 
-         # charge, 
-         # particle.source,
+         # charge_f, 
+         # particle_source_f,
          org_f,
-         effect)
+         effect_f)
 
 ```
 
@@ -769,7 +776,7 @@ x <- as.data.frame(aoc_setup_selected_num)
 y<- na.omit(x)
 
 #Fit the full model
-Full_Model <- lm(effect ~., data = y)
+Full_Model <- lm(effect_f ~., data = y)
 
 summary(Full_Model)
 ```
@@ -784,3 +791,41 @@ step.model <- stepAIC(Full_Model, direction = "both",
 summary(step.model)
 
 ```
+
+# GLM Exploration
+
+Since a linear model does not seem to work well for this data set. I'm going to explore other distribution that may fit the data better. 
+
+```{r, echo = TRUE}
+
+#Select the columns that we want to feed into the model for simplicity.
+aoc_setup_selected <- aoc_setup %>% 
+  dplyr::select(dose.particles.mL.master, 
+         dose.mg.L.master, 
+         size_f, 
+         size.length.um.used.for.conversions, 
+         shape_f, 
+         poly_f, 
+         dose.um3.mL.master, 
+         exposure.duration.d, 
+         bio_f, 
+         charge_f, 
+         particle_source_f,
+         org_f,
+         effect_f)
+
+str(aoc_setup_selected)
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
