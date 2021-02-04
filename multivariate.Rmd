@@ -405,16 +405,12 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                    max.size.ingest.mm,#max ingestible size
                                    acute.chronic_f,
                                    dose.mg.L.master.AF.noec,
-                                   dose.particles.mL.master.AF.noec) %>%  
+                                   dose.particles.mL.master.AF.noec,
+                                   effect.score) %>%  #1 = minor, 2 = photosynthesis, feeding, 3 = growth, chlorophyll content, 4 = reproduction, 5  = population growth, 6 = survival
   filter(!size_f == "Not Reported") %>%   #take out not reported 
-  mutate_if(is.character, as.factor)
-  
-
-# #recode variables
-# multiVar <- multiVar %>% mutate(effect_10 = case_when(
-#     effect_f == "Y" ~ 1,
-#     effect_f == "N" ~ 0
-#   ))# 
+  mutate_if(is.character, as.factor) %>% mutate(effect_10 = case_when(
+     effect_f == "Yes" ~ 1,
+     effect_f == "No" ~ 0))
 ```
 
 # Analysis
@@ -979,12 +975,13 @@ Repeat with continous variables whenever possible, and max of 8 predictors.
 skim(multiVar)
 ```
 ```{r}
-acute <- multiVar %>% filter(acute.chronic_f == "Chronic") %>% 
+acute <- multiVar %>% 
+  filter(acute.chronic_f == "Acute") %>% 
   filter(!environment == "Terrestrial") %>% 
   filter(bio.org == "organism") %>% 
   filter(lvl1_f == "Fitness") %>% 
   filter(!exposure.route == "food") %>% 
-  select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d,bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master)) %>% 
+  dplyr::select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d, bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master, effect_10, ID)) %>%
   mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
   drop_na()
 skim(acute)
@@ -996,12 +993,39 @@ exp(1)^6
 $e^6$ is less than n (453), so we may proceed.
 
 ```{r}
-plot(myrf)
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+acute_split <- acute %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+acute_train <- training(acute_split)
+acute_test <- testing(acute_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+# Random forest -- 
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+acuterf <- randomForest(y = acute_train$effect_f, # dependent variable
+  x = acute_train %>%
+    dplyr::select(-effect_f), # selecting all predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+acuterf # examine the results.
+```
+
+```{r}
+plot(acuterf)
 # model performance appears to improve most at ~75 trees
 ```
 
 ```{r}
-varImpPlot(myrf)
+varImpPlot(acuterf)
 # displays which variables are most important
 # helps to winnow down list of predictors
 # recommended to weigh left pane more
@@ -1011,10 +1035,363 @@ varImpPlot(myrf)
 Dose, organism group, exposure duration are important.
 
 ```{r}
-importance <- myrf$importance
+importance <- acuterf$importance
 View(importance)
 # displays the data plotted in the plot above
 ```
+
+###Validation
+
+
+```{r fit results}
+fitted <- predict(acuterf, acute_test[,-6], OOB = TRUE, type ="response")
+misClasificError <- mean(fitted != acute_test$effect_f)
+print(paste('Training Accuracy', 1 - misClasificError))
+```
+
+Alternative ROC Curve
+```{r}
+require(pROC)
+predicted <- predict(acuterf, acute_test %>%  dplyr::select(-effect_f),
+                       OOB=TRUE, type= "response")
+#Calculate ROC curve
+rocCurve.tree <- roc(as.numeric(acute_test$effect_f),as.numeric(predicted))
+
+##gplot
+# rocks <- roc()
+
+#plot the ROC curve
+plot(rocCurve.tree,col=c(4))
+```
+##### Chronic
+```{r}
+chronic <- multiVar %>% 
+  filter(acute.chronic_f == "Chronic") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!exposure.route == "food") %>% 
+  dplyr::select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d, bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master, effect_10, ID)) %>%
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na()
+skim(chronic)
+```
+With a complete dataset for just acute studies in aquatic organisms with aqueous route of exposure, we are left with 453 complete cases with 6 predictor variables, 1 response variable (effect y/n), and an ID. Let's determine if we have enough data for ML. 
+```{r}
+exp(1)^6
+```
+$e^6$ is less than n (453), so we may proceed.
+
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+chronic_split <- chronic %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+chronic_train <- training(chronic_split)
+chronic_test <- testing(chronic_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+# Random forest -- 
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+chronicrf <- randomForest(y = chronic_train$effect_f, # dependent variable
+  x = chronic_train %>%
+    dplyr::select(-effect_f), # selecting all predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+chronicrf # examine the results.
+```
+
+```{r}
+plot(chronicrf)
+# model performance appears to improve most at ~75 trees
+```
+
+```{r}
+varImpPlot(chronicrf)
+# displays which variables are most important
+# helps to winnow down list of predictors
+# recommended to weigh left pane more
+# right pane also shows how evenly things split based on the list of predictors
+# values close to 0 can be dropped, but don't have to be
+```
+Dose, organism group, exposure duration are important.
+
+```{r}
+importance <- chronicrf$importance
+View(importance)
+# displays the data plotted in the plot above
+```
+
+```{r fit results}
+fitted <- predict(chronicrf, chronic_test[,-6], OOB = TRUE, type ="response")
+misClasificError <- mean(fitted != chronic_test$effect_f)
+print(paste('Training Accuracy', 1 - misClasificError))
+```
+
+#### All Data
+```{r}
+all <- multiVar %>% 
+  #filter(acute.chronic_f == "Chronic") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!exposure.route == "food") %>% 
+  dplyr::select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d, bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master, effect_10, ID)) %>%
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na()
+skim(all)
+```
+With a complete dataset for just acute studies in aquatic organisms with aqueous route of exposure, we are left with 453 complete cases with 6 predictor variables, 1 response variable (effect y/n), and an ID. Let's determine if we have enough data for ML. 
+```{r}
+exp(1)^6
+```
+$e^6$ is less than n (453), so we may proceed.
+
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+all_split <- all %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+all_train <- training(all_split)
+all_test <- testing(all_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+# Random forest -- 
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+allrf <- randomForest(y = all_train$effect_f, # dependent variable
+  x = all_train %>%
+    dplyr::select(-effect_f), # selecting all predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+allrf # examine the results.
+```
+
+```{r}
+plot(allrf)
+# model performance appears to improve most at ~75 trees
+```
+
+```{r}
+varImpPlot(allrf)
+# displays which variables are most important
+# helps to winnow down list of predictors
+# recommended to weigh left pane more
+# right pane also shows how evenly things split based on the list of predictors
+# values close to 0 can be dropped, but don't have to be
+```
+Dose, organism group, exposure duration are important.
+
+```{r}
+importance <- allrf$importance
+View(importance)
+# displays the data plotted in the plot above
+```
+
+```{r fit results}
+fitted <- predict(allrf, all_test[,-6], OOB = TRUE, type ="response")
+misClasificError <- mean(fitted != all_test$effect_f)
+print(paste('Training Accuracy', 1 - misClasificError))
+```
+
+#### NO FILTERS
+```{r}
+nofilter <- multiVar %>% 
+  #filter(acute.chronic_f == "Chronic") %>% 
+  ##filter(!environment == "Terrestrial") %>% 
+  #filter(bio.org == "organism") %>% 
+  #filter(lvl1_f == "Fitness") %>% 
+  #filter(!exposure.route == "food") %>% 
+  dplyr::select(-c(sex, functional.group, charge, zetapotential.mV, max.size.ingest.mm, media.sal.ppt, media.ph, media.temp, treatments, acute.chronic_f, max.size.ingest.mm, effect.metric, lvl2_f, exposure.route, exposure.duration.d, bio.org, environment, lvl1_f, dose.particles.mL.master.AF.noec, dose.mg.L.master.AF.noec, size_f, density.mg.um.3, dose.particles.mL.master, effect_10, ID)) %>%
+  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  drop_na()
+skim(nofilter)
+```
+With a complete dataset for just acute studies in aquatic organisms with aqueous route of exposure, we are left with 453 complete cases with 6 predictor variables, 1 response variable (effect y/n), and an ID. Let's determine if we have enough data for ML. 
+```{r}
+exp(1)^6
+```
+$e^6$ is less than n (453), so we may proceed.
+
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+nofilter_split <- nofilter %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" cnofilter ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+nofilter_train <- training(nofilter_split)
+nofilter_test <- testing(nofilter_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+# Random forest -- 
+set.seed(2) # assures the data pulled is random, but sets it for the run below (makes outcome stable)
+nofilterrf <- randomForest(y = nofilter_train$effect_f, # dependent variable
+  x = nofilter_train %>%
+    dplyr::select(-effect_f), # selecting nofilter predictor variables
+  importance = T, # how useful is a predictor in predicting values (nothing causal)
+  proximity = T, 
+  ntrees = 100) # 500 trees default. 
+
+nofilterrf # examine the results.
+```
+
+```{r}
+plot(nofilterrf)
+# model performance appears to improve most at ~75 trees
+```
+
+```{r}
+varImpPlot(nofilterrf)
+# displays which variables are most important
+# helps to winnow down list of predictors
+# recommended to weigh left pane more
+# right pane also shows how evenly things split based on the list of predictors
+# values close to 0 can be dropped, but don't have to be
+```
+Dose, organism group, exposure duration are important.
+
+```{r}
+importance <- nofilterrf$importance
+View(importance)
+# displays the data plotted in the plot above
+```
+
+```{r fit results}
+fitted <- predict(nofilterrf, nofilter_test[,-6], OOB = TRUE, type ="response")
+misClasificError <- mean(fitted != nofilter_test$effect_f)
+print(paste('Training Accuracy', 1 - misClasificError))
+```
+
+
+#### ROC Curve
+yet anothyer try
+```{r}
+###CHRONIC
+chronicpredictions <- as.data.frame(predict(chronicrf, chronic_test[,-6], type = "prob"))
+# predict class and then attach test class
+chronicpredictions$predict <- names(chronicpredictions)[1:2][apply(chronicpredictions[,1:2], 1, which.max)]
+chronicpredictions$observed <- chronic_test$effect_f
+
+####ACUTE
+predictions <- as.data.frame(predict(acuterf, acute_test[,-6], type = "prob"))
+# predict class and then attach test class
+predictions$predict <- names(predictions)[1:2][apply(predictions[,1:2], 1, which.max)]
+predictions$observed <- acute_test$effect_f
+head(predictions)
+
+#### all
+allpredictions <- as.data.frame(predict(allrf, all_test[,-6], type = "prob"))
+# predict class and then attach test class
+allpredictions$predict <- names(allpredictions)[1:2][apply(allpredictions[,1:2], 1, which.max)]
+allpredictions$observed <- all_test$effect_f
+head(allpredictions)
+
+
+###nofilter
+nofilterpredictions <- as.data.frame(predict(nofilterrf, nofilter_test[,-6], type = "prob"))
+# predict class and then attach test class
+nofilterpredictions$predict <- names(nofilterpredictions)[1:2][apply(nofilterpredictions[,1:2], 1, which.max)]
+nofilterpredictions$observed <- nofilter_test$effect_f
+```
+```{r}
+# 1 ROC curve, yes vs no for acute
+roc.acute <- roc(ifelse(predictions$observed=="Yes", "Yes", "No"), as.numeric(predictions$Yes))
+
+#chronic
+roc.chronic <- roc(ifelse(chronicpredictions$observed=="Yes", "Yes", "No"), as.numeric(chronicpredictions$Yes))
+#all
+roc.all <- roc(ifelse(allpredictions$observed=="Yes", "Yes", "No"), as.numeric(allpredictions$Yes))
+
+#nofilter
+roc.nofilter <- roc(ifelse(nofilterpredictions$observed=="Yes", "Yes", "No"), as.numeric(nofilterpredictions$Yes))
+
+all <- ggroc(roc.all) + labs(title = "Chronic and Acute",
+                             subtitle = "Accuracy = 81.7%, n = 1510") +
+  theme_minimal()
+acute <- ggroc(roc.acute, col = "red") + labs(title = "Acute",
+                                              subtitle = "Accuracy = 84.8%, n = 883") + theme_minimal()
+chronic <- ggroc(roc.chronic, col = "blue") + labs(title = "Chronic",
+                                                   subtitle = "Accuracy = 67.3%, n = 452") + theme_minimal()
+ 
+nofilter<- ggroc(roc.nofilter, col = "green") + labs(title = "Entire Dataset",
+                                                   subtitle = "Accuracy = 79.9%, n = 4615") + theme_minimal()
+require(gridExtra)
+grid.arrange(all, acute, chronic, nofilter,
+             ncol = 4)
+```
+
+
+
+```{r}
+#plot reciever operating curve
+perf <- performance(preds,"tpr","fpr")
+```
+
+```{r}
+# compute in-sample results
+caret::confusionMatrix(fitted,as.factor(acute_test$effect_f))
+```
+
+```{r}
+# Validation set assessment #1: looking at confusion matrix
+prediction_for_table <- predict(acuterf, acute_test[,-6])
+table(observed = acute_test[,6], predicted = prediction_for_table)
+```
+
+
+```{r}
+# Validation set assessment #2: ROC curves and AUC
+# Needs to import ROCR package for ROC curve plotting:
+library(ROCR)
+# Calculate the probability of new observations belonging to each class
+# prediction_for_roc_curve will be a matrix with dimensions data_set_size x number_of_classes
+prediction_for_roc_curve <- predict(acuterf ,acute_test[,-6],type="response")
+# Use pretty colours:
+pretty_colours <- c("#F8766D","#00BA38","#619CFF")
+# Specify the different classes 
+classes <- levels(acute_test$organism.group)
+# For each class
+for (i in 1:13)
+{
+ # Define which observations belong to class[i]
+ true_values <- ifelse(acute_test[,6]==classes[i],"Yes","No")
+ # Assess the performance of classifier for class[i]
+ pred <- prediction(prediction_for_roc_curve[,i],true_values)
+ perf <- performance(pred, "tpr", "fpr")
+ if (i==1)
+ {
+     plot(perf,main="ROC Curve",col=pretty_colours[i]) 
+ }
+ else
+ {
+     plot(perf,main="ROC Curve",col=pretty_colours[i],add=TRUE) 
+ }
+ # Calculate the AUC and print it to screen
+ auc.perf <- performance(pred, measure = "auc")
+ print(auc.perf@y.values)
+}
+```
+
 
 ```{r}
 # predict()
