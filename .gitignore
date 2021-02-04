@@ -2,5 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+<<<<<<< HEAD
 Stepwise Multiple Regressions.Rmd
 Stepwise-Multiple-Regressions.html
+=======
+>>>>>>> 1a6a3e4a7fded4e841412cd86dae11eed4ce0abe

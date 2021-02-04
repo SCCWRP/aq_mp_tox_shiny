@@ -38,27 +38,11 @@ library(party)                  # Alternative decision tree algorithm
 library(pROC)   #for ROC curves
 library(uwot) #umap
 library(ISLR)  #for the Carseat Data
-library(quantregForest)
-library(caret)
-library(tidyverse)
-library(tidymodels)
-library(skimr)
-library(sf)
-library(ggspatial)
-library(nhdplusTools)
-library(patchwork)
-library(Metrics)
-library(gt)
 ```
 ## Data import
 ```{r data import}
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
-
-#assign row ID
-aoc <- rowid_to_column(aoc, "ID")
-aoc <- aoc %>% 
-  mutate(ID = paste0(ID, "ID"))
 
 #### Introduction Setup ####
 
@@ -348,13 +332,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
-  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
-  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
-  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
-                                            af.time_noNA == 1 ~ "Chronic",
-                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>%    #factorize assesment factor time into chronic/acute
-  mutate(dose.mg.L.master.AF.noec = dose.mg.L.master * af.noec) %>% #converts ECxx, LC50, HONEC, LOEC, NOEC all to NOEC
-  mutate(dose.particles.mL.master.AF.noec = dose.particles.mL.master * af.noec)  #converts ECxx, LC50, HONEC, LOEC, NOEC all to NOEC
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
     
 
 #### SSD AO Setup ####
@@ -372,8 +350,8 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ```
 ```{r}
 # subset data to selected variables
+
 multiVar <- aoc_z %>% dplyr::select(#doi, size.category, 
-                                    ID,
                                     size_f,
                                     size.length.um.used.for.conversions, 
                                     shape, 
@@ -385,7 +363,7 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     bio.org, #biological level of organization
                                     #af.time, #assessment factor based on exposure time
                                     treatments, #number of doses (no including control)
-                                    effect_f, #yes no
+                                    effect, #yes no
                                     exposure.duration.d, 
                                     exposure.route, #Factor
                                     organism.group, #factor
@@ -402,6 +380,7 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     functional.group, #factor
                                     charge, #positive or negatibe
                                     zetapotential.mV, # numeric   
+<<<<<<< HEAD
                                    max.size.ingest.mm,#max ingestible size
                                    acute.chronic_f,
                                    dose.mg.L.master.AF.noec,
@@ -411,6 +390,18 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
   mutate_if(is.character, as.factor) %>% mutate(effect_10 = case_when(
      effect_f == "Yes" ~ 1,
      effect_f == "No" ~ 0))
+=======
+                                   max.size.ingest.mm) %>%  #max ingestible size
+  filter(!size_f == "Not Reported")  #take out not reported 
+
+#recode variables
+multiVar <- multiVar %>% mutate(effect_10 = case_when(
+    effect == "Y" ~ 1,
+    effect == "N" ~ 0
+  ))# %>% 
+  #mutate_all(is.character, ~as.factor())
+                                    
+>>>>>>> 1a6a3e4a7fded4e841412cd86dae11eed4ce0abe
 ```
 
 # Analysis
@@ -428,7 +419,7 @@ CompletenessSummary_size
 ```{r}
 require()
 #convert to matrix and transpose
-transposed_size <- as.data.frame(t(as.matrix(CompletenessSummary_size[2:28]))) %>% #1 is category, 2-6 are variables
+transposed_size <- as.data.frame(t(as.matrix(CompletenessSummary_size[2:25]))) %>% #1 is category, 2-6 are variables
   arrange('1nm < 100nm')
 #reassign column names
 colnames(transposed_size) <- c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm")
@@ -459,7 +450,7 @@ CompletenessSummary_environment
 ```{r}
 require()
 #convert to matrix and transpose
-transposed_environment <- as.data.frame(t(as.matrix(CompletenessSummary_environment[2:28])))
+transposed_environment <- as.data.frame(t(as.matrix(CompletenessSummary_environment[2:25])))
 #reassign column names
 colnames(transposed_environment) <- c("Freshwater", "Marine", "Terrestrial")
 #transposedTag
@@ -562,7 +553,7 @@ embed_img(multiVar2, multiVar_map, pc_axes = TRUE, equal_axes = TRUE, alpha_scal
 
 ```{r}
 #PCA
-pca <- stats::prcomp(multiVar2[,-4], retx = TRUE, rank. = 2)
+pca <- stats::prcomp(multiVar2[,-5], retx = TRUE, rank. = 2)
 #build color pallete
 my_colors = colorRampPalette(c("red", "yellow", "green"))(nrow(multiVar2))
 #plot
@@ -574,37 +565,25 @@ embed_plot(pca$x, multiVar2$polymer, color_scheme = palette.colors(palette = "Ok
 require(plotly)
 #PCA for discrete variables
 multiVar_discrete <- multiVar %>% 
-  select(size.length.um.used.for.conversions, polymer, dose.mg.L.master, exposure.duration.d, effect) %>% 
+  select(size.length.um.used.for.conversions, polymer, dose.mg.L.master, exposure.duration.d) %>% 
   drop_na %>% 
-  mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
-  mutate(effect_10 = case_when(
-    effect == "Y" ~ 1,
-    effect == "N" ~ 0
-  )) %>% 
-  select(-effect)
+  mutate_if(~is.numeric(.) && (.) > 0, log10)
 
 #buildPCA
-pca_discrete <- stats::prcomp(multiVar_discrete[,-2], retx = TRUE, rank. = 5, scale. = TRUE)
-
-embed_plot(pca_discrete$x, multiVar_discrete$polymer)
+pca_discrete <- stats::prcomp(multiVar_discrete[,-2], retx = TRUE, rank. = 2)
 
 embed_plotly(pca_discrete$x, multiVar_discrete$polymer, color_scheme = palette.colors(palette = "Okabe-Ito"), 
            title = "Polymer PCA", alpha_scale = 0.5, equal_axes = TRUE,
            tooltip = paste("Polymer:", multiVar_discrete$polymer))
-
-#embed_plotly also option
 ```
 
 
-# Random Forest
-## Recursive Partitioning And Regression Trees
+## Random Forest
+### Recursive Partitioning And Regression Trees
 
 The rpart algorithm works by splitting the dataset recursively, which means that the subsets that arise from a split are further split until a predetermined termination criterion is reached.  At each step, the split is made based on the independent variable that results in the largest possible reduction in heterogeneity of the dependent (predicted) variable.
 
 It is important to note that the algorithm works by making the best possible choice at each particular stage, without any consideration of whether those choices remain optimal in future stages. That is, the algorithm makes a locally optimal decision at each stage. It is thus quite possible that such a choice at one stage turns out to be sub-optimal in the overall scheme of things.  In other words,  the algorithm does not find a globally optimal tree.
-
-
-The size of the data set usually imposes a hard limit on how many features may be considered due to Curse of Dimensionality, i.e. your data becomes sparser and sparser as you increase the number of features considered, which usually leads to overfitting. While there is no rule of thumb relating to how many features vs.  the number of observations you should use, I try to keep $e^Nf < No$ (Nf = number of features, No = number of observations) to minimise overfitting [this is not always possible and it does not ensure that we won’t overfit]. In this case, our training set has 3200, which suggests that using 8 features (e^8 ~ 2980) is not entirely absurd. Obviously, this depends on your data, so we will cover some further overfitting checks later on.
 ```{r}
 #trim data so effect is always known
 multiVar_sub <- multiVar %>% 
@@ -681,7 +660,7 @@ Next, we prune the tree using the cost complexity criterion. Basically, the inte
 
 As described earlier, we choose the appropriate pruning parameter (aka cost-complexity parameter) \alpha by picking the value that results in the lowest prediction error. Note that all relevant computations have already been carried out by R when we built the original tree (the call to rpart in the code above). All that remains now is to pick the value of \alpha:
 
-### Pruning
+#### Pruning
 
 ```{r}
 #cost-complexity pruning
@@ -762,7 +741,7 @@ sd(pruned_set)
 ```
 
 
-## CForest
+### CForest
 ```{r run model}
 require(party)
 crf <- cforest(as.factor(effect_10) ~ size.length.um.used.for.conversions + particle.volume.um3 + exposure.duration.d +
@@ -846,6 +825,7 @@ tab <- round(cbind(by(rpart.prob[,2], INDICES=t1$where, mean), by(crf.prob[,2], 
 colnames(tab) <- c("rpart", "cforest")
 kable(tab)
 ```
+<<<<<<< HEAD
 # Random Forest Package
 
 ## Preparation
@@ -1708,6 +1688,8 @@ dc$error.cv
 
 
 
+=======
+>>>>>>> 1a6a3e4a7fded4e841412cd86dae11eed4ce0abe
 # Non-linear Dose Response
 If we hold all paramaters constant except for dose, we should observe a non-linear dose-response behavior that can be best predicted by a 3- or 4-parameter Hill Equation. The most available information is likely for polystyrene spheres in crustaceans.There are 21 studies available.
 
