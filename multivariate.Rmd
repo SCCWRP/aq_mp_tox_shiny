@@ -401,7 +401,7 @@ multiVar <- multiVar %>% mutate(effect_10 = case_when(
   ))# %>% 
   #mutate_all(is.character, ~as.factor())
                                     
->>>>>>> 1a6a3e4a7fded4e841412cd86dae11eed4ce0abe
+
 ```
 
 # Analysis
@@ -1294,6 +1294,7 @@ nofilterpredictions$predict <- names(nofilterpredictions)[1:2][apply(nofilterpre
 nofilterpredictions$observed <- nofilter_test$effect_f
 ```
 ```{r}
+require(ggdark)
 # 1 ROC curve, yes vs no for acute
 roc.acute <- roc(ifelse(predictions$observed=="Yes", "Yes", "No"), as.numeric(predictions$Yes))
 
@@ -1306,21 +1307,75 @@ roc.all <- roc(ifelse(allpredictions$observed=="Yes", "Yes", "No"), as.numeric(a
 roc.nofilter <- roc(ifelse(nofilterpredictions$observed=="Yes", "Yes", "No"), as.numeric(nofilterpredictions$Yes))
 
 all <- ggroc(roc.all) + labs(title = "Chronic and Acute",
-                             subtitle = "Accuracy = 81.7%, n = 1510") +
-  theme_minimal()
+                             subtitle = "Accuracy = 81.7%, n = 1510") + dark_theme_bw()
+
 acute <- ggroc(roc.acute, col = "red") + labs(title = "Acute",
-                                              subtitle = "Accuracy = 84.8%, n = 883") + theme_minimal()
+                                              subtitle = "Accuracy = 84.8%, n = 883") + dark_theme_bw()
+
 chronic <- ggroc(roc.chronic, col = "blue") + labs(title = "Chronic",
-                                                   subtitle = "Accuracy = 67.3%, n = 452") + theme_minimal()
+                                                   subtitle = "Accuracy = 67.3%, n = 452") + dark_theme_bw()
  
 nofilter<- ggroc(roc.nofilter, col = "green") + labs(title = "Entire Dataset",
-                                                   subtitle = "Accuracy = 79.9%, n = 4615") + theme_minimal()
+                                                   subtitle = "Accuracy = 79.9%, n = 4615") + dark_theme_bw()
 require(gridExtra)
-grid.arrange(all, acute, chronic, nofilter,
+grid.arrange(nofilter, all, acute, chronic,
              ncol = 4)
+```
+```{r}
+require(pROC)
+require(tidyverse)
+require(ggdark)
+require(ggsci)
+ggroc(list(all = roc.nofilter, organisms = roc.all, acute = roc.acute, chronic = roc.chronic), aes = c("linetype", "color")) +
+  labs(title = "ROC Curves for Aquatic Toxicity RF",
+       subtitle = "n = 4615",
+       color = "Dataset",
+       linetype = "Dataset") +
+  scale_color_tron()+
+  dark_theme_bw(base_size = 20)# +
+  #theme(plot.title.position = element_text(hjust = 0.5),
+   #     plot.subtitle.position = element_text(hjust = 0.5))
+```
+
+Make a classification tree.
+
+```{r, echo = FALSE}
+#get column index of predicted variable in dataset
+typeColNum <- grep("effect",names(all))
+
+#build tree
+require(rpart)
+set.seed(15097)
+t1 <- rpart(effect_f ~ size.length.um.used.for.conversions + shape + polymer + organism.group + particle.volume.um3 + dose.mg.L.master + effect.score,
+            method = "class", #classification because response is discrete
+            control = rpart.control(minbucket = 20, cp=0.008), #requires that there be at least 19 cases (responded + nonrespondents) in the final grouping of variable values of the terminal node of the tre..
+            data = all_train)
+print(t1, digits=4)
 ```
 
 
+Plot an interpretable tree.
+```{r, echo = FALSE}
+require(rpart.plot)
+cols <- ifelse(t1$frame$yval == 1, "gray50", "black")
+prp(t1, main="Tree for Effect",
+    extra=106, # display prob of survival and percent of obs
+    nn=TRUE, # display node numbers
+    fallen.leaves=TRUE, # put leaves on the bottom of page
+    branch=.5, # change angle of branch lines
+    faclen=0, # do not abbreviate factor levels
+    trace=1, # print automatically calculated cex
+    shadow.col="gray", # shadows under the leaves
+    branch.lty=1, # draw branches using solid lines
+    branch.type=5, # branch lines width = weight(frame$wt), no. of cases here
+    split.cex=1.2, # make split text larger than node text
+    split.prefix="is ", # put "is " before split text
+    split.suffix="?", # put "?" after split text
+    col=cols, border.col=cols, # cols[2] if survived
+    split.box.col="lightgray", # lightgray split boxes (default is white)
+    split.border.col="darkgray", # darkgray border on split boxes
+    split.round=0.5) # round the split box corners a tad
+```
 
 ```{r}
 #plot reciever operating curve
