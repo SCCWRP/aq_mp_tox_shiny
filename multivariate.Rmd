@@ -332,7 +332,15 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
-  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported))
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%   #calculate volume/mL
+  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
+  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
+                                            af.time_noNA == 1 ~ "Chronic",
+                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>%    #factorize assesment factor time into chronic/acute
+  mutate(dose.mg.L.master.AF.noec = dose.mg.L.master * af.noec) %>% 
+  mutate(dose.particles.mL.master.AF.noec = dose.particles.mL.master * af.noec) %>% 
+  mutate(effect_f = factor(effect))
     
 
 #### SSD AO Setup ####
@@ -364,6 +372,8 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     #af.time, #assessment factor based on exposure time
                                     treatments, #number of doses (no including control)
                                     effect, #yes no
+                                    effect_f,
+                                    size_f,
                                     exposure.duration.d, 
                                     exposure.route, #Factor
                                     organism.group, #factor
@@ -380,7 +390,6 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                     functional.group, #factor
                                     charge, #positive or negatibe
                                     zetapotential.mV, # numeric   
-<<<<<<< HEAD
                                    max.size.ingest.mm,#max ingestible size
                                    acute.chronic_f,
                                    dose.mg.L.master.AF.noec,
@@ -388,18 +397,17 @@ multiVar <- aoc_z %>% dplyr::select(#doi, size.category,
                                    effect.score) %>%  #1 = minor, 2 = photosynthesis, feeding, 3 = growth, chlorophyll content, 4 = reproduction, 5  = population growth, 6 = survival
   filter(!size_f == "Not Reported") %>%   #take out not reported 
   mutate_if(is.character, as.factor) %>% mutate(effect_10 = case_when(
-     effect_f == "Yes" ~ 1,
-     effect_f == "No" ~ 0))
-=======
-                                   max.size.ingest.mm) %>%  #max ingestible size
+     effect_f == "Y" ~ 1,
+     effect_f == "N" ~ 0)) %>% 
+                                 #  max.size.ingest.mm) %>%  #max ingestible size
   filter(!size_f == "Not Reported")  #take out not reported 
 
 #recode variables
-multiVar <- multiVar %>% mutate(effect_10 = case_when(
-    effect == "Y" ~ 1,
-    effect == "N" ~ 0
-  ))# %>% 
-  #mutate_all(is.character, ~as.factor())
+# multiVar <- multiVar %>% mutate(effect_10 = case_when(
+#     effect == "Y" ~ 1,
+#     effect == "N" ~ 0
+#   ))# %>% 
+#   #mutate_all(is.character, ~as.factor())
                                     
 
 ```
@@ -495,7 +503,8 @@ multiVar %>%
 <!-- # ``` -->
 
 
-## PCA
+
+# PCA
 
 # UMAP
 
@@ -1306,19 +1315,19 @@ roc.all <- roc(ifelse(allpredictions$observed=="Yes", "Yes", "No"), as.numeric(a
 #nofilter
 roc.nofilter <- roc(ifelse(nofilterpredictions$observed=="Yes", "Yes", "No"), as.numeric(nofilterpredictions$Yes))
 
-all <- ggroc(roc.all) + labs(title = "Chronic and Acute",
+allROC <- ggroc(roc.all) + labs(title = "Chronic and Acute",
                              subtitle = "Accuracy = 81.7%, n = 1510") + dark_theme_bw()
 
-acute <- ggroc(roc.acute, col = "red") + labs(title = "Acute",
+acuteROC <- ggroc(roc.acute, col = "red") + labs(title = "Acute",
                                               subtitle = "Accuracy = 84.8%, n = 883") + dark_theme_bw()
 
-chronic <- ggroc(roc.chronic, col = "blue") + labs(title = "Chronic",
+chronicROC <- ggroc(roc.chronic, col = "blue") + labs(title = "Chronic",
                                                    subtitle = "Accuracy = 67.3%, n = 452") + dark_theme_bw()
  
-nofilter<- ggroc(roc.nofilter, col = "green") + labs(title = "Entire Dataset",
+nofilterROC <- ggroc(roc.nofilter, col = "green") + labs(title = "Entire Dataset",
                                                    subtitle = "Accuracy = 79.9%, n = 4615") + dark_theme_bw()
 require(gridExtra)
-grid.arrange(nofilter, all, acute, chronic,
+grid.arrange(nofilterROC, allROC, acuteROC, chronicROC,
              ncol = 4)
 ```
 ```{r}
@@ -1573,7 +1582,7 @@ qrf_dat <- multiVar_small_train  %>%
 ```{r}
 plot(myqrf) # plots the results.
 ```
-# Again appears to improve after ~100 trees.
+Again appears to improve after ~100 trees.
 
 ### Model Validation
 #### Categorical Response
@@ -1738,6 +1747,160 @@ dc$error.cv
 # However, this model is much larger than the CSCI (20) and ASCI (10) models, so we may decide to trim this down in the future.
 
 ```
+
+#3-D plots
+```{r}
+#remotes::install_github("tylermorganwall/rayshader")
+require(rayshader)
+require(tidyverse)
+require(ggsci)
+require(ggdark)
+
+#scatterplot with size, dose and polymer
+acute3D <- acute %>% 
+  #filter(effect_f == "Yes") %>% 
+  ggplot(aes(x = size.length.um.used.for.conversions, y = dose.mg.L.master, color = effect.score)) + #, shape = polymer)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth() +
+  scale_y_continuous("Dose (mg/L)", limits=c(-4,5)) +
+  scale_color_viridis_c(option = "A") +
+  ggtitle("Toxicity Probability by Length, Dose (mg/L) and Shape") +
+  labs(caption = "Acute Aquatic Organism") +
+  dark_theme_classic() +
+  facet_wrap(shape~.)
+
+acute3D
+
+#3D plot
+#plot_gg(acute3D, multicore = TRUE, width = 5, height = 5, scale =250) #3D plot
+```
+
+```{r}
+#3d scatterplot
+require(plotly)
+# size = acute$size.length.um.used.for.conversions
+# dose = acute$dose.mg.L.master
+# effect = acute$effect.score
+# volume = acute$particle.volume.um3
+
+plot_ly(acute, 
+        x = ~size.length.um.used.for.conversions, 
+        y = ~dose.mg.L.master, 
+        z = ~particle.volume.um3, 
+        type = "scatter3d", 
+        mode = "markers", 
+        color = ~effect_f)
+```
+```{r}
+#scatterplot with size, dose and polymer
+mass <-multiVar %>% 
+  filter(!effect_f == "NA") %>% 
+  filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  ggplot(aes(x = size.length.um.used.for.conversions, y = dose.mg.L.master, color = effect_f)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth() +
+  scale_y_log10("Dose (mg/L)",limits = c(1e-4, 1e7))+
+  scale_x_log10("Length (um)", limits  = c(1, 1e4)) +
+  #coord_trans(x = "log10") +
+  #scale_x_continuous("Length (um)", breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5),
+                   #      labels = trans_format("log10", scales::math_format(10^.x))) +
+  scale_colour_locuszoom() +
+  ggtitle("Toxicity Probability by Length and Dose (mg/L)") +
+  labs(caption = "Aquatic Organisms, HONEC/LOEC/NOEC") +
+  dark_theme_classic()# + 
+  #facet_wrap(acute.chronic_f ~.)
+mass
+```
+```{r}
+particles <- multiVar %>% 
+  filter(!effect_f == "NA") %>% 
+  filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  ggplot(aes(x = size.length.um.used.for.conversions, y = dose.particles.mL.master, color = effect_f)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth() +
+  scale_y_log10("Dose (particles/mL)",limits = c(1e-4, 1e7))+
+  scale_x_log10("Length (um)", limits  = c(1, 1e4)) +
+  #coord_trans(x = "log10") +
+  #scale_x_continuous("Length (um)", breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5),
+                   #      labels = trans_format("log10", scales::math_format(10^.x))) +
+  scale_colour_locuszoom() +
+  ggtitle("Toxicity Probability by Length and Dose (particles/mL)") +
+  labs(caption = "Aquatic Organisms, HONEC/LOEC/NOEC") +
+  dark_theme_classic() #+ 
+  #facet_wrap(acute.chronic_f ~.)
+particles
+```
+```{r}
+volume <- aoc_z %>% 
+  filter(!effect_f == "NA") %>% 
+  filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  ggplot(aes(x = size.length.um.used.for.conversions, y = dose.um3.mL.master, color = effect_f)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth() +
+  scale_y_log10("Dose (um3/mL)",limits = c(1e+1, 1e7))+
+  scale_x_log10("Length (um3)", limits  = c(1e-1, 100)) +
+  #coord_trans(x = "log10") +
+  #scale_x_continuous("Length (um)", breaks = scales::trans_breaks("log10", function(x) 10^x, n = 5),
+                   #      labels = trans_format("log10", scales::math_format(10^.x))) +
+  scale_colour_locuszoom() +
+  ggtitle("Toxicity Probability by Length and Dose (um3/mL)") +
+  labs(caption = "Aquatic Organisms, HONEC/LOEC/NOEC") +
+  dark_theme_classic() #+ 
+  #facet_wrap(acute.chronic_f ~.)
+volume
+```
+
+```{r}
+require(gridExtra)
+grid.arrange(particles, mass, volume, nrow = 3)
+```
+
+
+```{r}
+#3D density plot
+acute_density <- acute %>% 
+  ggplot(aes(x = size.length.um.used.for.conversions, y = dose.mg.L.master)) +
+  state_density_2d(aes(fill = stat(effect.score)),
+                       geom = "polygon",
+                       n = 100, bins = 10, contour = TRUE) +
+  facet_wrap(shape~.) +
+  scale_fill_viridis_c(option = "A")
+
+plot_gg(acute_density, multicore = TRUE, width = 5, height = 5, scale =250) #3D plot
+```
+
+```{r}
+#heatmap
+#meltAcute = reshape2::melt(acute, id.vars = "size.length.um.used.for.conversions")
+
+#meltAcute$age = as.numeric(meltAcute$variable)
+
+acutegg = acute %>% 
+  ggplot() +
+  geom_raster(aes(x = size.length.um.used.for.conversions,y = dose.mg.L.master, fill = effect_f)) +
+  scale_x_continuous("Size (um)",expand=c(0,0)) + #,breaks = seq(1900,2010,10)) +
+  scale_y_continuous("Dose (mg/L)", expand=c(0,0)) + #,breaks=seq(0,100,10),limits=c(0,100)) +
+  scale_fill_viridis_d("Death\nProbability\nPer Year") +#,trans = "log10",breaks=c(1,0.1,0.01,0.001,0.0001), labels = c("1","1/10","1/100","1/1000","1/10000")) +
+  ggtitle("Acute Toxicity Probability by Size and Dose") +
+  labs(caption = "Acute Aquatic Organism")
+
+acutegg
+#plot_gg(deathgg, multicore=TRUE,height=5,width=6,scale=500)
+```
+
+
 
 # Works Cited
 
