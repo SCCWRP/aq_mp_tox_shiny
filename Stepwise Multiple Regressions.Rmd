@@ -459,7 +459,7 @@ m1_crust_model_dose <- glm(effect_10 ~ logdose.particles.mL.master*size.length.u
 
 summary(m1_crust_model_dose)
 
-ggPredict(m1_crust_model_dose,colorn=100,jitter=TRUE, interactive = FALSE, digits = 3, se = FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
 
 ```
 
