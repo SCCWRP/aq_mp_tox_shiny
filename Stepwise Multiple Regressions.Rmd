@@ -13,7 +13,8 @@ output:
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
 #Packages
 library(tidyverse)
-library(MASS) #Stepwise regression package 
+library(MASS, exclude = 'select') #Stepwise regression package 
+library(ggiraphExtra) #For plotting
 
 #Data Import
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -29,6 +30,9 @@ aoc_setup <- aoc %>%
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
     effect == "N" ~ "No"),
     levels = c("No", "Yes"))) %>%
+  mutate(effect_10 = case_when(
+     effect_f == "Yes" ~ 1,
+     effect_f == "No" ~ 0)) %>% 
   replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
   mutate(size_f = factor(case_when(
     size.category == 1 ~ "1nm < 100nm",
@@ -282,11 +286,11 @@ hist(Zeta_Potential_mV)
 #No need to log transform
 
 aoc_setup_select <- aoc_setup %>% 
-  mutate(log10(dose.particles.mL.master)) %>% 
-  mutate(log10(dose.mg.L.master)) %>%
-  mutate(log10(dose.um3.mL.master)) %>%
-  mutate(log10(size.length.um.used.for.conversions)) %>%
-  mutate(log10(exposure.duration.d))
+  mutate(log.dose.particles.mL.master = log10(dose.particles.mL.master)) %>% 
+  mutate(log.dose.mg.L.master = log10(dose.mg.L.master)) %>%
+  mutate(log.dose.um3.mL.master = log10(dose.um3.mL.master)) %>%
+  mutate(log.size.length.um.used.for.conversions = log10(size.length.um.used.for.conversions)) %>%
+  mutate(log.exposure.duration.d = log10(exposure.duration.d))
 
 ```
 
@@ -298,884 +302,116 @@ Due to skewed data, the following categories are log10 transformed before modeli
 * Size (continuous)
 * Exposure Duration
 
-# Model: All Independent Variables, Response Variable: Effect (Y/N)
+# Model: Kitchen Sink
+
+All Independent Variables, Response Variable: Effect (Y/N)
 
 Full Model 
 
 ```{r, echo = FALSE}
 
 #Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_1 <- aoc_setup_select %>% 
+aoc_setup_select_1 <- aoc_setup_select %>%
+  filter(life_f != "Not Reported") %>% 
+  filter(acute.chronic_f != "Unavailable") %>% 
+  filter(size_f != "Not Reported") %>% 
+  filter(poly_f != "Not Reported") %>%
+  filter(shape_f != "Not Reported") %>%
+  filter(environment != "Terrestrial") %>%
   dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
+    log.dose.particles.mL.master, 
+    log.dose.mg.L.master,
+    log.dose.um3.mL.master,
+    log.size.length.um.used.for.conversions,
+    # size_f,
+    # poly_f,
     shape_f,
     org_f,
     life_f,
     bio_f,
-    `log10(exposure.duration.d)`,
+    log.exposure.duration.d,
     acute.chronic_f,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f)
+    # charge_f,
+    # zetapotential.mV,
+    # particle_source_f,
+    effect_10)
 
 #Check for single level factors
 debug_contr_error(aoc_setup_select_1)
-
-#Remove polymer and shape because they only have one level
-aoc_setup_select_1 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    # poly_f, 
-    # shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f)
 
 #Omit missing data before modeling
 aoc_setup_select_1 <- na.omit(aoc_setup_select_1)
 
 #Fit the full model
-Full_Model <- lm(as.numeric(effect_f) ~., data = aoc_setup_select_1)
+Full_Model <- lm(effect_10 ~., data = aoc_setup_select_1)
 
 summary(Full_Model)
 ```
 
+Stepwise Model - Both Directions
+
 ```{r, echo = FALSE}
 
-#Code adapted from: https://stackoverflow.com/questions/36942443/plotting-a-multiple-logistic-regression-for-binary-and-continuous-values-in-r
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
 
-#Predict probabilities based on model
-aoc_setup_select_1$prob = predict(Full_Model, aoc_setup_select_1, type="response")
 
-#Plot probabilities
-test_plot <- aoc_setup_select_1 %>% 
-  ggplot(aes(x = `log10(size.length.um.used.for.conversions)`, y = prob))+
-  geom_point() +
-  stat_smooth(method = "glm") #This doesn't use the model so I should probably get rid of it
+summary(step.model)
 
-plot(test_plot)
+```
+
+# Model: Crustacean Fitness, Organism Level Endpoints Only
+
+
+Full Model 
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_simple <- aoc_setup %>%
+  filter(!effect_f == "NA") %>%
+  filter(!acute.chronic_f == "Unavailable") %>%
+  filter(bio.org == "organism") %>%
+  filter(!environment == "Terrestrial") %>%
+  filter(lvl1_f == "Fitness") %>%
+  filter(!size_f == "Not Reported") %>%
+  mutate(logdose.mg.L.master = log10(dose.mg.L.master))
+
+#Fit the full model
+m1_crust_model_dose <- glm(effect_10 ~ logdose.mg.L.master + size.length.um.used.for.conversions, data = m1_crust_simple, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_dose)
 ```
 
 ```{r}
 
-#https://blogs.uoregon.edu/rclub/2016/04/05/plotting-your-logistic-regression-models/
+#Plots
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
 
-Full_Model$coefficients
+range(m1_crust_simple$logdose.mg.L.master, na.rm = TRUE)
+#[1] -11.638272   8.171552
+# generate sequence of values between range in increments of 100 to give smooth appearance to model
+xdose <- seq(-11.638272 ,8.171552, 0.1)
+ydose <- predict(m1_crust_model_dose, 
+                 list(logdose.mg.L.master = xdose), 
+                 type = "response")
+#ggplot with logistic data
+ plot(m1_crust_simple$logdose.mg.L.master, m1_crust_simple$effect_10, pch = 16, xlab = "log dose (mg/L)", ylab = "effect")
+# lines(xdose, ydose)
 
-b0 <- Full_Model$coefficients[1]
-dose_counts <- Full_Model$coefficients[2]
-dose_mass <- Full_Model$coefficients[3]
-dose_vol <- Full_Model$coefficients[4]
-size_con <- Full_Model$coefficients[5]
-size_100nm_1um <- Full_Model$coefficients[6]
-size_1um_100um <- Full_Model$coefficients[7]
-org_bacterium <- Full_Model$coefficients[8]
-org_crutacea <- Full_Model$coefficients[9]
-org_echinoderm <- Full_Model$coefficients[10]
-org_fish <- Full_Model$coefficients[11]
-org_mollusc <- Full_Model$coefficients[12]
-org_nematode <- Full_Model$coefficients[13]
-life_early <- Full_Model$coefficients[14]
-life_juv <- Full_Model$coefficients[15]
-bio_organism <- Full_Model$coefficients[17]
-bio_subcell <- Full_Model$coefficients[18]
-bio_tissue <- Full_Model$coefficients[19]
-exp_dur <- Full_Model$coefficients[20]
-acute_chronic <- Full_Model$coefficients[21]
-charge_positive <- Full_Model$coefficients[23]
-zeta <- Full_Model$coefficients[24]
-source_lab <- Full_Model$coefficients[25]
+ 
 
-#Set range for x axis variable 
+ggplot(m1_crust_simple, aes(x = logdose.mg.L.master, y = effect_10))+
+  geom_point() +
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
 
-X1_range <- seq(from=min(aoc_setup_select_1$`log10(size.length.um.used.for.conversions)`), to=max(aoc_setup_select_1$`log10(size.length.um.used.for.conversions)`), by=.01)
-
-#Not sure what to do here because I'm not running interactions?
-logits <- b0 +
-  size_con*X1_range +
-  dose_counts +
-  dose_mass +
-  dose_vol +
-  size_100nm_1um +
-  size_1um_100um +
-  org_bacterium +
-  org_crutacea +
-  org_echinoderm +
-  org_fish +
-  org_mollusc +
-  org_nematode +
-  life_early +
-  life_juv +
-  bio_organism +
-  bio_subcell +
-  bio_tissue +
-  exp_dur +
-  acute_chronic +
-  charge_positive +
-  zeta +
-  source_lab 
-
-# Compute the probibilities (this is what will actually get plotted):
-a_probs <- exp(logits)/(1 + exp(logits))
-
-#plot
-plot(X1_range, a_probs, 
-     ylim=c(0,1),
-     type="l", 
-     lwd=3, 
-     lty=2, 
-     col="gold", 
-     xlab="X1", ylab="P(effect)", main="Probability of Effect")
-
-```
-
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Charge and Zeta Potential
-
-Missing categories (NA) means that some data are incomplete. This is likely charge and zeta potential which are only in the database for PS and PC spheres. Removed from model to retain more data. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select2 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select2)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
 ```
 
 Stepwise Model - Both Directions
 
 ```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
 
-
-summary(step.model)
-
-```
-
-## Remove Exposure Duration
-
-Exposure duration not significant - removed from model. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select3 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    # `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select3)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Size (binned)
-
-Size (binned) not significant - removed from model. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select4 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    # size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    # `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select4)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Particle Source and Life Stage
-
-Particle Source and Life Stage - removed from model. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select5 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    # size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    # life_f,
-    bio_f,
-    # `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    # particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select5)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## All Variables: Acute
-
-Add all variables back in but only use acute data (fish, crustaceans, mollucs, and algae)
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select5 <- aoc_setup_select %>% 
-  filter(acute.chronic_f == "Acute") %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select5)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## All Variables: Chronic
-
-Add all variables back in but only use chronic data (fish, crustaceans, mollucs, and algae)
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select6 <- aoc_setup_select %>% 
-  filter(acute.chronic_f == "Chronic") %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select6)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-# Model: All Independent Variables, Response Variable: Effect (Y/N) x Effect Score
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_1 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    max.size.ingest.mm,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_1)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Charge and Zeta Potential
-
-Missing categories (NA) means that some data are incomplete. This is likely charge and zeta potential which are only in the database for PS and PC spheres. Removed from model to retain more data. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_2 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_2)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Size (binned)
-
-Size (binned) not significant - removed from model.  
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_3 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    # size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_3)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Particle Source
-
-Particle source not significant - removed from model.  
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_4 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    # size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    # particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_4)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-# Model: All Independent Variables + Maximum Ingestion Size, Response Variable: Effect (Y/N) x Effect Score
-
-There is some data for the maximum ingestible size within the database. It is limited to **only 9 species**, but I wanted to try it out to see if it shows any promise. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_1 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    max.size.ingest.mm,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    charge_f,
-    zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_1)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Remove Charge and Zeta Potential
-
-Missing categories (NA) means that some data are incomplete. This is likely charge and zeta potential which are only in the database for PS and PC spheres. Removed from model to retain more data. 
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_2 <- aoc_setup_select %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    max.size.ingest.mm,
-    life_f,
-    bio_f,
-    `log10(exposure.duration.d)`,
-    acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_2)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
-#Stepwise model
-step.model <- stepAIC(Full_Model, direction = "both", 
-                      trace = FALSE)
-
-
-summary(step.model)
-
-```
-
-## Acute, fitness and organismal endpoints + Charge and Zeta Potential Removed
-
-Same as the previous model, but endpoint type is limited to fitness, biological organization is limited to organismal and exposure duration limited to acute
-
-Full Model 
-
-```{r, echo = FALSE}
-
-#Select the columns that we want to feed into the model for simplicity
-aoc_setup_select_3 <- aoc_setup_select %>% 
-  filter(acute.chronic_f == "Acute") %>% 
-  filter(lvl1_f == "Fitness") %>% 
-  filter(bio_f == "Organism") %>% 
-  dplyr::select(
-    `log10(dose.particles.mL.master)`, 
-    `log10(dose.mg.L.master)`,
-    `log10(dose.um3.mL.master)`,
-    `log10(size.length.um.used.for.conversions)`, 
-    size_f,     
-    poly_f, 
-    shape_f,
-    org_f,
-    max.size.ingest.mm,
-    life_f,
-    # bio_f,
-    `log10(exposure.duration.d)`,
-    # acute.chronic_f,
-    # charge_f,
-    # zetapotential.mV,
-    particle_source_f,
-    effect_f,
-    effect.score)
-
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_3)
-
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
-
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
-
-#Fit the full model
-Full_Model <- lm(effect_f*effect.score ~., data = y,
-                 na.action = na.omit)
-summary(Full_Model)
-```
-
-Stepwise Model - Both Directions
-
-```{r, echo = FALSE}
 #Stepwise model
 step.model <- stepAIC(Full_Model, direction = "both", 
                       trace = FALSE)
