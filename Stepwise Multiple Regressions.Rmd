@@ -149,6 +149,62 @@ aoc_setup <- aoc %>%
 
 ```
 
+```{r}
+
+#Custom function that finds factors with only 1 level
+#Source: https://stackoverflow.com/questions/44200195/how-to-debug-contrasts-can-be-applied-only-to-factors-with-2-or-more-levels-er
+
+debug_contr_error <- function (dat, subset_vec = NULL) {
+  if (!is.null(subset_vec)) {
+    ## step 0
+    if (mode(subset_vec) == "logical") {
+      if (length(subset_vec) != nrow(dat)) {
+        stop("'logical' `subset_vec` provided but length does not match `nrow(dat)`")
+        }
+      subset_log_vec <- subset_vec
+      } else if (mode(subset_vec) == "numeric") {
+      ## check range
+      ran <- range(subset_vec)
+      if (ran[1] < 1 || ran[2] > nrow(dat)) {
+        stop("'numeric' `subset_vec` provided but values are out of bound")
+        } else {
+        subset_log_vec <- logical(nrow(dat))
+        subset_log_vec[as.integer(subset_vec)] <- TRUE
+        } 
+      } else {
+      stop("`subset_vec` must be either 'logical' or 'numeric'")
+      }
+    dat <- base::subset(dat, subset = subset_log_vec)
+    } else {
+    ## step 1
+    dat <- stats::na.omit(dat)
+    }
+  if (nrow(dat) == 0L) warning("no complete cases")
+  ## step 2
+  var_mode <- sapply(dat, mode)
+  if (any(var_mode %in% c("complex", "raw"))) stop("complex or raw not allowed!")
+  var_class <- sapply(dat, class)
+  if (any(var_mode[var_class == "AsIs"] %in% c("logical", "character"))) {
+    stop("matrix variables with 'AsIs' class must be 'numeric'")
+    }
+  ind1 <- which(var_mode %in% c("logical", "character"))
+  dat[ind1] <- lapply(dat[ind1], as.factor)
+  ## step 3
+  fctr <- which(sapply(dat, is.factor))
+  if (length(fctr) == 0L) warning("no factor variables to summary")
+  ind2 <- if (length(ind1) > 0L) fctr[-ind1] else fctr
+  dat[ind2] <- lapply(dat[ind2], base::droplevels.factor)
+  ## step 4
+  lev <- lapply(dat[fctr], base::levels.default)
+  nl <- lengths(lev)
+  ## return
+  list(nlevels = nl, levels = lev)
+  }
+
+
+```
+
+
 #Variables to put into model
 
 * Dose (counts)
@@ -268,20 +324,127 @@ aoc_setup_select_1 <- aoc_setup_select %>%
     particle_source_f,
     effect_f)
 
-#Convert all data to numerical data
-aoc_setup_select_num <- data.matrix(aoc_setup_select_1)
+#Check for single level factors
+debug_contr_error(aoc_setup_select_1)
 
-#Convert data matrix into a data frame
-x <- as.data.frame(aoc_setup_select_num)
+#Remove polymer and shape because they only have one level
+aoc_setup_select_1 <- aoc_setup_select %>% 
+  dplyr::select(
+    `log10(dose.particles.mL.master)`, 
+    `log10(dose.mg.L.master)`,
+    `log10(dose.um3.mL.master)`,
+    `log10(size.length.um.used.for.conversions)`, 
+    size_f,     
+    # poly_f, 
+    # shape_f,
+    org_f,
+    life_f,
+    bio_f,
+    `log10(exposure.duration.d)`,
+    acute.chronic_f,
+    charge_f,
+    zetapotential.mV,
+    particle_source_f,
+    effect_f)
 
-#Drop NAs to get model to be happy - this might be sketchy!?
-y<- na.omit(x)
+#Omit missing data before modeling
+aoc_setup_select_1 <- na.omit(aoc_setup_select_1)
 
 #Fit the full model
-Full_Model <- lm(effect_f ~., data = y,
-                 na.action = na.omit)
+Full_Model <- lm(as.numeric(effect_f) ~., data = aoc_setup_select_1)
+
 summary(Full_Model)
 ```
+
+```{r, echo = FALSE}
+
+#Code adapted from: https://stackoverflow.com/questions/36942443/plotting-a-multiple-logistic-regression-for-binary-and-continuous-values-in-r
+
+#Predict probabilities based on model
+aoc_setup_select_1$prob = predict(Full_Model, aoc_setup_select_1, type="response")
+
+#Plot probabilities
+test_plot <- aoc_setup_select_1 %>% 
+  ggplot(aes(x = `log10(size.length.um.used.for.conversions)`, y = prob))+
+  geom_point() +
+  stat_smooth(method = "glm") #This doesn't use the model so I should probably get rid of it
+
+plot(test_plot)
+```
+
+```{r}
+
+#https://blogs.uoregon.edu/rclub/2016/04/05/plotting-your-logistic-regression-models/
+
+Full_Model$coefficients
+
+b0 <- Full_Model$coefficients[1]
+dose_counts <- Full_Model$coefficients[2]
+dose_mass <- Full_Model$coefficients[3]
+dose_vol <- Full_Model$coefficients[4]
+size_con <- Full_Model$coefficients[5]
+size_100nm_1um <- Full_Model$coefficients[6]
+size_1um_100um <- Full_Model$coefficients[7]
+org_bacterium <- Full_Model$coefficients[8]
+org_crutacea <- Full_Model$coefficients[9]
+org_echinoderm <- Full_Model$coefficients[10]
+org_fish <- Full_Model$coefficients[11]
+org_mollusc <- Full_Model$coefficients[12]
+org_nematode <- Full_Model$coefficients[13]
+life_early <- Full_Model$coefficients[14]
+life_juv <- Full_Model$coefficients[15]
+bio_organism <- Full_Model$coefficients[17]
+bio_subcell <- Full_Model$coefficients[18]
+bio_tissue <- Full_Model$coefficients[19]
+exp_dur <- Full_Model$coefficients[20]
+acute_chronic <- Full_Model$coefficients[21]
+charge_positive <- Full_Model$coefficients[23]
+zeta <- Full_Model$coefficients[24]
+source_lab <- Full_Model$coefficients[25]
+
+#Set range for x axis variable 
+
+X1_range <- seq(from=min(aoc_setup_select_1$`log10(size.length.um.used.for.conversions)`), to=max(aoc_setup_select_1$`log10(size.length.um.used.for.conversions)`), by=.01)
+
+#Not sure what to do here because I'm not running interactions?
+logits <- b0 +
+  size_con*X1_range +
+  dose_counts +
+  dose_mass +
+  dose_vol +
+  size_100nm_1um +
+  size_1um_100um +
+  org_bacterium +
+  org_crutacea +
+  org_echinoderm +
+  org_fish +
+  org_mollusc +
+  org_nematode +
+  life_early +
+  life_juv +
+  bio_organism +
+  bio_subcell +
+  bio_tissue +
+  exp_dur +
+  acute_chronic +
+  charge_positive +
+  zeta +
+  source_lab 
+
+# Compute the probibilities (this is what will actually get plotted):
+a_probs <- exp(logits)/(1 + exp(logits))
+
+#plot
+plot(X1_range, a_probs, 
+     ylim=c(0,1),
+     type="l", 
+     lwd=3, 
+     lty=2, 
+     col="gold", 
+     xlab="X1", ylab="P(effect)", main="Probability of Effect")
+
+```
+
 
 Stepwise Model - Both Directions
 
