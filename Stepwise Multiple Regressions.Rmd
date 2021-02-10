@@ -391,7 +391,7 @@ summary(m1_crust_model_dose)
 
 ```{r}
 #Plots
-ggPredict(m1_crust_model_dose,colorn=100,jitter=TRUE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=TRUE, interactive = FALSE, digits = 3, se = FALSE)
 ```
 
 ```{r}
@@ -414,6 +414,85 @@ ggplot(m1, aes(x = logdose.mg.L.master, y = effect_10, color = size.length.um.us
   #             se = FALSE, color = 'green') +
   # stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
 ```
+```{r}
+#alternative method using ggpredict
+require(ggeffects)
+require(ggdark)
+require(ggsci)
+ggpredict(m1_crust_model_dose)
+df <- ggpredict(m1_crust_model_dose, se = TRUE)
+df <- ggpredict(m1_crust_model_dose,terms=c("logdose.mg.L.master", "size.length.um.used.for.conversions"))
+
+#note that faceting works best with discrete variable as interactive term
+ggplot(df, aes(x = x, y = predicted, colour = group)) +
+  geom_line() +
+  geom_ribbon( aes(ymin = conf.low, ymax = conf.high, fill = group, color = NULL), alpha = .15) +
+  facet_wrap(~.) +
+  dark_theme_bw() +
+  scale_color_tron()
+```
+
+```{r}
+#alt method
+plot(df, facet = TRUE)
+```
+
+## Discrete predictor and dose
+```{r, echo = FALSE}
+#Select the columns that we want to feed into the model for simplicity
+m1_crust <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.mg.L.master = log10(dose.mg.L.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.mg.L.master, size_f)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_model_discrete <- glm(effect_10 ~ logdose.mg.L.master * size_f, data = m1_crust, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_discrete)
+```
+Plot.
+```{r}
+discrete <- ggpredict(m1_crust_model_discrete,terms = c("logdose.mg.L.master", "size_f"))
+plot(discrete, facet = TRUE, add.data = TRUE)
+```
+### Survival package
+```{r}
+#include time
+m1_crust <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.mg.L.master = log10(dose.mg.L.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.mg.L.master, size_f, exposure.duration.d)) %>% 
+  drop_na()
+
+require(survival)
+survival <- survival::coxph(survival::Surv(exposure.duration.d, effect_10) ~ logdose.mg.L.master + size_f, data = m1_crust)
+#cumulative hazard
+cumHaz <- ggpredict(survival,terms = c("logdose.mg.L.master", "size_f"), type = "cumhaz")
+plot(cumHaz, facet = TRUE, add.data = TRUE, colors = "flat")
+```
+```{r}
+#survival probability over time
+pr <- ggpredict(survival, c("logdose.mg.L.master", "size_f"), type = "surv")
+plot(pr, colors = "social")
+```
+
 
 Stepwise Model - Both Directions
 
