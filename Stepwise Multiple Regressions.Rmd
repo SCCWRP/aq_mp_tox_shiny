@@ -962,3 +962,63 @@ summary(step.model)
 
 ```
 
+## Acute, fitness and organismal endpoints + Charge and Zeta Potential Removed
+
+Same as the previous model, but endpoint type is limited to fitness, biological organization is limited to organismal and exposure duration limited to acute
+
+Full Model 
+
+```{r, echo = FALSE}
+
+#Select the columns that we want to feed into the model for simplicity
+aoc_setup_select_3 <- aoc_setup_select %>% 
+  filter(acute.chronic_f == "Acute") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(bio_f == "Organism") %>% 
+  dplyr::select(
+    `log10(dose.particles.mL.master)`, 
+    `log10(dose.mg.L.master)`,
+    `log10(dose.um3.mL.master)`,
+    `log10(size.length.um.used.for.conversions)`, 
+    size_f,     
+    poly_f, 
+    shape_f,
+    org_f,
+    max.size.ingest.mm,
+    life_f,
+    # bio_f,
+    `log10(exposure.duration.d)`,
+    # acute.chronic_f,
+    # charge_f,
+    # zetapotential.mV,
+    particle_source_f,
+    effect_f,
+    effect.score)
+
+#Convert all data to numerical data
+aoc_setup_select_num <- data.matrix(aoc_setup_select_3)
+
+#Convert data matrix into a data frame
+x <- as.data.frame(aoc_setup_select_num)
+
+#Drop NAs to get model to be happy - this might be sketchy!?
+y<- na.omit(x)
+
+#Fit the full model
+Full_Model <- lm(effect_f*effect.score ~., data = y,
+                 na.action = na.omit)
+summary(Full_Model)
+```
+
+Stepwise Model - Both Directions
+
+```{r, echo = FALSE}
+#Stepwise model
+step.model <- stepAIC(Full_Model, direction = "both", 
+                      trace = FALSE)
+
+
+summary(step.model)
+
+```
+
