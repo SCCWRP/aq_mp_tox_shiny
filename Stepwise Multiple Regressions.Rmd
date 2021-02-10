@@ -369,43 +369,50 @@ Full Model
 ```{r, echo = FALSE}
 
 #Select the columns that we want to feed into the model for simplicity
-m1_crust_simple <- aoc_setup %>%
-  filter(!effect_f == "NA") %>%
-  filter(!acute.chronic_f == "Unavailable") %>%
-  filter(bio.org == "organism") %>%
-  filter(!environment == "Terrestrial") %>%
-  filter(lvl1_f == "Fitness") %>%
-  filter(!size_f == "Not Reported") %>%
-  mutate(logdose.mg.L.master = log10(dose.mg.L.master))
+m1_crust <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.mg.L.master = log10(dose.mg.L.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.mg.L.master, size.length.um.used.for.conversions)) %>% 
+  drop_na()
 
 #Fit the full model
-m1_crust_model_dose <- glm(effect_10 ~ logdose.mg.L.master + size.length.um.used.for.conversions, data = m1_crust_simple, na.action = "na.exclude", family = "binomial")
+m1_crust_model_dose <- glm(effect_10 ~ logdose.mg.L.master * size.length.um.used.for.conversions, data = m1_crust, na.action = "na.exclude", family = "binomial")
 
 summary(m1_crust_model_dose)
 ```
 
 ```{r}
-
 #Plots
-ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=TRUE)
+```
 
-range(m1_crust_simple$logdose.mg.L.master, na.rm = TRUE)
-#[1] -11.638272   8.171552
-# generate sequence of values between range in increments of 100 to give smooth appearance to model
-xdose <- seq(-11.638272 ,8.171552, 0.1)
-ydose <- predict(m1_crust_model_dose, 
-                 list(logdose.mg.L.master = xdose), 
-                 type = "response")
-#ggplot with logistic data
- plot(m1_crust_simple$logdose.mg.L.master, m1_crust_simple$effect_10, pch = 16, xlab = "log dose (mg/L)", ylab = "effect")
-# lines(xdose, ydose)
+```{r}
+#alternative method using ggplot
 
- 
-
-ggplot(m1_crust_simple, aes(x = logdose.mg.L.master, y = effect_10))+
-  geom_point() +
-  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
-
+#get probabilities
+m1 <- m1_crust %>% 
+  mutate(prob = predict(m1_crust_model_dose,
+                        type = "response"))
+  
+# plot
+ggplot(m1, aes(x = logdose.mg.L.master, y = effect_10, color = size.length.um.used.for.conversions))+
+  geom_jitter() +
+  geom_smooth(method = 'glm',
+              aes(x = logdose.mg.L.master, y = prob), #use predicted NOEC probability
+              method.args = list(family = binomial(link = 'logit')),
+              se = FALSE, color = 'red') #+
+  # geom_smooth(method = 'glm',
+  #             method.args = list(family = binomial(link = 'probit')),
+  #             se = FALSE, color = 'green') +
+  # stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
 ```
 
 Stepwise Model - Both Directions
