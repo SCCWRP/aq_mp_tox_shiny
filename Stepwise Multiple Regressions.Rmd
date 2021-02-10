@@ -391,8 +391,70 @@ summary(m1_crust_model_dose)
 
 ```{r}
 #Plots
-ggPredict(m1_crust_model_dose,colorn=100,jitter=TRUE, interactive = FALSE, digits = 3, se = FALSE)
+ggPredict(m1_crust_model_dose,
+          colorn=200,
+ #         jitter=TRUE, 
+point = FALSE,
+          interactive = FALSE, 
+show.summary = TRUE,
+#digits = 3, 
+se = FALSE)
 ```
+
+```{r}
+#particle couunt
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_part <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.particles.mL.master = log10(dose.particles.mL.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.particles.mL.master, size.length.um.used.for.conversions)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_model_particles <- glm(effect_10 ~ logdose.particles.mL.master * size.length.um.used.for.conversions, data = m1_crust_part, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_particles)
+```
+plot
+```{r}
+ggPredict(m1_crust_model_particles, colorn=1000)
+```
+### volume
+```{r}
+#particle couunt
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_volume <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.um3.mL.master = log10(dose.um3.mL.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.um3.mL.master, size.length.um.used.for.conversions)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_model_volume <- glm(effect_10 ~ logdose.um3.mL.master * size.length.um.used.for.conversions, data = m1_crust_volume, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_volume)
+```
+plot
+```{r}
+ggPredict(m1_crust_model_volume, colorn=500)
+```
+
 
 ```{r}
 #alternative method using ggplot
