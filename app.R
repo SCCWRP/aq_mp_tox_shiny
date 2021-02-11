@@ -763,7 +763,10 @@ column(width = 12,
                                               selected = levels(aoc_z$size_f),
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
-                          
+                           #Morphology widget
+                           column(width = 3,
+                                  htmlOutput("shapeSelection")), # dependent on sizes
+                           
                             #Endpoint widget
                            column(width = 3,
                                   htmlOutput("lvl1Selection")), # allows for multiple inputs
@@ -922,13 +925,30 @@ column(width = 12,
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
                               h4("Species Sensitivity Distribution", align = "center"),
-                              plotOutput(outputId = "aoc_ssd_ggplot", width = "160%", height = "500px", hover = hoverOpts(id = "plot_hover")),
+                              plotOutput(outputId = "aoc_ssd_ggplot", width = "140%", height = "500px", hover = hoverOpts(id = "plot_hover")),
                               verbatimTextOutput("info"),
                               br(),
-                              column(width = 12,
+                              # column(width = 12,
+                              #        column(width = 4,
+                              #                pickerInput(inputId = "user_width",
+                              #                            label = "Plot Width (in.)",
+                              #                            value = 8,
+                              #                            min = 2,
+                              #                            max = 18,
+                              #                            step = 1)),
+                              #        column(width = 4,
+                              #               pickerInput(inputId = "user_heigth",
+                              #                           label = "Plot Height (in.)",
+                              #                           value =10,
+                              #                           min = 2,
+                              #                           max = 18,
+                              #                           step = 1)),
+                                     column(width = 4,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
+                                     #),
                               br(),
+                              
                               selectInput(inputId = "theme.type", "Dark or Light Mode:", 
                                           list(light = "light", dark = "dark")),
                               selectInput(inputId = "color.type", "Color Theme:", 
@@ -1828,6 +1848,34 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)})
   
+  
+  #Create dependent dropdown checklists: select shape by above input
+  output$shapeSelection <- renderUI({
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #assign species input
+    size_c_ssd <- input$size_check_ssd #assign sizes input
+    poly_c_ssd <- input$poly_check_ssd #assign polymer input
+    
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(poly_f %in% poly_c_ssd) %>%  # filter polymers from other checkbox
+    mutate(shape_f_new = factor(as.character(shape_f))) # new subset of factors
+    
+    #populate picker choices based on available factors
+    pickerInput(inputId = "shape_check_ssd", 
+                label = "Shapes:", 
+                choices = levels(aoc_new$shape_f_new),
+                selected = levels(aoc_new$shape_f_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  
   #Create dependent dropdown checklists: select lvl1 by above input
   output$lvl1Selection <- renderUI({
     #Assign user inputs to variables for this reactive
@@ -1907,6 +1955,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign broad endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    shape_c_ssd <- input$shape_check_ssd #assign shapes
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
@@ -1968,6 +2017,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
+      dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
@@ -1992,6 +2042,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign general endpoints
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
+    shape_c_ssd <- input$shape_check_ssd #assign shapes
     effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
@@ -2054,6 +2105,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by generic endpoints inputs
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
+      dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
       dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
@@ -2246,16 +2298,19 @@ output$SSD_plot <- renderPlot({
     
 # Create downloadable png of ssd plot
 output$downloadSsdPlot <- downloadHandler(
+  
   filename = function() {
     paste('SSD_plot', Sys.Date(), '.png', sep='')
   },
   content = function(file) {
+    # #define user inputs
+     # width <- isolate(input$user_width)
+     # height <- isolate(input$user_height)
     device <- function(..., width, height) {
-      grDevices::png(..., width = 12, height = 12, res = 250, units = "in")
+      grDevices::png(..., width = 10, height = 12, res = 250, units = "in")
     }
     ggsave(file, plot = ssd_ggplot(), device = device)
   })
-
 
   # ***Sub-plots ----
   #Determine Hazard Concentration
