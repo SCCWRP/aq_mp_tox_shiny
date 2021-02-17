@@ -428,6 +428,93 @@ summary(m1_crust_model_dose)
 
 ```{r}
 #Plots
+ggPredict(m1_crust_model_dose,
+          colorn=200,
+ #         jitter=TRUE, 
+point = FALSE,
+          interactive = FALSE, 
+show.summary = TRUE,
+#digits = 3, 
+se = FALSE)
+```
+
+```{r}
+#particle couunt
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_part <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.particles.mL.master = log10(dose.particles.mL.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.particles.mL.master, size.length.um.used.for.conversions)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_model_particles <- glm(effect_10 ~ logdose.particles.mL.master * size.length.um.used.for.conversions, data = m1_crust_part, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_particles)
+```
+plot
+```{r}
+ggPredict(m1_crust_model_particles, colorn=1000)
+```
+### volume
+```{r}
+#particle couunt
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_volume <- aoc_setup %>% 
+  filter(!effect_f == "NA") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  #filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(bio.org == "organism") %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  mutate(logdose.um3.mL.master = log10(dose.um3.mL.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, logdose.um3.mL.master, size.length.um.used.for.conversions)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_model_volume <- glm(effect_10 ~ logdose.um3.mL.master * size.length.um.used.for.conversions, data = m1_crust_volume, na.action = "na.exclude", family = "binomial")
+
+summary(m1_crust_model_volume)
+```
+plot
+```{r}
+ggPredict(m1_crust_model_volume, colorn=500)
+```
+
+
+```{r}
+#alternative method using ggplot
+
+#get probabilities
+m1 <- m1_crust %>% 
+  mutate(prob = predict(m1_crust_model_dose,
+                        type = "response"))
+  
+# plot
+ggplot(m1, aes(x = logdose.mg.L.master, y = effect_10, color = size.length.um.used.for.conversions))+
+  geom_jitter() +
+  geom_smooth(method = 'glm',
+              aes(x = logdose.mg.L.master, y = prob), #use predicted NOEC probability
+              method.args = list(family = binomial(link = 'logit')),
+              se = FALSE, color = 'red') #+
+  # geom_smooth(method = 'glm',
+  #             method.args = list(family = binomial(link = 'probit')),
+  #             se = FALSE, color = 'green') +
+  # stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE)
+```
+
+```{r}
 ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
 ```
 
@@ -467,6 +554,7 @@ ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
 #Plots
 ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
 ```
+
 ```{r}
 #alternative method using ggpredict
 require(ggeffects)
