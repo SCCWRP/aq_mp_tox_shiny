@@ -1757,7 +1757,16 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   }
   print(p)
  
-  })
+  },
+  
+  # #This is based on a slider widget input
+  # width = function() {
+  #   input$cols * 300
+  # }, height = function() {
+  #   input$rows * 400
+  # }
+  
+  )
   
   # Create downloadable csv of filtered dataset.
   # Removed columns created above so the dataset matches Leah's original dataset.
