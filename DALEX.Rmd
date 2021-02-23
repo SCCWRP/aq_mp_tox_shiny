@@ -1,0 +1,1026 @@
+---
+title: "DALEX"
+author: "Scott Coffin"
+date: "2/19/2021"
+output: 
+  html_document:
+    code_folding: hide
+    theme: sandstone
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    number_sections: true
+  word_document:
+    toc: yes
+---
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      warning=FALSE, message=FALSE, echo = FALSE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+# load required packages
+library(rsample)
+library(dplyr)
+library(DALEX)
+library(tidyverse)
+library(tigerstats)
+library(caret)
+library(skimr)
+library(ggeffects)
+library(knitr)
+library(doParallel)
+library(modelplotr)
+```
+# Setup
+## Data Import
+```{r}
+# Load finalized dataset.
+aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) #%>% 
+  #mutate(ID = paste0("ID",row_number()))
+
+#### Introduction Setup ####
+
+# All text inputs below.
+
+#### Overview AO Setup ####
+
+#Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
+  #mutate(plot_f = case_when(
+    #plot_f == "Polymer" ~ "Polymer",
+    #plot_f == "Size" ~ "Size",
+    #plot_f == "Shape" ~ "Shape",
+    #plot_f == "Organism" ~ "Organism",
+    #plot_f == "Lvl1" ~ "Endpoint Category",
+    #plot_f == "Life.stage" ~ "Life Stage",
+    #plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
+    #plot_f == "Exposure.route" ~ "Exposure Route"))%>%
+  #mutate(plot_f = factor(plot_f))%>%
+  #mutate(logEndpoints = log(Endpoints))%>%
+  #rename(Percent = Freq)
+
+polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
+polyf<-as.data.frame(polydf)%>% #Makes data frame 
+  filter(effect %in% c("Y","N"))%>% #Sorts into Yes and No
+  mutate(polymer = case_when(
+    polymer == "BIO" ~ "Biopolymer",
+    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+    polymer == "LTX" ~ "Latex",
+    polymer == "PA" ~ "Polyamide",
+    polymer == "PE" ~ "Polyethylene",
+    polymer == "PC" ~ "Polycarbonate",
+    polymer == "PET" ~ "Polyethylene Terephthalate",
+    polymer == "PI" ~ "Polyisoprene",
+    polymer == "PMMA" ~ "Polymethylmethacrylate",
+    polymer == "PP" ~ "Polypropylene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PVC" ~ "Polyvinylchloride",
+    polymer == "PLA" ~ "Polylactic Acid"))%>%
+  mutate_if(is.numeric, round,0) #rounds percents 
+Endpoints<-xtabs(~polymer +effect ,aoc) #Pulls all study obs. for polymer from dataset
+polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
+  rename(Endpoints='Freq.1')%>% #renames column
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
+sizef<-as.data.frame(sizedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  mutate(size.category = case_when(
+    size.category == 1 ~ "<1µm",
+    size.category == 2 ~ "1µm < 10µm",
+    size.category == 3 ~ "10µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
+    size.category == 5 ~ "1mm < 5mm",
+    size.category == 0 ~ "unavailable"))%>%
+  rename(Type = "size.category")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Size")
+study_s<-xtabs(~size.category +effect ,aoc)
+sizefinal<- data.frame(cbind(sizef, study_s))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='size.category')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+      
+shapedf<-rowPerc(xtabs(~shape + effect, aoc))
+shapef<-as.data.frame(shapedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type="shape")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Shape")%>%
+  mutate(Type = case_when(
+    Type == "cube" ~ "Cube",
+    Type == "sphere" ~ "Sphere",
+    Type == "fragment" ~ "Fragment",
+    Type == "fiber" ~ "Fiber"))
+study_sh<-xtabs(~shape + effect,aoc)
+shapefinal<- data.frame(cbind(shapef, study_sh))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='shape')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+taxdf<-rowPerc(xtabs(~organism.group +effect, aoc))
+taxf<-as.data.frame(taxdf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "organism.group")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Organism")
+study_t<-xtabs(~organism.group +effect,aoc)
+taxfinal<- data.frame(cbind(taxf, study_t))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='organism.group')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+lvl1df<-rowPerc(xtabs(~lvl1 +effect, aoc))
+lvl1f<-as.data.frame(lvl1df)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "lvl1")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Lvl1")%>%
+  mutate(Type = case_when(
+    Type == "alimentary.excretory" ~ "Alimentary, Excretory",
+    Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    Type == "community" ~ "Community",
+    Type == "fitness" ~ "Fitness",
+    Type == "immune" ~ "Immune",
+    Type == "metabolism" ~ "Metabolism",
+    Type == "microbiome" ~ "Microbiome",
+    Type == "stress" ~ "Stress")) 
+study_l<-xtabs(~lvl1 +effect,aoc)
+lvl1final<- data.frame(cbind(lvl1f, study_l))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='lvl1')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+  
+lifedf<-rowPerc(xtabs(~life.stage +effect, aoc))
+lifef<-as.data.frame(lifedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "life.stage")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Life.stage")
+studyli<-xtabs(~life.stage +effect ,aoc)
+lifefinal<- data.frame(cbind(lifef, studyli))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='life.stage')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+vivodf<-rowPerc(xtabs(~invitro.invivo +effect, aoc))
+vivof<-as.data.frame(vivodf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "invitro.invivo")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Invivo.invivo")%>%
+  mutate(Type = case_when(
+    Type=="invivo"~"In Vivo",
+    Type=="invitro"~"In Vitro"))
+study_v<-xtabs(~invitro.invivo +effect,aoc)
+vivofinal<- data.frame(cbind(vivof, study_v))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='invitro.invivo')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+routedf<-rowPerc(xtabs(~exposure.route +effect, aoc))
+routef<-as.data.frame(routedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "exposure.route")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Exposure.route")%>%
+  mutate(Type = case_when(
+    Type == "coparental.exposure" ~"Co-Parental Exposure",
+    Type == "paternal.exposure" ~ "Paternal Exposure",
+    Type == "maternal.exposure" ~ "Maternal Exposure",
+    Type == "food" ~ "Food",
+    Type == "water" ~ "Water",
+    Type == "sediment" ~ "Sediment",
+    Type == "media" ~ "Media"))
+study_r<-xtabs(~exposure.route +effect,aoc)
+routefinal<- data.frame(cbind(routef, study_r))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='exposure.route')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+  
+  
+#### Exploration AO Setup ####
+
+# Master dataset for scatterplots - for Heili's tab.
+aoc_v1 <- aoc %>% # start with original dataset
+   # full dataset filters.
+  mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
+    effect == "N" ~ "No"),
+    levels = c("No", "Yes"))) %>%
+  # removing NAs to make data set nicer
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported"))
+
+aoc_setup <- aoc_v1 %>% # start with original dataset
+  mutate(size_f = factor(case_when(
+    size.category == 1 ~ "1nm < 100nm",
+    size.category == 2 ~ "100nm < 1µm",
+    size.category == 3 ~ "1µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
+    size.category == 5 ~ "1mm < 5mm",
+    size.category == 0 ~ "Not Reported"),
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+  # shape category data tidying.
+  mutate(shape_f = factor(case_when(
+    shape == "fiber" ~ "Fiber",
+    shape == "fragment" ~ "Fragment",
+    shape == "sphere" ~ "Sphere",
+    shape == "Not Reported" ~ "Not Reported"),
+    levels = c("Fiber", "Fragment", "Sphere", "Not Reported"))) %>% # order our different shapes.
+  # polymer category data tidying.
+  mutate(poly_f = factor(case_when(
+    polymer == "BIO" ~ "Biopolymer",
+    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+    polymer == "LTX" ~ "Latex",
+    polymer == "PA" ~ "Polyamide",
+    polymer == "PE" ~ "Polyethylene",
+    polymer == "PC" ~ "Polycarbonate",
+    polymer == "PET" ~ "Polyethylene Terephthalate",
+    polymer == "PI" ~ "Polyisoprene",
+    polymer == "PMMA" ~ "Polymethylmethacrylate",
+    polymer == "PP" ~ "Polypropylene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PVC" ~ "Polyvinylchloride",
+    polymer == "PLA" ~ "Polylactic Acid",
+    polymer == "Not Reported" ~ "Not Reported"))) %>%
+  # taxonomic category data tidying.
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea",
+                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
+  mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    lvl1 == "community" ~ "Community",
+    lvl1 == "fitness" ~ "Fitness",
+    lvl1 == "immune" ~ "Immune",
+    lvl1 == "metabolism" ~ "Metabolism",
+    lvl1 == "microbiome" ~ "Microbiome",
+    lvl1 == "stress" ~ "Stress"))) %>% # creates new column with nicer names.
+  # Level 2 Data tidying
+  mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
+    lvl2 == "actinobacteria" ~ "Actinobacteria",
+    lvl2 == "aggressivity"~"Agressivity",
+    lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
+    lvl2 == "bacteroidetes"~ "Bacteriodetes",
+    lvl2 == "blood"~"Blood",
+    lvl2 == "body.condition"~"Body Condition",
+    lvl2 == "boldness"~"Boldness",
+    lvl2 == "brain.histo"~"Brain Histological Abnormalities",
+    lvl2 == "burrowing"~"Burrowing",
+    lvl2 == "carb.metabolism"~"Carb Metabolism",
+    lvl2 == "chemokines.cytokines"~"Chemokines",
+    lvl2 == "circulatory"~"Circulatory",
+    lvl2 == "detoxification"~"Detoxification",
+    lvl2 == "development"~"Development",
+    lvl2 == "digestion"~"Digestion",
+    lvl2 == "digestive.enzymes"~"Digestive Enzymes",
+    lvl2 == "digestive.tract.histo"~"Digestive Tract Histological Abnormalities",
+    lvl2 == "diversity"~ "Diversity",
+    lvl2 == "feeding"~ "Feeding",
+    lvl2 == "firmicutes"~ "Firmicutes",
+    lvl2 == "gall.bladder.histo" ~ "Gall Bladder Histological Abnormalities",
+    lvl2 == "gen.metabolism"~ "General Metabolism",
+    lvl2 == "gill.histo"~ "Gill Histological Abnormalities",
+    lvl2 == "gonad.histo"~"Gonad Histological Abnormalities",
+    lvl2 == "growth"~ "Growth",
+    lvl2 == "immune.cells"~"Immune Cells",
+    lvl2 == "immune.other"~"Immune Other ",
+    lvl2 == "intestinal.permeability"~"Intestinal Permeability",
+    lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
+    lvl2 == "lipid.metabolism"~"Lipid Metabolism",
+    lvl2 == "liver.histo"~"Liver Histological Abnormalities",
+    lvl2 == "liver.kidney.products" ~ "Liver and Kidney Products",
+    lvl2 == "locomotion"~"Locomotion",
+    lvl2 == "mortality"~"Mortality",
+    lvl2 == "nervous.system"~"Nervous System",
+    lvl2 == "oxidative.stress"~"Oxidative Stress",
+    lvl2 == "photosynthesis"~ "Photosynthesis",
+    lvl2 == "proteobacteria"~"Protebacteria",
+    lvl2 == "reproduction"~"Reproduction",
+    lvl2 == "respiration"~"Respiration",
+    lvl2 == "sexhormones"~"Sex Hormones",
+    lvl2 == "shoaling"~"Shoaling",
+    lvl2 == "stress"~"Stress",
+    lvl2 == "vision.system"~"Vision System"))) %>% #Renames for widget
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
+    bio.org == "organism"~"Organism",
+    bio.org == "population"~ "Population",
+    bio.org == "subcell"~"Subcell",
+    bio.org == "tissue" ~ "Tissue")))%>%
+  mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
+    invitro.invivo == "invitro"~"In Vitro")))%>% ##Renames for widget (Not using a widget right now, but saving for human health database)
+  mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
+    life.stage == "Juvenile"~"Juvenile",
+    life.stage == "Adult"~"Adult",
+    life.stage == "Not Reported"~"Not Reported")))%>% #Renames for widget
+  mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
+    environment == "Marine" ~ "Marine",
+    environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%   #calculate volume/mL
+  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
+  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
+                                            af.time_noNA == 1 ~ "Chronic",
+                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>%    #factorize assesment factor time into chronic/acute
+  mutate(dose.mg.L.master.AF.noec = dose.mg.L.master * af.noec) %>% 
+  mutate(dose.particles.mL.master.AF.noec = dose.particles.mL.master * af.noec) %>% 
+  mutate(effect_f = factor(effect)) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(effect_10 = case_when(
+     effect_f == "Y" ~ 1,
+     effect_f == "N" ~ 0))
+    
+
+#### SSD AO Setup ####
+
+# Master dataset for SSDs
+aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
+  # environment category data tidying.
+  mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
+ 
+# final cleanup and factoring  
+aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
+aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
+aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
+```
+## Data Selection
+```{r}
+df <- aoc_z %>% 
+  dplyr::select(c(organism.group, exposure.duration.d, lvl1_f, dose.um3.mL.master, dose.mg.L.master, dose.particles.mL.master, life.stage, bio.org, polymer, shape, size.length.um.used.for.conversions, treatments, effect, effect.metric, particle.volume.um3, density.mg.um.3, environment, exposure.route, lvl2_f)) %>% 
+  mutate(effect.metric = as.character(effect.metric)) %>% 
+  mutate(effect.metric = (case_when(
+    effect.metric == "NONEC" ~ "NOEC",
+    effect.metric == "HONEC" ~ "NOEC",
+    effect.metric == "LOEC" ~ "LOEC",
+    effect.metric == "LC50" ~ "LC50",
+    effect.metric == "EC50" ~"EC50",
+    effect.metric == "EC10" ~ "EC10"
+  ))) %>% 
+  mutate(effect.metric = replace_na(effect.metric,"not_available")) %>% 
+  mutate(effect.metric = as.factor(effect.metric)) %>% 
+  drop_na() %>%  #drop missing
+mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+  mutate(effect_10 = case_when( #convert ordinal to numeric
+      effect == "Y" ~ 1,
+      effect == "N" ~ 0
+    )) %>%
+  mutate(effect_10 = factor(effect_10)) %>% 
+  dplyr::select(-(effect))
+
+#ensure completeness
+skim(df)
+```
+
+```{r}
+# create train, validation, and test splits
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+df_split <- df %>%
+  initial_split(prop = 0.75)
+# default is 3/4ths split (but 75% training, 25% testing).
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+train <- training(df_split)
+test <- testing(df_split)
+
+# variable names for resonse & features
+y <- "effect_10"
+x <- setdiff(names(df), y) 
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+classif_rf <- train(effect_10~., data = train, method = "rf", ntree = 100, tuneLength = 1)
+
+classif_glm <- train(effect_10~., data = train, method = "glm", family = "binomial")
+
+classif_svm <- train(effect_10~., data = train, method = "svmRadial", prob.model = TRUE, tuneLength = 1)#,
+                    # preProcess = c("pca","scale","center"))
+
+classif_decTree <- train(effect_10~., data = train, method = "C5.0", preProcess = c("scale","center")) 
+
+classif_nnet <- train(effect_10~., data = train, method = "nnet", preProcess=c("scale","center"))
+
+classif_xgbTree <- train(effect_10~., data = train, method = "xgbTree")
+
+#classif_logicBag <- train(effect_10~., data = train, method = "logicBag", ntree = 100)
+
+# explain
+yTest <- as.numeric(as.character(test$effect_10))
+
+explainer_classif_rf <- DALEX::explain(classif_rf, label = "rf",
+                                       data = test, 
+                                       y = yTest)
+                                       
+explainer_classif_glm <- DALEX::explain(classif_glm, label = "glm", 
+                                        data = test, y = yTest)
+                                       
+explainer_classif_svm <- DALEX::explain(classif_svm,  label = "svm", 
+                                        data = test, y = yTest)
+
+explainer_classif_decTree <- DALEX::explain(classif_rf, label = "Decision Tree",
+                                       data = test, 
+                                       y = yTest)
+                                       
+explainer_classif_nnet <- DALEX::explain(classif_glm, label = "Neural Net", 
+                                        data = test, y = yTest)
+                                       
+explainer_classif_xgbTree <- DALEX::explain(classif_svm,  label = "eXtreme Gradient Boosting Trees", 
+                                        data = test, y = yTest)
+
+#explainer_classif_logicBag <- DALEX::explain(classif_svm,  label = "Bagged Logic Regression", 
+                                       # data = test, y = yTest)
+                                        
+```
+# Modelling
+## Model Performance
+```{r}
+mp_classif_rf <- model_performance(explainer_classif_rf)
+mp_classif_glm <- model_performance(explainer_classif_glm)
+mp_classif_svm <- model_performance(explainer_classif_svm)
+mp_classif_decTree <- model_performance(explainer_classif_decTree)
+mp_classif_nnet <- model_performance(explainer_classif_nnet)
+mp_classif_xgbTree <- model_performance(explainer_classif_xgbTree)
+#mp_classif_logicBag <- model_performance(explainer_classif_logicBag)
+
+# compare residuals plots
+resid_dist <- plot(mp_classif_rf, mp_classif_glm, mp_classif_svm, mp_classif_decTree, mp_classif_nnet,
+                   mp_classif_xgbTree) + #, mp_classif_logicBag) +
+  theme_minimal() +
+        theme(legend.position = 'bottom',
+              plot.title = element_text(hjust = 0.5)) + 
+        labs(y = '')
+resid_dist
+```
+#### Residuals
+```{r}
+resid_box <- plot(mp_classif_rf, mp_classif_glm, mp_classif_svm, mp_classif_decTree, mp_classif_nnet, mp_classif_xgbTree,
+     #mp_classif_logicBag, 
+     geom = "boxplot") +
+  theme_minimal() +
+        theme(legend.position = 'bottom',
+              plot.title = element_text(hjust = 0.5)) 
+resid_box
+```
+```{r}
+require(gridExtra)
+grid.arrange(resid_box,resid_dist, ncol=2)
+```
+
+#### Lift Curves
+
+Lift curves describe a performance coefficient (lift) over the cumulative proportion of a population. Lift is calculated as the ratio of "yes's" on a certain sample point (for toxicity) divided by the ratio of "yes's" on the whole dataset. $Lift = Predicted Rate/Average Rate$. 
+
+
+```{r eval=FALSE, include=FALSE}
+#### DO NOT RUN - MAKES WEIRD PLOT###
+
+# #recode class as character
+# df2 <- df %>% 
+#  mutate(effect = factor(case_when( #convert ordinal to numeric
+#       effect_10 == "1" ~ "Y",
+#       effect_10 == "0" ~ "N"
+#     )))
+# #split test/train
+# set.seed(4)
+# df2_split <- df2 %>%
+#   initial_split(prop = 0.75)
+# train2 <- training(df2_split)
+# test2 <- testing(df2_split)
+# 
+# #set controls
+# ctrl <- trainControl(method = "cv", classProbs = TRUE,
+#                      summaryFunction = twoClassSummary)
+# #create models for lift plots
+# lift_rf <- train(effect ~., data = train2, method = "rf", ntree = 100, tuneLength = 1,
+#                     trControl = ctrl)
+# 
+# lift_glm <- train(effect~., data = train2, method = "glm", family = "binomial", 
+#                      trControl = ctrl)
+# 
+# lift_svm <- train(effect~., data = train2, method = "svmRadial", prob.model = TRUE, 
+#                      tuneLength = 1, trControl = ctrl)#,
+#                     # preProcess = c("pca","scale","center"))
+# 
+# lift_decTree <- train(effect~., data = train2, method = "C5.0", 
+#                          preProcess =c("scale","center"), trControl = ctrl) 
+# 
+# lift_nnet <- train(effect~., data = train2, method = "nnet", preProcess=c("scale","center"),
+#                       trControl = ctrl)
+# 
+# lift_xgbTree <- train(effect~., data = train2, method = "xgbTree", trControl = ctrl)
+# 
+# 
+# ## Generate the test set results
+# lift_results <- data.frame(effect = test2$effect)
+# lift_results$rf <- predict(lift_rf, test, type = "prob")[,"Y"]
+# lift_results$glm <- predict(lift_glm, test, type = "prob")[,"Y"]
+# lift_results$svm <- predict(lift_svm, test, type = "prob")[,"Y"]
+# lift_results$decTree <- predict(lift_decTree, test, type = "prob")[,"Y"]
+# lift_results$nnet <- predict(lift_nnet, test, type = "prob")[,"Y"]
+# lift_results$xgbTree <- predict(lift_xgbTree, test, type = "prob")[,"Y"]
+# head(lift_results)
+# 
+# #plot results
+# trellis.par.set(caretTheme())
+# lift_obj <- lift(effect ~ rf + glm + svm + decTree + nnet + xgbTree, data = lift_results)
+# plot(lift_obj, values = 60, auto.key = list(columns = 3,
+#                                             lines = TRUE,
+#                                             points = FALSE))
+```
+##### ALT METHOD
+http://rstudio-pubs-static.s3.amazonaws.com/436131_3212dcf341cc422590f1a9f52830cfd6.html
+
+```{r}
+# transform datasets and model objects into scored data and calculate deciles 
+scores_and_ntiles <- prepare_scores_and_ntiles(datasets=list("train","test"),
+                                               dataset_labels = list("train data","test data"),
+                                               models = list("classif_rf", "classif_decTree",
+                                                             "classif_glm", "classif_nnet",
+                                                             "classif_svm", "classif_xgbTree"),
+                                               model_labels = list("random forest", "Decision
+                                                                   tree", "General linear model",
+                                                                   "Neural net", "Support Vector
+                                                                   machine", "eXtreme Gradient
+                                                                   Boosting Trees"),
+                                               target_column="effect_10",
+                                               ntiles = 100)
+
+
+# transform data generated with prepare_scores_and_deciles into aggregated data for chosen plotting scope 
+plot_input <- plotting_scope(prepared_input = scores_and_ntiles, scope = 'compare_models')
+plot_cumgains(data = plot_input, custom_line_colors = RColorBrewer::brewer.pal(2,'Accent'))
+```
+
+```{r}
+plot_cumlift(data = plot_input,custom_line_colors = RColorBrewer::brewer.pal(2,'Accent'))
+```
+```{r}
+plot_cumresponse(data = plot_input,highlight_ntile = 20, 
+                 custom_line_colors = RColorBrewer::brewer.pal(2,'Accent'))
+```
+```{r}
+plot_multiplot(data = plot_input,  custom_line_colors = RColorBrewer::brewer.pal(2,'Accent'))
+```
+
+
+#### Roc Curves
+```{r}
+plot(mp_classif_rf, 
+     #mp_classif_glm, 
+     mp_classif_svm, 
+     #mp_classif_decTree, 
+     mp_classif_nnet,
+     #mp_classif_xgbTree,
+     geom = "roc") +
+  ggtitle("ROC Curves - All Models",  
+          paste("AUC_rf = ",round(mp_classif_rf$measures$auc,2), 
+                paste("AUC_svm = ",round(mp_classif_svm$measures$auc,2)),
+          paste("AUC_nnet = ",round(mp_classif_nnet$measures$auc,2))
+          )) +
+#,  "AUC_glm = 0.799  AUC_svm = 0.798 AUC_decTree = AUC_nnet = AUC_xgbTree = ") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Variable Importance
+```{r fig.height=7, fig.width=5, warning=FALSE}
+vi_classif_rf <- model_parts(explainer_classif_rf, loss_function = loss_root_mean_square)
+vi_classif_glm <- model_parts(explainer_classif_glm, loss_function = loss_root_mean_square)
+vi_classif_svm <- model_parts(explainer_classif_svm, loss_function = loss_root_mean_square)
+vi_classif_decTree <- model_parts(explainer_classif_decTree, loss_function = loss_root_mean_square)
+vi_classif_nnet <- model_parts(explainer_classif_nnet, loss_function = loss_root_mean_square)
+vi_classif_xgbTree <- model_parts(explainer_classif_xgbTree, loss_function = loss_root_mean_square)
+#vi_classif_logicBag <- model_parts(explainer_classif_logicBag, loss_function = loss_root_mean_square)
+
+plot(vi_classif_rf, vi_classif_glm, vi_classif_svm)#, #vi_classif_logicBag)
+```
+```{r}
+plot(vi_classif_decTree, vi_classif_nnet, vi_classif_xgbTree)
+```
+
+
+
+
+#### Partial Dependence Plot
+```{r}
+pdp_classif_rf  <- model_profile(explainer_classif_rf, variable = "dose.um3.mL.master", type = "partial")
+pdp_classif_glm  <- model_profile(explainer_classif_glm, variable = "dose.um3.mL.master", type = "partial")
+pdp_classif_svm  <- model_profile(explainer_classif_svm, variable = "dose.um3.mL.master", type = "partial")
+pdp_classif_decTree  <- model_profile(explainer_classif_decTree, variable = "dose.um3.mL.master", type = "partial")
+pdp_classif_nnet  <- model_profile(explainer_classif_nnet, variable = "dose.um3.mL.master", type = "partial")
+pdp_classif_xgbTree  <- model_profile(explainer_classif_xgbTree, variable = "dose.um3.mL.master", type = "partial")
+#pdp_classif_logicBag  <- model_profile(explainer_classif_logicBag, variable = "dose.um3.mL.master", type = "partial")
+
+plot(pdp_classif_rf, pdp_classif_glm, pdp_classif_svm, pdp_classif_decTree, pdp_classif_nnet, pdp_classif_xgbTree)#, pdp_classif_logicBag)
+```
+```{r}
+#Partial Dependence organism type
+pdp_classif_rf  <- model_profile(explainer_classif_rf, variable = "organism.group", type = "partial")
+pdp_classif_glm  <- model_profile(explainer_classif_glm, variable = "organism.group", type = "partial")
+pdp_classif_svm  <- model_profile(explainer_classif_svm, variable = "organism.group", type = "partial")
+pdp_classif_decTree  <- model_profile(explainer_classif_decTree, variable = "organism.group", type = "partial")
+pdp_classif_nnet  <- model_profile(explainer_classif_nnet, variable = "organism.group", type = "partial")
+pdp_classif_xgbTree  <- model_profile(explainer_classif_xgbTree, variable = "organism.group", type = "partial")
+#pdp_classif_logicBag  <- model_profile(explainer_classif_logicBag, variable = "dose.um3.mL.master", type = "partial")
+
+
+plot(pdp_classif_rf$agr_profiles, pdp_classif_glm$agr_profiles, pdp_classif_svm$agr_profiles, pdp_classif_decTree$agr_profiles, pdp_classif_nnet$agr_profiles, pdp_classif_xgbTree$agr_profiles) +
+  ggtitle("Contrastive Partial Dependence Profiles", "") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+#### Breakdown
+
+```{r}
+# create a single observation
+new_cust <- test$effect_10 %>% as.data.frame()
+
+
+# compute breakdown distances
+new_cust_glm <- predict_parts(explainer_classif_glm, new_observation = test, type = "break_down")
+new_cust_rf <- predict_parts(explainer_classif_rf, new_observation = test, type = "break_down")
+new_cust_svm <- predict_parts(explainer_classif_svm, new_observation = test, type = "break_down")
+new_cust_decTree <- predict_parts(explainer_classif_decTree, new_observation = test, type = "break_down")
+new_cust_nnet <- predict_parts(explainer_classif_nnet, new_observation = test, type = "break_down")
+new_cust_xgbTree <- predict_parts(explainer_classif_xgbTree, new_observation = test, type = "break_down")
+#new_cust_logicBag <- predict_parts(explainer_classif_logicBag, new_observation = test, type = "break_down")
+
+# class of prediction_breakdown output
+class(new_cust_rf)
+
+# check out the top 10 influential variables for this observation
+new_cust_rf[1:10, 1:5]
+```
+
+```{r}
+plot(new_cust_glm, new_cust_rf, new_cust_svm, new_cust_decTree, new_cust_nnet, new_cust_xgbTree)#,
+     #new_cust_logicBag)
+```
+```{r}
+library(ggplot2)
+
+# filter for top 10 influential variables for each model and plot
+list(new_cust_glm, new_cust_rf) %>%
+  purrr::map(~ top_n(., 11, wt = abs(contribution))) %>%
+  do.call(rbind, .) %>%
+  mutate(variable = paste0(variable, " (", label, ")")) %>%
+  ggplot(aes(contribution, reorder(variable, contribution))) +
+  geom_point() +
+  geom_vline(xintercept = 0, size = 3, color = "white") +
+  facet_wrap(~ label, scales = "free_y", ncol = 1) +
+  ylab(NULL)
+```
+
+```{r}
+library(ggplot2)
+
+# filter for top 10 influential variables for each model and plot
+list(new_cust_svm, new_cust_decTree) %>%
+  purrr::map(~ top_n(., 11, wt = abs(contribution))) %>%
+  do.call(rbind, .) %>%
+  mutate(variable = paste0(variable, " (", label, ")")) %>%
+  ggplot(aes(contribution, reorder(variable, contribution))) +
+  geom_point() +
+  geom_vline(xintercept = 0, size = 3, color = "white") +
+  facet_wrap(~ label, scales = "free_y", ncol = 1) +
+  ylab(NULL)
+```
+
+```{r}
+library(ggplot2)
+
+# filter for top 10 influential variables for each model and plot
+list(new_cust_nnet,new_cust_xgbTree) %>%
+  purrr::map(~ top_n(., 11, wt = abs(contribution))) %>%
+  do.call(rbind, .) %>%
+  mutate(variable = paste0(variable, " (", label, ")")) %>%
+  ggplot(aes(contribution, reorder(variable, contribution))) +
+  geom_point() +
+  geom_vline(xintercept = 0, size = 3, color = "white") +
+  facet_wrap(~ label, scales = "free_y", ncol = 1) +
+  ylab(NULL)
+```
+
+# Final Model
+All in all random forest is my final model of choice: it appears the more balanced and is the most accurate overall. This model will now be tuned and refined for maximum performance.
+
+## Tuning
+http://rstudio-pubs-static.s3.amazonaws.com/480890_237ad52b09b6440e9c849a3c07a04d2f.html
+```{r include=FALSE}
+cache = TRUE
+set.seed(1000)
+train_control <- trainControl(method = "repeatedcv", 
+                              number = 10,
+                              repeats = 5,
+                              verboseIter = TRUE,
+                              allowParallel = TRUE,
+                              summaryFunction = multiClassSummary)
+cache = TRUE
+set.seed(1000)
+
+start_time <- Sys.time() # Start timer
+
+my_grid1 <- expand.grid(mtry = 1:17)
+
+rf1 <- train(effect_10 ~ .,
+             data = train,
+             method = "rf",
+             metric = "Accuracy",
+             tuneGrid = my_grid1,
+             trControl = train_control)
+rf1
+```
+
+Plot tuning.
+
+```{r}
+cache = TRUE
+
+my_plot <- function(model) {
+    theme_set(theme_minimal())
+    u <- model$results %>%
+        select(mtry, Accuracy, Kappa, F1, Sensitivity,
+              Specificity,Pos_Pred_Value, Neg_Pred_Value, 
+               Precision, Recall, Detection_Rate) %>%
+        gather(a, b, -mtry)
+    
+    u %>% ggplot(aes(mtry, b)) + geom_line() + geom_point() + 
+        facet_wrap(~ a, scales = "free") + 
+        labs(x = "Number of mtry", y = NULL, 
+             title = "The Relationship between Model Performance and mtry")
+}
+
+rf1 %>% my_plot()
+```
+
+
+I will further refine this model using recursive feature elimination and compare accuracy with the other models.
+
+```{r}
+
+my_ctrl <- rfeControl(functions = rfFuncs, #random forests
+                      method = "repeatedcv",
+                      verbose = FALSE,
+                      repeats = 5,
+                      returnResamp = "all")
+
+rfProfile <- rfe(y = df$effect_10, # set dependent variable
+              x = df %>% 
+                dplyr::select(-effect_10),
+              rfeControl = my_ctrl,
+               size = c(1:2, 4, 6, 8, 10, 12, 13))
+rfProfile
+```
+
+## Predictor Selection
+The following variables are those that were picked in the final (most accurate) model. 
+```{r}
+#get variable names picked in the final model
+predictors(rfProfile)
+```
+The first 6 models are shown below with their corresponding accuracy and kappa values. 
+```{r}
+head(rfProfile$resample)
+```
+
+```{r}
+trellis.par.set(caretTheme())
+#plot(rfProfile, type = c("g", "o"), metric = "Accuracy")
+ggplot(rfProfile) + theme_bw()
+```
+```{r}
+plot1 <- xyplot(rfProfile, type = c("g", "p", "smooth"), main = "Accuracy of individual resampling results")
+plot2 <- densityplot(rfProfile, 
+                     subset = Variables < 5, 
+                     adjust = 1.25, 
+                     as.table = TRUE, 
+                     xlab = "Accuracy Estimates", 
+                     pch = "|")
+print(plot1, split=c(1,1,1,2), more=TRUE)
+print(plot2, split=c(1,2,1,2))
+```
+
+
+
+### Final Predictor Selection
+```{r}
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 1, maximize = TRUE)
+# higher tol (~10) gives you less variables
+# lower tol (~1) gives you more variables - "I'd like the simplest model within 1% of the best model."
+accuracy1 <- pickVars(rfProfile$variables, size = my_size)
+accuracy1
+```
+A random forest model with the above four predictors is within 1% of the best model. If a more accurate model is desired, and data is available, additional factors can be included in the model. Shown below are factors that should be included for a model that is within 0.5% accuracy of the best model.
+
+```{r}
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 0.5, maximize = TRUE)
+# higher tol (~10) gives you less variables
+# lower tol (~1) gives you more variables - "I'd like the simplest model within 1% of the best model."
+accuracy0.5 <- pickVars(rfProfile$variables, size = my_size)
+accuracy0.5
+```
+Below is a table showing which variables are included in models of varying accuracies.
+
+```{r}
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 0.1, maximize = TRUE)
+accuracy0.1 <- pickVars(rfProfile$variables, size = my_size)
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 0.3, maximize = TRUE)
+accuracy0.3 <- pickVars(rfProfile$variables, size = my_size)
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 5, maximize = TRUE)
+accuracy5 <- pickVars(rfProfile$variables, size = my_size)
+my_size <- pickSizeTolerance(rfProfile$results, metric = "Accuracy", tol = 10, maximize = TRUE)
+accuracy10 <- pickVars(rfProfile$variables, size = my_size)
+
+varsTable = list('0.1%' =accuracy0.1, '1%' = accuracy1, '5%' = accuracy5, '10%' = accuracy10)
+
+#$make padded dataframe
+na.pad <- function(x,len){
+    x[1:len]
+}
+
+makePaddedDataFrame <- function(l,...){
+    maxlen <- max(sapply(l,length))
+    data.frame(lapply(l,na.pad,len=maxlen),...)
+}
+#fancy print
+kable(makePaddedDataFrame(
+  list('Accuracy (0.1)' = accuracy0.1, 'Accuracy (0.3)' = accuracy0.3, "Accuracy (1)" = accuracy1, 'Accuracy (5)' = accuracy5, 'Accuracy (10)' = accuracy10)
+  ),
+      caption = "Variables to include in Random Forest to achieve Model Accuracy (within x% of best model)",
+    footnote = "Random Forest Recursive Feature Elimination")
+```
+### Final Model Tuning
+While the absolute best model contains 18 variables with an estimated accuracy of 93.89%, it is possible to achieve ~93% accuracy with just eight variables, as displayed in the above table. The advantage of including fewer variables is that less information is needed to accurately predict toxicity. The final model with these eight variables will be further refined through an iterative tuning process to determine the optimal number of variables to be randomly collected for sampling at each split (mtry), and the number of branches to grow after each split.Code for the following section is inspired from https://rpubs.com/phamdinhkhanh/389752. 
+```{r}
+final_df <-df %>% 
+  dplyr::select(c(effect.metric, dose.mg.L.master, lvl2_f, dose.particles.mL.master, effect_10, dose.um3.mL.master, organism.group, exposure.duration.d, treatments)) %>% 
+  droplevels()
+ 
+#ensure completeness
+skim(final_df)
+```
+
+```{r}
+# create train, validation, and test splits
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+df_final_split <- final_df %>%
+  initial_split(prop = 0.75)
+# default is 3/4ths split (but 75% training, 25% testing).
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+train_final <- training(df_final_split)
+test_final <- testing(df_final_split)
+
+# variable names for resonse & features
+y <- "effect_10"
+x <- setdiff(names(final_df), y) 
+```
+
+The mtry parameter will be optimized below:
+
+```{r}
+tunegrid <- expand.grid(.mtry=(1:7))
+                       # , .ntree=c(500, 1000, 1500, 2000, 2500)) #would like to optimize but can't figure out how!
+
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 10,
+                           ## repeat 3 times
+                           repeats = 3)
+                        
+nrow(tunegrid)
+
+set.seed(825)
+tuneFit <- train(effect_10 ~ ., data = train_final, 
+                 method = "rf", 
+                 trControl = fitControl, 
+                 verbose = FALSE, 
+                 ## Now specify the exact models 
+                 ## to evaluate:
+                 metric = 'Accuracy',
+                 tuneGrid = tunegrid)
+tuneFit
+```
+
+```{r}
+plot(tuneFit)
+```
+Now that mtry is optimized, the number of trees will be optimized, holding mtry constant.
+
+```{r}
+# Manual Search
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="grid")
+tunegrid <- expand.grid(.mtry=c(7)) #replace with optimal value from previous chunk
+modellist <- list()
+for (ntree in c(1000, 1500, 2000, 2500)) {
+	set.seed(123)
+	fit <- train(effect_10~., data=train_final, method="rf", metric='Accuracy', 
+	             tuneGrid=tunegrid, trControl=control, ntree=ntree)
+	key <- toString(ntree)
+	modellist[[key]] <- fit
+}
+# compare results
+results <- resamples(modellist)
+summary(results)
+```
+
+```{r}
+dotplot(results)
+```
+
+
+
+### Final Model
+Now that we have optimized the variables for our final model, we will build and save the final simplified model that has the highest accuracy.
+```{r}
+tunegrid <- expand.grid(.mtry=c(7))
+
+final_model <- train(effect_10~., data = train_final, method = "rf", ntree = 2500, tuneLength = 5)
+
+# explain
+yTest <- as.numeric(as.character(test_final$effect_10))
+
+explainer_final_model <- DALEX::explain(final_model, label = "rf",
+                                       data = test_final, 
+                                       y = yTest)
+
+mp_classif_final_model <- model_performance(explainer_final_model)
+mp_classif_final_model
+```
+#### Performance
+Performance metrics for the final model are below.
+
+##### ROC Curve
+
+```{r}
+plot(mp_classif_final_model,
+     geom = "roc") +
+  ggtitle("ROC Curve - Final Model",  
+          paste("AUC = ",round(mp_classif_final_model$measures$auc,2),
+                paste("Accuracy = ", 100 * round(mp_classif_final_model$measures$accuracy,3), "%")
+          )) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none")
+```
+
+##### Confusion Matrix
+The tuned, final, simplified model is now validated using test set data.
+```{r}
+test_pred <- predict(final_model, newdata = test_final)
+confusionMatrix(table(test_pred, test_final$effect_10))
+```
+This confusion matrix is plotted below.
+```{r}
+table <- data.frame(confusionMatrix(test_pred, test_final$effect_10)$table)
+
+plotTable <- table %>%
+  mutate(goodbad = ifelse(table$Prediction == table$Reference, "good", "bad")) %>%
+  group_by(Reference) %>%
+  mutate(prop = Freq/sum(Freq))
+
+# fill alpha relative to sensitivity/specificity by proportional outcomes within reference groups (see dplyr code above as well as original confusion matrix for comparison)
+ggplot(data = plotTable, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect"))
+  theme_bw() +
+  xlim(rev(levels(table$Reference)))
+```
+
+
+# Machine Settings
+
+Machine Info:
+```{r}
+Sys.info()[c(1:3,5)]
+```
+
+
+Session Info:
+```{r}
+sessionInfo()
+```

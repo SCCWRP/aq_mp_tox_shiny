@@ -1,0 +1,807 @@
+---
+title: "SVM, K-NN"
+author: "Scott Coffin"
+date: "2/18/2021"
+output: 
+ html_document:
+    code_folding: hide
+    theme: sandstone
+    toc: yes
+    toc_float: yes
+    toc_depth: 4
+    number_sections: true
+  word_document:
+    toc: yes
+---
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      warning=FALSE, message=FALSE, echo = FALSE)
+```
+---
+
+# Setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Load packages
+library(tidyverse) #General everything
+library(RColorBrewer)
+library(ggplot2) #General plotting
+library(ggrepel) #For adding text labels that repel away from data points
+library(calecopal) #Color palette
+library(shiny) #Runs shiny
+library(shinythemes) #Shiny theme for the page
+library(shinyWidgets) #Widgets
+library(scales) #SSD - Use the percent format
+library(reshape2) #Overview tab - melts bars together
+library(ssdtools) #SSD package
+library(DT) #Build HTML data tables
+#library(plotly) #Make plots interactive
+library(viridis) #Colors
+library(scales) #To use "percent" function
+library(tigerstats) #turns things into percents
+library(ggbeeswarm) #plot all points
+library(fitdistrplus, exclude = 'select') #alt SSD 
+library(RColorBrewer) #colors
+library(pheatmap) #pretty heat maps
+library(rpart)  #for trees
+#library(rattle)    # Fancy tree plot This is a difficult library to install (https://gist.github.com/zhiyzuo/a489ffdcc5da87f28f8589a55aa206dd) 
+library(rpart.plot)             # Enhanced tree plots
+library(RColorBrewer)       # Color selection for fancy tree plot
+library(party)                  # Alternative decision tree algorithm
+# library(partykit)               # Convert rpart object to BinaryTree
+library(pROC)   #for ROC curves
+library(uwot) #umap
+library(ISLR)  #for the Carseat Data
+library(lme4) #general linearized mixed model GLMM
+library(quantregForest)
+library(caret) #support vector machines
+library(tidyverse)
+library(tidymodels)
+library(skimr)
+library(sf)
+library(ggspatial)
+library(nhdplusTools)
+library(patchwork)
+library(Metrics)
+library(gt)
+library(randomForest)
+
+# Attach Packages
+library(kernlab)      # SVM methodology
+library(e1071)        # SVM methodology
+```
+## Data import
+```{r data import}
+# Load finalized dataset.
+aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% 
+  mutate(ID = paste0("ID",row_number()))
+
+#### Introduction Setup ####
+
+# All text inputs below.
+
+#### Overview AO Setup ####
+
+#Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
+  #mutate(plot_f = case_when(
+    #plot_f == "Polymer" ~ "Polymer",
+    #plot_f == "Size" ~ "Size",
+    #plot_f == "Shape" ~ "Shape",
+    #plot_f == "Organism" ~ "Organism",
+    #plot_f == "Lvl1" ~ "Endpoint Category",
+    #plot_f == "Life.stage" ~ "Life Stage",
+    #plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
+    #plot_f == "Exposure.route" ~ "Exposure Route"))%>%
+  #mutate(plot_f = factor(plot_f))%>%
+  #mutate(logEndpoints = log(Endpoints))%>%
+  #rename(Percent = Freq)
+
+polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
+polyf<-as.data.frame(polydf)%>% #Makes data frame 
+  filter(effect %in% c("Y","N"))%>% #Sorts into Yes and No
+  mutate(polymer = case_when(
+    polymer == "BIO" ~ "Biopolymer",
+    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+    polymer == "LTX" ~ "Latex",
+    polymer == "PA" ~ "Polyamide",
+    polymer == "PE" ~ "Polyethylene",
+    polymer == "PC" ~ "Polycarbonate",
+    polymer == "PET" ~ "Polyethylene Terephthalate",
+    polymer == "PI" ~ "Polyisoprene",
+    polymer == "PMMA" ~ "Polymethylmethacrylate",
+    polymer == "PP" ~ "Polypropylene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PVC" ~ "Polyvinylchloride",
+    polymer == "PLA" ~ "Polylactic Acid"))%>%
+  mutate_if(is.numeric, round,0) #rounds percents 
+Endpoints<-xtabs(~polymer +effect ,aoc) #Pulls all study obs. for polymer from dataset
+polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
+  rename(Endpoints='Freq.1')%>% #renames column
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
+sizef<-as.data.frame(sizedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  mutate(size.category = case_when(
+    size.category == 1 ~ "<1µm",
+    size.category == 2 ~ "1µm < 10µm",
+    size.category == 3 ~ "10µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
+    size.category == 5 ~ "1mm < 5mm",
+    size.category == 0 ~ "unavailable"))%>%
+  rename(Type = "size.category")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Size")
+study_s<-xtabs(~size.category +effect ,aoc)
+sizefinal<- data.frame(cbind(sizef, study_s))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='size.category')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+      
+shapedf<-rowPerc(xtabs(~shape + effect, aoc))
+shapef<-as.data.frame(shapedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type="shape")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Shape")%>%
+  mutate(Type = case_when(
+    Type == "cube" ~ "Cube",
+    Type == "sphere" ~ "Sphere",
+    Type == "fragment" ~ "Fragment",
+    Type == "fiber" ~ "Fiber"))
+study_sh<-xtabs(~shape + effect,aoc)
+shapefinal<- data.frame(cbind(shapef, study_sh))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='shape')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+taxdf<-rowPerc(xtabs(~organism.group +effect, aoc))
+taxf<-as.data.frame(taxdf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "organism.group")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Organism")
+study_t<-xtabs(~organism.group +effect,aoc)
+taxfinal<- data.frame(cbind(taxf, study_t))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='organism.group')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+lvl1df<-rowPerc(xtabs(~lvl1 +effect, aoc))
+lvl1f<-as.data.frame(lvl1df)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "lvl1")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Lvl1")%>%
+  mutate(Type = case_when(
+    Type == "alimentary.excretory" ~ "Alimentary, Excretory",
+    Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    Type == "community" ~ "Community",
+    Type == "fitness" ~ "Fitness",
+    Type == "immune" ~ "Immune",
+    Type == "metabolism" ~ "Metabolism",
+    Type == "microbiome" ~ "Microbiome",
+    Type == "stress" ~ "Stress")) 
+study_l<-xtabs(~lvl1 +effect,aoc)
+lvl1final<- data.frame(cbind(lvl1f, study_l))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='lvl1')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+  
+lifedf<-rowPerc(xtabs(~life.stage +effect, aoc))
+lifef<-as.data.frame(lifedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "life.stage")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Life.stage")
+studyli<-xtabs(~life.stage +effect ,aoc)
+lifefinal<- data.frame(cbind(lifef, studyli))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='life.stage')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+vivodf<-rowPerc(xtabs(~invitro.invivo +effect, aoc))
+vivof<-as.data.frame(vivodf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "invitro.invivo")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Invivo.invivo")%>%
+  mutate(Type = case_when(
+    Type=="invivo"~"In Vivo",
+    Type=="invitro"~"In Vitro"))
+study_v<-xtabs(~invitro.invivo +effect,aoc)
+vivofinal<- data.frame(cbind(vivof, study_v))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='invitro.invivo')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+
+routedf<-rowPerc(xtabs(~exposure.route +effect, aoc))
+routef<-as.data.frame(routedf)%>%
+  filter(effect %in% c("Y","N"))%>%
+  rename(Type= "exposure.route")%>%
+  mutate_if(is.numeric, round,0)%>%
+  mutate(plot="Exposure.route")%>%
+  mutate(Type = case_when(
+    Type == "coparental.exposure" ~"Co-Parental Exposure",
+    Type == "paternal.exposure" ~ "Paternal Exposure",
+    Type == "maternal.exposure" ~ "Maternal Exposure",
+    Type == "food" ~ "Food",
+    Type == "water" ~ "Water",
+    Type == "sediment" ~ "Sediment",
+    Type == "media" ~ "Media"))
+study_r<-xtabs(~exposure.route +effect,aoc)
+routefinal<- data.frame(cbind(routef, study_r))%>% 
+  rename(Endpoints='Freq.1')%>%
+  rename(category='exposure.route')%>%
+  mutate(logEndpoints = log(Endpoints))%>%
+  rename(Percent = Freq)#renames column
+  
+  
+#### Exploration AO Setup ####
+
+# Master dataset for scatterplots - for Heili's tab.
+aoc_v1 <- aoc %>% # start with original dataset
+   # full dataset filters.
+  mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
+    effect == "N" ~ "No"),
+    levels = c("No", "Yes"))) %>%
+  # removing NAs to make data set nicer
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported"))
+
+aoc_setup <- aoc_v1 %>% # start with original dataset
+  mutate(size_f = factor(case_when(
+    size.category == 1 ~ "1nm < 100nm",
+    size.category == 2 ~ "100nm < 1µm",
+    size.category == 3 ~ "1µm < 100µm",
+    size.category == 4 ~ "100µm < 1mm",
+    size.category == 5 ~ "1mm < 5mm",
+    size.category == 0 ~ "Not Reported"),
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+  # shape category data tidying.
+  mutate(shape_f = factor(case_when(
+    shape == "fiber" ~ "Fiber",
+    shape == "fragment" ~ "Fragment",
+    shape == "sphere" ~ "Sphere",
+    shape == "Not Reported" ~ "Not Reported"),
+    levels = c("Fiber", "Fragment", "Sphere", "Not Reported"))) %>% # order our different shapes.
+  # polymer category data tidying.
+  mutate(poly_f = factor(case_when(
+    polymer == "BIO" ~ "Biopolymer",
+    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+    polymer == "LTX" ~ "Latex",
+    polymer == "PA" ~ "Polyamide",
+    polymer == "PE" ~ "Polyethylene",
+    polymer == "PC" ~ "Polycarbonate",
+    polymer == "PET" ~ "Polyethylene Terephthalate",
+    polymer == "PI" ~ "Polyisoprene",
+    polymer == "PMMA" ~ "Polymethylmethacrylate",
+    polymer == "PP" ~ "Polypropylene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "PUR" ~ "Polyurathane",
+    polymer == "PVC" ~ "Polyvinylchloride",
+    polymer == "PLA" ~ "Polylactic Acid",
+    polymer == "Not Reported" ~ "Not Reported"))) %>%
+  # taxonomic category data tidying.
+  mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea",
+                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
+  mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
+    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+    lvl1 == "community" ~ "Community",
+    lvl1 == "fitness" ~ "Fitness",
+    lvl1 == "immune" ~ "Immune",
+    lvl1 == "metabolism" ~ "Metabolism",
+    lvl1 == "microbiome" ~ "Microbiome",
+    lvl1 == "stress" ~ "Stress"))) %>% # creates new column with nicer names.
+  # Level 2 Data tidying
+  mutate(lvl2_f = factor(case_when(lvl2 == "abundance"~"Abundance",
+    lvl2 == "actinobacteria" ~ "Actinobacteria",
+    lvl2 == "aggressivity"~"Agressivity",
+    lvl2 == "ammonia.excretion" ~ "Ammonia Excretion",
+    lvl2 == "bacteroidetes"~ "Bacteriodetes",
+    lvl2 == "blood"~"Blood",
+    lvl2 == "body.condition"~"Body Condition",
+    lvl2 == "boldness"~"Boldness",
+    lvl2 == "brain.histo"~"Brain Histological Abnormalities",
+    lvl2 == "burrowing"~"Burrowing",
+    lvl2 == "carb.metabolism"~"Carb Metabolism",
+    lvl2 == "chemokines.cytokines"~"Chemokines",
+    lvl2 == "circulatory"~"Circulatory",
+    lvl2 == "detoxification"~"Detoxification",
+    lvl2 == "development"~"Development",
+    lvl2 == "digestion"~"Digestion",
+    lvl2 == "digestive.enzymes"~"Digestive Enzymes",
+    lvl2 == "digestive.tract.histo"~"Digestive Tract Histological Abnormalities",
+    lvl2 == "diversity"~ "Diversity",
+    lvl2 == "feeding"~ "Feeding",
+    lvl2 == "firmicutes"~ "Firmicutes",
+    lvl2 == "gall.bladder.histo" ~ "Gall Bladder Histological Abnormalities",
+    lvl2 == "gen.metabolism"~ "General Metabolism",
+    lvl2 == "gill.histo"~ "Gill Histological Abnormalities",
+    lvl2 == "gonad.histo"~"Gonad Histological Abnormalities",
+    lvl2 == "growth"~ "Growth",
+    lvl2 == "immune.cells"~"Immune Cells",
+    lvl2 == "immune.other"~"Immune Other ",
+    lvl2 == "intestinal.permeability"~"Intestinal Permeability",
+    lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
+    lvl2 == "lipid.metabolism"~"Lipid Metabolism",
+    lvl2 == "liver.histo"~"Liver Histological Abnormalities",
+    lvl2 == "liver.kidney.products" ~ "Liver and Kidney Products",
+    lvl2 == "locomotion"~"Locomotion",
+    lvl2 == "mortality"~"Mortality",
+    lvl2 == "nervous.system"~"Nervous System",
+    lvl2 == "oxidative.stress"~"Oxidative Stress",
+    lvl2 == "photosynthesis"~ "Photosynthesis",
+    lvl2 == "proteobacteria"~"Protebacteria",
+    lvl2 == "reproduction"~"Reproduction",
+    lvl2 == "respiration"~"Respiration",
+    lvl2 == "sexhormones"~"Sex Hormones",
+    lvl2 == "shoaling"~"Shoaling",
+    lvl2 == "stress"~"Stress",
+    lvl2 == "vision.system"~"Vision System"))) %>% #Renames for widget
+  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
+    bio.org == "organism"~"Organism",
+    bio.org == "population"~ "Population",
+    bio.org == "subcell"~"Subcell",
+    bio.org == "tissue" ~ "Tissue")))%>%
+  mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
+    invitro.invivo == "invitro"~"In Vitro")))%>% ##Renames for widget (Not using a widget right now, but saving for human health database)
+  mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
+    life.stage == "Juvenile"~"Juvenile",
+    life.stage == "Adult"~"Adult",
+    life.stage == "Not Reported"~"Not Reported")))%>% #Renames for widget
+  mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
+    environment == "Marine" ~ "Marine",
+    environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
+  mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%   #calculate volume/mL
+  mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
+  mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
+                                            af.time_noNA == 1 ~ "Chronic",
+                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>%    #factorize assesment factor time into chronic/acute
+  mutate(dose.mg.L.master.AF.noec = dose.mg.L.master * af.noec) %>% 
+  mutate(dose.particles.mL.master.AF.noec = dose.particles.mL.master * af.noec) %>% 
+  mutate(effect_f = factor(effect)) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(effect_10 = case_when(
+     effect_f == "Y" ~ 1,
+     effect_f == "N" ~ 0))
+    
+
+#### SSD AO Setup ####
+
+# Master dataset for SSDs
+aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for terrestrial data)
+  # environment category data tidying.
+  mutate(environment.noNA = replace_na(environment, "Not Reported")) %>% # replaces NA to better relabel.
+  mutate(env_f = factor(environment.noNA, levels = c("Marine", "Freshwater", "Terrestrial", "Not Reported"))) 
+ 
+# final cleanup and factoring  
+aoc_z$Species <- as.factor(paste(aoc_z$genus,aoc_z$species)) #must make value 'Species" (uppercase)
+aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
+aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
+```
+```{r}
+# subset data to selected variables
+
+multiVar <- aoc_z %>% dplyr::select(#doi, size.category, 
+                                    size_f,
+                                    size.length.um.used.for.conversions, 
+                                    shape, 
+                                    polymer, 
+                                    particle.volume.um3, 
+                                    density.mg.um.3, 
+                                    organism.group,
+                                    environment, 
+                                    bio.org, #biological level of organization
+                                    #af.time, #assessment factor based on exposure time
+                                    treatments, #number of doses (no including control)
+                                    effect, #yes no
+                                    effect_f,
+                                    effect_10,
+                                    size_f,
+                                    exposure.duration.d, 
+                                    exposure.route, #Factor
+                                    organism.group, #factor
+                                    media.temp, #numeric
+                                    lvl1_f, #endpoints
+                                    lvl2_f, #endpoints
+                                   # lvl3, 
+                                     dose.mg.L.master, 
+                                    sex, #factor
+                                    media.ph, #numeric
+                                    media.sal.ppt, #numeric
+                                    dose.particles.mL.master,
+                                   effect.metric, #NOEC LOEC
+                                    functional.group, #factor
+                                    charge, #positive or negatibe
+                                    zetapotential.mV, # numeric   
+                                   max.size.ingest.mm,#max ingestible size
+                                   acute.chronic_f,
+                                   dose.mg.L.master.AF.noec,
+                                   dose.particles.mL.master.AF.noec,
+                                   max.size.ingest.mm, #maximum ingestible size range
+                                   effect.score) %>%  #1 = minor, 2 = photosynthesis, feeding, 3 = growth, chlorophyll content, 4 = reproduction, 5  = population growth, 6 = survival
+  filter(!size_f == "Not Reported") %>%   #take out not reported 
+                                 #  max.size.ingest.mm) %>%  #max ingestible size
+  filter(!size_f == "Not Reported")  #take out not reported 
+
+#recode variables
+# multiVar <- multiVar %>% mutate(effect_10 = case_when(
+#     effect == "Y" ~ 1,
+#     effect == "N" ~ 0
+#   ))# %>% 
+#   #mutate_all(is.character, ~as.factor())
+                                    
+
+```
+
+
+# Support Vector Machine
+## Kitchen Sink
+### Visualization
+
+#### Support Vector Machine - Non-linear
+
+Support Vector Classifiers are a subset of the group of classification structures known as Support Vector Machines. Support Vector Machines can construct classification boundaries that are nonlinear in shape. The options for classification structures using the svm() command from the e1071 package are linear, polynomial, radial, and sigmoid. Toobserve relationships of classifiers, we plot the data in two dimensions.
+
+
+```{r}
+# Plot data
+multiVar %>% 
+ggplot(aes(x = log(size.length.um.used.for.conversions), y = log(dose.mg.L.master), color = effect_f, shape = effect_f)) + 
+  geom_point(size = 2) +
+  scale_color_manual(values=c("#000000", "#FF0000")) +
+  theme(legend.position = "none")
+```
+Notice that the data is not linearly separable, and furthermore, isn’t all clustered together in a single group. There are two sections of class 1 observations with a cluster of class 2 observations in between. To demonstrate the power of SVMs, we’ll take 100 random observations from the set and use them to construct our boundary. We set kernel = "radial" based on the shape of our data and plot the results.
+
+```{r}
+# set pseudorandom number generator
+set.seed(123)
+# sample training data
+set.seed(4)
+kitchenSink_split <- kitchenSink %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+kitchenSink_train <- training(kitchenSink_split)
+kitchenSink_test <- testing(kitchenSink_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+count_kitchenSink <- paste0('n = ',nrow(kitchenSink))
+skim(kitchenSink)
+
+subTrain <- kitchenSink_test %>% 
+  dplyr::select(c(effect_f, dose.mg.L.master, size.length.um.used.for.conversions)) %>% 
+  mutate_if(~is.numeric(.) && (.) > 0, log10)
+
+#fit model
+svmfit_kitchenSink <- svm(effect_f ~ ., 
+                          data = subTrain, kernel = "radial", gamma = 1, cost = 1)
+summary(svmfit_kitchenSink)
+# plot classifier
+plot(svmfit_kitchenSink, data = subTrain)
+```
+The same procedure can be run using the kernlab package, which has far more kernel options than the corresponding function in e1071. In addition to the four choices in e1071, this package allows use of a hyperbolic tangent, Laplacian, Bessel, Spline, String, or ANOVA RBF kernel. To fit this data, we set the cost to be the same as it was before, 1.
+```{r}
+# Fit radial-based SVM in kernlab
+kernfit <- ksvm(effect_f ~ ., data = subTrain, type = "C-svc", kernel = 'rbfdot', C = 1, scaled = c())
+# Plot training data
+plot(kernfit, data = subTrain)
+```
+
+
+### Data Split
+```{r}
+#choose relevant predictors and log-transform
+kitchenSink <- aoc_z %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate(doi = as.character(doi)) %>% 
+  dplyr::select(size_f,
+                #doi, #need to split studies
+                size.length.um.used.for.conversions, shape, polymer, particle.volume.um3, density.mg.um.3, organism.group, bio.org, treatments, effect_f, exposure.duration.d, exposure.route, lvl1_f, dose.mg.L.master) %>%
+  # mutate_if(~is.numeric(.) && (.) > 0, log10) %>% 
+ # mutate(effect_10 = case_when( #convert ordinal to numeric
+ #     effect_f == "Y" ~ 1,
+ #     effect_f == "N" ~ 0
+ #   ))
+drop_na() #drop missing
+
+skim(kitchenSink)
+```
+#### Drop NA
+```{r}
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+kitchenSink_split <- kitchenSink %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+kitchenSink_train <- training(kitchenSink_split)
+kitchenSink_test <- testing(kitchenSink_split)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+count_kitchenSink <- paste0('n = ',nrow(kitchenSink))
+
+skim(kitchenSink)
+```
+
+#### Rough Fix NA
+```{r}
+#rough fix
+kitchenSink_roughfix <- na.roughfix(kitchenSink)
+
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+kitchenSink_split_roughfix <- kitchenSink_roughfix %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+kitchenSink_train_roughfix <- training(kitchenSink_split_roughfix)
+kitchenSink_test_roughfix <- testing(kitchenSink_split_roughfix)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+count_roughfix <- paste0('n = ',nrow(kitchenSink_roughfix))
+
+skim(kitchenSink_roughfix)
+```
+
+#### Multiple Imputation NA
+
+The algorithm starts by imputing NAs using na.roughfix. Then randomForest is called with the completed data. The proximity matrix from the randomForest is used to update the imputation of the NAs. For continuous predictors, the imputed value is the weighted average of the non-missing obervations, where the weights are the proximities. For categorical predictors, the imputed value is the category with the largest average proximity. This process is iterated iter times.
+
+Note: Imputation has not (yet) been implemented for the unsupervised case. Also, Breiman (2003) notes that the OOB estimate of error from randomForest tend to be optimistic when run on the data matrix with imputed values.
+```{r}
+# impute values
+#drop NA's in response
+kitchenSink_noNa <- kitchenSink %>% drop_na(effect_f)
+
+#impute
+set.seed(111)
+kitchenSink_rfImpute <- rfImpute(data = kitchenSink_noNa, 
+                                    effect_f ~., #response value, cannot contain NA's
+                                    iter = 4,
+                                    ntree =75)
+
+# Create calibration and validation splits with tidymodels initial_split() function.
+set.seed(4)
+kitchenSink_split_imputed <- kitchenSink_rfImpute %>%
+  initial_split(prop = 0.75, strata = polymer) # splits data into training and testing set.
+# default is 3/4ths split (but 75% training, 25% testing).
+# Stratification (strata) = grouping training/testing sets by region, state, etc.
+# Using the "strata" call ensures the number of data points in the training data is equivalent to the proportions in the original data set. (Strata below 10% of the total are pooled together.)
+
+# Create a training data set with the training() function
+# Pulls from training and testing sets created by initial_split()
+kitchenSink_train_imputed <- training(kitchenSink_split_imputed)
+kitchenSink_test_imputed <- testing(kitchenSink_split_imputed)
+# Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
+
+count_imputed <- paste0('n = ',nrow(kitchenSink_rfImpute))
+
+skim(kitchenSink_rfImpute)
+```
+
+### Train
+#### Drop Na
+```{r}
+#examine train and test sets
+dim(kitchenSink_train); dim(kitchenSink_test)
+```
+
+Before we train our model, we’ll first implement the trainControl() method. This will control all the computational overheads so that we can use the train() function provided by the caret package. The training method will train our data on different algorithms.
+
+First, let’s focus on the traincontrol() method:
+
+```{r}
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+# The trainControl() method here, is taking 3 parameters.
+# The “method” parameter defines the resampling method, in this demo we’ll be using the repeatedcv or the repeated cross-validation method.
+# The next parameter is the “number”, this basically holds the number of resampling iterations.
+# The “repeats ” parameter contains the sets to compute for our repeated cross-validation. We are using setting number =10 and repeats =3
+# This trainControl() method returns a list. We are going to pass this on our train() method.
+
+svm_Linear <- train(effect_f ~., 
+                    data = kitchenSink_train, 
+                    method = "bayesglm", #Bayesian Model
+                    trControl = trctrl, 
+                    preProcess = c("center", "scale"), 
+                    tuneLength = 10)
+#The “preProcess” parameter is for preprocessing our training data.
+# We are passing 2 values in our “pre-process” parameter “center” & “scale”. These two help for centering and scaling the data.
+# After pre-processing, these convert our training data with mean value as approximately “0” and standard deviation as “1”. The “tuneLength” parameter holds an integer value. This is for tuning our algorithm.
+
+svm_Linear
+```
+It’s a linear model therefore, it just tested at value “C” = 1.
+
+Now, our model is trained with C value as 1. We are ready to predict classes for our test set. We can use predict() method.
+
+The caret package provides predict() method for predicting results. We are passing 2 arguments. Its first parameter is our trained model and second parameter “newdata” holds our testing data frame. The predict() method returns a list, we are saving it in a test_pred variable.
+
+```{r}
+test_pred <- predict(svm_Linear, newdata = kitchenSink_test)
+confusionMatrix(table(test_pred, kitchenSink_test$effect_f))
+```
+
+The output shows that our model accuracy for test set is %
+
+By following the above procedure, we can build our svmLinear classifier.
+
+We can also do some customization for selecting C value(Cost) in Linear classifier. This can be done by inputting values in grid search. 
+
+The next code snippet will show you, building & tuning of an SVM classifier with different values of C.
+
+We are going to put some values of C using expand.grid() into “grid” dataframe. Next step is to use this dataframe for testing our classifier at specific C values. It needs to be put in train() method with tuneGrid parameter.
+
+
+```{r}
+grid <- expand.grid(C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,5))
+svm_Linear_Grid <- train(effect_f ~., data = kitchenSink_train, method = "svmLinear",
+                         trControl = trctrl,
+                         preProcess = c("center", "scale"),
+                         tuneGrid = grid,
+                         tuneLength = 10)
+svm_Linear_Grid
+plot(svm_Linear_Grid)
+```
+The above plot is showing that our classifier is giving best accuracy on C = 1.75. Let’s try to make predictions using this model for our test set.
+
+```{r}
+test_pred_grid <- predict(svm_Linear_Grid, newdata = kitchenSink_train)
+confusionMatrix(table(test_pred_grid, kitchenSink_train$effect_f))
+```
+
+# ROC Curves
+
+Prep for plotting.
+```{r}
+
+#### kitchenSink
+kitchenSinkpredictions <- as.data.frame(predict(kitchenSinkrf, kitchenSink_test%>% dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+kitchenSinkpredictions$predict <- names(kitchenSinkpredictions)[1:2][apply(kitchenSinkpredictions[,1:2], 1, which.max)]
+kitchenSinkpredictions$observed <- kitchenSink_test$effect_f
+head(kitchenSinkpredictions)
+
+#### kitchenSink_roughfix_roughfix
+kitchenSink_roughfixpredictions <- as.data.frame(predict(kitchenSink_roughfixrf, kitchenSink_roughfix_test%>% dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+kitchenSink_roughfixpredictions$predict <- names(kitchenSink_roughfixpredictions)[1:2][apply(kitchenSink_roughfixpredictions[,1:2], 1, which.max)]
+kitchenSinkpredictions$observed <- kitchenSink_test$effect_f
+head(kitchenSinkpredictions)
+
+
+###CHRONIC
+chronicpredictions <- as.data.frame(predict(chronicrf, chronic_test %>% dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+chronicpredictions$predict <- names(chronicpredictions)[1:2][apply(chronicpredictions[,1:2], 1, which.max)]
+chronicpredictions$observed <- chronic_test$effect_f
+
+####ACUTE
+predictions <- as.data.frame(predict(acuterf, acute_test%>% dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+predictions$predict <- names(predictions)[1:2][apply(predictions[,1:2], 1, which.max)]
+predictions$observed <- acute_test$effect_f
+head(predictions)
+
+
+
+
+###nofilter
+nofilterpredictions <- as.data.frame(predict(nofilterrf, nofilter_test%>% dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+nofilterpredictions$predict <- names(nofilterpredictions)[1:2][apply(nofilterpredictions[,1:2], 1, which.max)]
+nofilterpredictions$observed <- nofilter_test$effect_f
+
+###nofilterOptimized
+nofilter.optimizedpredictions <- as.data.frame(predict(myrf_optimized, multiVar_smkitchenSink_test %>%  dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+nofilter.optimizedpredictions$predict <- names(nofilter.optimizedpredictions)[1:2][apply(nofilter.optimizedpredictions[,1:2], 1, which.max)]
+nofilter.optimizedpredictions$observed <- multiVar_smkitchenSink_test$effect_f
+
+###nofilterOptimizedImputed
+nofilter.optimized.imputedpredictions <- as.data.frame(predict(myrf_optimized_imputed, multiVar_smkitchenSink_test_imputed %>%  dplyr::select(-effect_f), type = "prob"))
+# predict class and then attach test class
+nofilter.optimized.imputedpredictions$predict <- names(nofilter.optimized.imputedpredictions)[1:2][apply(nofilter.optimized.imputedpredictions[,1:2], 1, which.max)]
+nofilter.optimized.imputedpredictions$observed <- multiVar_smkitchenSink_test_imputed$effect_f
+```
+Plot.
+```{r}
+require(ggdark)
+# 1 ROC curve, yes vs no for acute
+roc.acute <- roc(ifelse(predictions$observed=="Y", "Y", "N"), as.numeric(predictions$Y))
+
+#chronic
+roc.chronic <- roc(ifelse(chronicpredictions$observed=="Y", "Y", "N"), as.numeric(chronicpredictions$Y))
+#kitchenSink
+roc.kitchenSink <- roc(ifelse(kitchenSinkpredictions$observed=="Y", "Y", "N"), as.numeric(kitchenSinkpredictions$Y))
+
+#nofilter
+roc.nofilter <- roc(ifelse(nofilterpredictions$observed=="Y", "Y", "N"), as.numeric(nofilterpredictions$Y))
+
+#no filter (optimized)
+roc.nofilter.optimized <- roc(ifelse(nofilter.optimizedpredictions$observed=="Y", "Y", "N"), as.numeric(nofilter.optimizedpredictions$Y))
+
+#no filter (optimized; imputed)
+roc.nofilter.optimized.imputed <- roc(ifelse(nofilter.optimized.imputedpredictions$observed=="Y", "Y", "N"), as.numeric(nofilter.optimized.imputedpredictions$Y))
+
+##make ROC curves
+
+#kitchenSink
+kitchenSinkROC <- ggroc(roc.kitchenSink, col = "yellow") + 
+  labs(title = "Chronic and Acute",
+       subtitle = paste0(accuracy_kitchenSink,', ',count_kitchenSink)) + 
+  dark_theme_bw()
+
+#acute
+acuteROC <- ggroc(roc.acute, col = "green") + 
+  labs(title = "Acute",
+       subtitle = paste0(accuracy_acute,', ',count_acute)) + 
+  dark_theme_bw()
+
+#chronic
+chronicROC <- ggroc(roc.chronic, col = "blue") + 
+  labs(title = "Chronic",
+       subtitle = paste0(accuracy_chronic,', ',count_chronic)) + #auto label
+  dark_theme_bw()
+
+#no filter
+nofilterROC <- ggroc(roc.nofilter, col = "red3") + 
+  labs(title = "Entire Dataset",
+       subtitle = paste0(accuracy_nofilter,', ',count_nofilter)) + 
+  dark_theme_bw()
+
+#optimized (rough fix)
+nofilteroptimizedROC <- ggroc(roc.nofilter.optimized, col = "orangered") + 
+  labs(title = "Entire Dataset (optimized)",
+       subtitle = paste0(accuracy_optimized,', ',count_optimized)) + 
+  dark_theme_bw()
+
+#optimized (multiple imputation)
+nofilteroptimizedimputedROC <- ggroc(roc.nofilter.optimized.imputed, col = "orange") + 
+  labs(title = "Entire Dataset (optimized; imputed)",
+       subtitle = paste0(accuracy_optimized_imputed,', ',count_optimized_imputed)) + 
+  dark_theme_bw()
+
+#arrange together and print
+require(gridExtra)
+grid.arrange(nofilterROC, nofilteroptimizedROC, nofilteroptimizedimputedROC,kitchenSinkROC, acuteROC, chronicROC,
+             ncol = 3)
+```
+ROC curves may also be visualized together
+```{r}
+require(pROC)
+require(tidyverse)
+require(ggdark)
+require(ggsci)
+ggroc(list(kitchenSink = roc.nofilter, optimized = roc.nofilter.optimized, optimized.imputed = roc.nofilter.optimized.imputed, organisms = roc.kitchenSink, acute = roc.acute, chronic = roc.chronic), aes = c("linetype", "color")) +
+  labs(title = "ROC Curves for Aquatic Toxicity Random Forest",
+       subtitle = "n = 4615",
+       color = "Dataset",
+       linetype = "Dataset") +
+   scale_color_tron() +
+  # theme_bw(base_size = 20)
+ dark_theme_bw(base_size = 20)# +
+ theme(plot.title.position = element_text(hjust = 0.5),
+     plot.subtitle.position = element_text(hjust = 0.5))
+```
+
+

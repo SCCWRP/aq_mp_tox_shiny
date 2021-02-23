@@ -4,10 +4,19 @@ author: "Leah Thornton Hampton"
 date: "2/1/2021"
 output:
   html_document: 
-    toc: true
+    code_folding: hide
+    theme: sandstone
+    toc: yes
+    toc_float: yes
     toc_depth: 4
     number_sections: true
-    toc_float: true
+  word_document:
+    toc: yes
+---
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      warning=FALSE, message=FALSE, echo = FALSE)
+```
 ---
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
@@ -15,6 +24,10 @@ output:
 library(tidyverse)
 library(MASS, exclude = 'select') #Stepwise regression package 
 library(ggiraphExtra) #For plotting
+library(ggeffects)
+library(ggdark)
+library(ggsci)
+library(viridis)
 
 #Data Import
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -394,7 +407,7 @@ summary(m1_crust_model_dose)
 ```{r}
 #Plots
 
-ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE, interactive = TRUE)
 ```
 
 ## Dose (volume)
@@ -432,7 +445,7 @@ ggPredict(m1_crust_model_dose,
           colorn=200,
  #         jitter=TRUE, 
 point = FALSE,
-          interactive = FALSE, 
+          interactive = TRUE, 
 show.summary = TRUE,
 #digits = 3, 
 se = FALSE)
@@ -462,7 +475,7 @@ summary(m1_crust_model_particles)
 ```
 plot
 ```{r}
-ggPredict(m1_crust_model_particles, colorn=1000)
+ggPredict(m1_crust_model_particles, colorn=1000, interactive = TRUE)
 ```
 ### volume
 ```{r}
@@ -489,7 +502,7 @@ summary(m1_crust_model_volume)
 ```
 plot
 ```{r}
-ggPredict(m1_crust_model_volume, colorn=500)
+ggPredict(m1_crust_model_volume, colorn=500, interactive = TRUE)
 ```
 
 
@@ -515,7 +528,7 @@ ggplot(m1, aes(x = logdose.mg.L.master, y = effect_10, color = size.length.um.us
 ```
 
 ```{r}
-ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE, interactive = TRUE)
 ```
 
 ## Dose (count)
@@ -546,16 +559,17 @@ m1_crust_model_dose <- glm(effect_10 ~ logdose.particles.mL.master*size.length.u
 
 summary(m1_crust_model_dose)
 
-ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE, interactive = TRUE)
 
 ```
 
 ```{r}
+require(ggiraphExtra)
 #Plots
-ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE)
+ggPredict(m1_crust_model_dose,colorn=100,jitter=FALSE, interactive = TRUE)
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 #alternative method using ggpredict
 require(ggeffects)
 require(ggdark)
@@ -573,7 +587,7 @@ ggplot(df, aes(x = x, y = predicted, colour = group)) +
   scale_color_tron()
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 #alt method
 plot(df, facet = TRUE)
 ```
@@ -600,12 +614,83 @@ m1_crust_model_discrete <- glm(effect_10 ~ logdose.mg.L.master * size_f, data = 
 
 summary(m1_crust_model_discrete)
 ```
-Plot.
+Plotted below.
 ```{r}
 discrete <- ggpredict(m1_crust_model_discrete,terms = c("logdose.mg.L.master", "size_f"))
-plot(discrete, facet = TRUE, add.data = TRUE)
+plot(discrete, facet = TRUE, add.data = TRUE, colors = "quadro", alpha = 0.2, dodge = 0.2)
+     #title = "All Aquatic Organisms")
 ```
-### Survival package
+#### Acute only crustacea
+```{r, echo = FALSE}
+require(arm) #bayesglm()
+#Select the columns that we want to feed into the model for simplicity
+m1_crust_acute <- aoc_setup %>% 
+  filter(!environment == "Terrestrial") %>% 
+  filter(bio.org == "organism") %>% 
+  #filter(effect.metric == c("HONEC", "LOEC", "NOEC")) %>% 
+  filter(organism.group == "Crustacea") %>% 
+  filter(!acute.chronic_f == "Unavailable") %>% 
+  filter(lvl1_f == "Fitness") %>% 
+  filter(!size_f == "Not Reported") %>% 
+  filter(!effect_f == "NA") %>% 
+  mutate(logdose.particles.mL.master = log10(dose.particles.mL.master)) %>% 
+  mutate(logdose.mg.L.master = log10(dose.mg.L.master)) %>% 
+ # filter(acute.chronic_f == "Acute") %>% 
+  dplyr::select(c(effect_10, 
+                  logdose.mg.L.master, 
+                  logdose.particles.mL.master, 
+                  size_f)) %>% 
+  drop_na()
+
+#Fit the full model
+m1_crust_acute_model_discrete <- glm(effect_10 ~ 
+                                      logdose.mg.L.master * size_f  + 
+                                       logdose.particles.mL.master * size_f, 
+                                     data = m1_crust_acute, 
+                                     na.action = "na.exclude", 
+                                     family = "binomial"#,
+                                     #glm.control(maxit = 50)
+                                     )
+
+summary(m1_crust_acute_model_discrete)
+```
+The above glm is visualized below.
+```{r}
+acute_discrete <- ggpredict(m1_crust_acute_model_discrete,terms = c(#"logdose.mg.L.master", 
+                                                                    "logdose.particles.mL.master",
+                                                                    "size_f")) #ensure discrete factor is second
+plot(acute_discrete)#, facet = TRUE, add.data = TRUE)
+```
+
+#### Alt Method using GG Plot
+This approach achieves a similiar product as using the ggPredict() function, except it relies on ggplot(), which is more malleable and transparent. The general steps are to first create a new dataframe over 1000 values of size using expand.grid() then use predict() and plot() with geom_line() and colour=size.
+```{r}
+require(viridis)
+#filtered dataset
+#m1_crust
+#model
+#summary(m1_crust_model_dose )
+#generate distribution of data
+mockData <- expand.grid(size.length.um.used.for.conversions = seq(0.034, 5000, 1),
+            logdose.particles.mL.master = seq(-4.195, 12.650,0.1))
+
+mockData$effect_10 <- predict(m1_crust_model_dose,
+                     mockData,
+                     type = "response")
+#plot
+mockData %>% 
+  ggplot(aes(x = logdose.particles.mL.master, 
+             y = effect_10, 
+             color = size.length.um.used.for.conversions)) +
+  geom_line() +
+  scale_color_gradientn(colors = topo.colors(7)) +
+  #scale_color_viridis_c(option = "A") +
+  dark_theme_bw()
+```
+
+
+## Survival package
+### Cumulative Hazard by Time
 ```{r}
 #include time
 m1_crust <- aoc_setup %>% 
@@ -628,6 +713,8 @@ survival <- survival::coxph(survival::Surv(exposure.duration.d, effect_10) ~ log
 cumHaz <- ggpredict(survival,terms = c("logdose.mg.L.master", "size_f"), type = "cumhaz")
 plot(cumHaz, facet = TRUE, add.data = TRUE, colors = "flat")
 ```
+### Probability of Survival by Time
+
 ```{r}
 #survival probability over time
 pr <- ggpredict(survival, c("logdose.mg.L.master", "size_f"), type = "surv")
