@@ -1261,6 +1261,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     shape_c <- input$shape_check # assign values to "shape_c" 
     size_c <- input$size_check # assign values to "size_c"
     species_c <- input$species_check #assign values to "species_c"
+    tech_tier_zero_c<-input$tech_tier_zero_check #assign values to "design_tier_zero_c"
+    risk_tier_zero_c<-input$risk_tier_zero_check #assign values to "risk_tier_zero_c"
     range_n <- input$range # assign values to "range_n"
     dose_check <- input$dose_check #renames selection from radio button
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
@@ -1324,7 +1326,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(shape_f %in% shape_c) %>% #filter by shape
       filter(species_f %in% species_c) %>%  #filter by species
       filter(env_f %in% env_c) %>% #filter by environment
-      filter(acute.chronic_f %in% acute.chronic.c) #acute/chronic
+      filter(acute.chronic_f %in% acute.chronic.c) %>%  #acute/chronic
+      filter(tier_zero_tech_f %in% tech_tier_zero_c) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c) #risk assessment quality
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
 
   })
@@ -1861,6 +1865,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     shinyjs::reset("life_check")
     shinyjs::reset("bio_check")
     shinyjs::reset("species_check")
+    shinyjs::reset("tech_tier_zero_check")
+    shinyjs::reset("risk_tier_zero_check")
   }) #If we add more widgets, make sure they get added here. 
 
 #### SSD AO S ####
