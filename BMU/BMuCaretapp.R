@@ -31,7 +31,7 @@ data_set <- read_csv("multiVar.csv", guess_max = 10000)
 data_set <- data_set %>% 
   dplyr::select(c(size.length.um.used.for.conversions, shape, polymer, organism.group, environment, bio.org, effect_f, exposure.duration.d, exposure.route, lvl1_f, dose.mg.L.master, dose.particles.mL.master, dose.um3.mL.master)) %>% 
     mutate_if(is.character, as.factor) %>% 
-  drop_na()
+  drop_na(effect_f)
 
 ###### Pre-Processing the data  using recipe #####
 set.seed(9650)
