@@ -636,28 +636,70 @@ column(width = 12,
                       column(width = 3,offset = 9,  
                              p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
 
-                    radioButtons(inputId = "dose_check", # dosing units
-                                 label = "Particles/mL, mg/L, or um3/mL:",
-                                 choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                 selected = "mg/L"),
+                    # second row of widget headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Quality Criteria")),
+                           
+                           column(width = 3,
+                                  h4("Exposure Concentrations")),
+                           
+                           column(width = 3,
+                                  h4("Aesthetics"))),
                     
-                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    #New row of widgets
                     
-                    radioButtons(inputId = "Rep_Con_rad",
-                      label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                      choices = c("reported", "converted", "all"),
-                      selected = "all"),
+                    column(width = 12,
+                           
+                           column(width = 3,
+                                  pickerInput(inputId = "tech_tier_zero_check", # chronic/acute checklist
+                                              label = "Technical Quality:", 
+                                              choices = levels(aoc_setup$tier_zero_tech_f),
+                                              selected = levels(aoc_setup$tier_zero_tech_f),
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)),
+                           
+                           column(width = 3, 
+                                  radioButtons(inputId = "dose_check", # dosing units
+                                               label = "Particles/mL, mg/L, or um3/mL:",
+                                               choices = c("Particles/mL", "mg/L", "um3/mL"),
+                                               selected = "mg/L")),
+                           
+                           column(width = 3,
+                                  selectInput(inputId = "plot.type", "Plot Type:", 
+                                       list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm")),
+                                  checkboxInput(inputId = "show.points", "Show All Points", FALSE))),
+                           
+                  #New row of widgets
                     
-                    #aesthethics
-                    selectInput(inputId = "plot.type", "Plot Type:", 
-                                list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm") #need to fix, just comment out for now
-                    ),
-                    checkboxInput(inputId = "show.points", "Show All Points", FALSE),
-                    selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
-                                list(light = "light", dark = "dark")),
-                    selectInput(inputId = "color.type_exp", "Color Theme:", 
-                                list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")),
-                    
+                  column(width = 12,
+                         
+                         column(width = 3,
+                                pickerInput(inputId = "risk_tier_zero_check", # chronic/acute checklist
+                                            label = "Applicability for Risk Assessment:", 
+                                            choices = levels(aoc_setup$tier_zero_risk_f),
+                                            selected = levels(aoc_setup$tier_zero_risk_f),
+                                            options = list(`actions-box` = TRUE), 
+                                            multiple = TRUE)),
+                         
+                         column(width = 3, 
+                                
+                                p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Particle volume has been estimated based on morphology. See resources tab for details on calculations."),
+                                
+                                radioButtons(inputId = "Rep_Con_rad",
+                                             label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                             choices = c("reported", "converted", "all"),
+                                             selected = "all")),
+                         
+                         column(width = 3, 
+                                selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
+                                            list(light = "light", dark = "dark")),
+                         
+                                selectInput(inputId = "color.type_exp", "Color Theme:", 
+                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")))),
+
+
                     # New row of widgets
                     column(width=12,
                         column(width = 3,
