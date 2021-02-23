@@ -331,8 +331,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
                                             af.time_noNA == 1 ~ "Chronic",
-                                            af.time_noNA == "Unavailable" ~ "Unavailable")))   #factorize assesment factor time into chronic/acute
-
+                                            af.time_noNA == "Unavailable" ~ "Unavailable"))) %>% #factorize assesment factor time into chronic/acute
+  mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Y" ~ "Red Criteria Failed",
+                                             tech.tier.zero == "N" ~ "Red Criteria Passed"))) %>% 
+  mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Y" ~ "Red Criteria Failed",
+                                             risk.tier.zero == "N" ~ "Red Criteria Passed")))
 
 #### SSD AO Setup ####
 
@@ -633,28 +636,70 @@ column(width = 12,
                       column(width = 3,offset = 9,  
                              p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
 
-                    radioButtons(inputId = "dose_check", # dosing units
-                                 label = "Particles/mL, mg/L, or um3/mL:",
-                                 choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                 selected = "mg/L"),
+                    # second row of widget headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Quality Criteria")),
+                           
+                           column(width = 3,
+                                  h4("Exposure Concentrations")),
+                           
+                           column(width = 3,
+                                  h4("Aesthetics"))),
                     
-                    p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
+                    #New row of widgets
                     
-                    radioButtons(inputId = "Rep_Con_rad",
-                      label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                      choices = c("reported", "converted", "all"),
-                      selected = "all"),
+                    column(width = 12,
+                           
+                           column(width = 3,
+                                  pickerInput(inputId = "tech_tier_zero_check", # chronic/acute checklist
+                                              label = "Technical Quality:", 
+                                              choices = levels(aoc_setup$tier_zero_tech_f),
+                                              selected = levels(aoc_setup$tier_zero_tech_f),
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)),
+                           
+                           column(width = 3, 
+                                  radioButtons(inputId = "dose_check", # dosing units
+                                               label = "Particles/mL, mg/L, or um3/mL:",
+                                               choices = c("Particles/mL", "mg/L", "um3/mL"),
+                                               selected = "mg/L")),
+                           
+                           column(width = 3,
+                                  selectInput(inputId = "plot.type", "Plot Type:", 
+                                       list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm")),
+                                  checkboxInput(inputId = "show.points", "Show All Points", FALSE))),
+                           
+                  #New row of widgets
                     
-                    #aesthethics
-                    selectInput(inputId = "plot.type", "Plot Type:", 
-                                list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm") #need to fix, just comment out for now
-                    ),
-                    checkboxInput(inputId = "show.points", "Show All Points", FALSE),
-                    selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
-                                list(light = "light", dark = "dark")),
-                    selectInput(inputId = "color.type_exp", "Color Theme:", 
-                                list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")),
-                    
+                  column(width = 12,
+                         
+                         column(width = 3,
+                                pickerInput(inputId = "risk_tier_zero_check", # chronic/acute checklist
+                                            label = "Applicability for Risk Assessment:", 
+                                            choices = levels(aoc_setup$tier_zero_risk_f),
+                                            selected = levels(aoc_setup$tier_zero_risk_f),
+                                            options = list(`actions-box` = TRUE), 
+                                            multiple = TRUE)),
+                         
+                         column(width = 3, 
+                                
+                                p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Particle volume has been estimated based on morphology. See resources tab for details on calculations."),
+                                
+                                radioButtons(inputId = "Rep_Con_rad",
+                                             label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                             choices = c("reported", "converted", "all"),
+                                             selected = "all")),
+                         
+                         column(width = 3, 
+                                selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
+                                            list(light = "light", dark = "dark")),
+                         
+                                selectInput(inputId = "color.type_exp", "Color Theme:", 
+                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")))),
+
+
                     # New row of widgets
                     column(width=12,
                         column(width = 3,
@@ -1216,6 +1261,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     shape_c <- input$shape_check # assign values to "shape_c" 
     size_c <- input$size_check # assign values to "size_c"
     species_c <- input$species_check #assign values to "species_c"
+    tech_tier_zero_c<-input$tech_tier_zero_check #assign values to "design_tier_zero_c"
+    risk_tier_zero_c<-input$risk_tier_zero_check #assign values to "risk_tier_zero_c"
     range_n <- input$range # assign values to "range_n"
     dose_check <- input$dose_check #renames selection from radio button
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
@@ -1279,7 +1326,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(shape_f %in% shape_c) %>% #filter by shape
       filter(species_f %in% species_c) %>%  #filter by species
       filter(env_f %in% env_c) %>% #filter by environment
-      filter(acute.chronic_f %in% acute.chronic.c) #acute/chronic
+      filter(acute.chronic_f %in% acute.chronic.c) %>%  #acute/chronic
+      filter(tier_zero_tech_f %in% tech_tier_zero_c) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c) #risk assessment quality
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
 
   })
@@ -1777,7 +1826,16 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   }
   print(p)
  
-  })
+  },
+  
+  # #This is based on a slider widget input
+  # width = function() {
+  #   input$cols * 300
+  # }, height = function() {
+  #   input$rows * 400
+  # }
+  
+  )
   
   # Create downloadable csv of filtered dataset.
   # Removed columns created above so the dataset matches Leah's original dataset.
@@ -1807,6 +1865,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     shinyjs::reset("life_check")
     shinyjs::reset("bio_check")
     shinyjs::reset("species_check")
+    shinyjs::reset("tech_tier_zero_check")
+    shinyjs::reset("risk_tier_zero_check")
   }) #If we add more widgets, make sure they get added here. 
 
 #### SSD AO S ####
