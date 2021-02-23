@@ -1,14 +1,14 @@
 ---
 title: "DALEX"
 author: "Scott Coffin"
-date: "2/19/2021"
+date: "2/22/2021"
 output: 
   html_document:
     code_folding: hide
     theme: sandstone
     toc: yes
     toc_float: yes
-    toc_depth: 5
+    toc_depth: 6
     number_sections: true
   word_document:
     toc: yes
@@ -1006,9 +1006,8 @@ ggplot(data = plotTable, mapping = aes(x = Reference, y = Prediction, fill = pro
   geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
   scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
   scale_x_discrete(labels = c("No Effect", "Effect")) +
-  scale_y_discrete(labels = c("No Effect", "Effect"))
-  theme_bw() +
-  xlim(rev(levels(table$Reference)))
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  theme_bw()
 ```
 
 
