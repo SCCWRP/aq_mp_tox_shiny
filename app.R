@@ -1438,9 +1438,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1522,9 +1522,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1603,9 +1603,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     #Theme type
     theme.type<-switch(input$theme.type_exp,
@@ -1683,9 +1683,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1765,9 +1765,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1847,9 +1847,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
