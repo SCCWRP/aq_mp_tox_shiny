@@ -736,37 +736,37 @@ column(width = 12,
                     hr(), # adds divider
                     
                     column(width = 12,
-                    plotOutput(outputId = "organism_plot_react"),
+                    plotOutput(outputId = "organism_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                   
                     column(width = 12,
-                    plotOutput(outputId = "lvl_plot_react"),
+                    plotOutput(outputId = "lvl_plot_react", height = "600px"),
                     br())), 
 
                     column(width = 12,
                     
                     column(width = 12,
-                    plotOutput(outputId = "lvl2_plot_react"),
+                    plotOutput(outputId = "lvl2_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                            
                     column(width = 12,
-                    plotOutput(outputId = "size_plot_react"),
+                    plotOutput(outputId = "size_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                   
                     column(width = 12,
-                    plotOutput(outputId = "shape_plot_react"),
+                    plotOutput(outputId = "shape_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                 
                     column(width = 12,
-                    plotOutput(outputId = "poly_plot_react"),
+                    plotOutput(outputId = "poly_plot_react", height = "600px"),
                     br()))), 
 
 #### SSD AO UI ####
@@ -1474,7 +1474,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
       summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
                 measurements = n(),
-                studies = n_distinct(article))
+                studies = n_distinct(article)) 
    
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
@@ -1488,9 +1488,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       geom_label_repel(data = aoc_org1,
                       aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                      hjust = 0,
+                      direction = "y", 
+                      nudge_x = 1000000000,
+                      segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
       theme(text = element_text(size=18), 
@@ -1570,10 +1571,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       #scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       #scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       geom_label_repel(data = aoc_size1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       theme(text = element_text(size=18), 
         legend.position = "right") +
@@ -1649,10 +1651,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#C7EAE5","#35978F")) +
       #scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
       geom_label_repel(data = aoc_shape1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       #theme_classic() +
       theme(text = element_text(size=18), 
@@ -1729,10 +1732,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       #scale_color_manual(values = c("#FAB455", "#A5683C")) +
       #scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       geom_label_repel(data = aoc_poly1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
      theme.type +
       # theme_classic() +
       theme(text = element_text(size=18),
@@ -1810,10 +1814,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl1_1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
       theme(text = element_text(size=18),
@@ -1891,10 +1896,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl2_1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       # theme_classic() +
     theme.type +
       theme(text = element_text(size=18),
