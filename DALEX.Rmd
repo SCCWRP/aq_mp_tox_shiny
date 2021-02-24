@@ -361,6 +361,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ```{r}
 df <- aoc_z %>% 
   filter(tech.tier.zero == "N") %>% #gives studies that pass technical quality criteria
+  filter(risk.tier.zero == "N") %>%  #only studies applicable for risk assessment. VERY RESTRICTIVE 
   dplyr::select(c(organism.group, exposure.duration.d, lvl1_f, dose.um3.mL.master, dose.mg.L.master, dose.particles.mL.master, life.stage, bio.org, polymer, shape, size.length.um.used.for.conversions, treatments, effect, effect.metric, particle.volume.um3, density.mg.um.3, environment, exposure.route, lvl2_f)) %>% 
   mutate(effect.metric = as.character(effect.metric)) %>% 
   mutate(effect.metric = (case_when(
@@ -419,7 +420,6 @@ classif_nnet <- train(effect_10~., data = train, method = "nnet", preProcess=c("
 
 classif_xgbTree <- train(effect_10~., data = train, method = "xgbTree")
 
-#classif_logicBag <- train(effect_10~., data = train, method = "logicBag", ntree = 100)
 
 # explain
 yTest <- as.numeric(as.character(test$effect_10))
@@ -443,10 +443,6 @@ explainer_classif_nnet <- DALEX::explain(classif_glm, label = "Neural Net",
                                        
 explainer_classif_xgbTree <- DALEX::explain(classif_svm,  label = "eXtreme Gradient Boosting Trees", 
                                         data = test, y = yTest)
-
-#explainer_classif_logicBag <- DALEX::explain(classif_svm,  label = "Bagged Logic Regression", 
-                                       # data = test, y = yTest)
-                                        
 ```
 # Modelling
 ## Model Performance
@@ -457,7 +453,6 @@ mp_classif_svm <- model_performance(explainer_classif_svm)
 mp_classif_decTree <- model_performance(explainer_classif_decTree)
 mp_classif_nnet <- model_performance(explainer_classif_nnet)
 mp_classif_xgbTree <- model_performance(explainer_classif_xgbTree)
-#mp_classif_logicBag <- model_performance(explainer_classif_logicBag)
 ```
 
 ### Histogram of Residuals

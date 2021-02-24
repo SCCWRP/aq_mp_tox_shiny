@@ -951,7 +951,7 @@ column(width = 12,
                                   pickerInput(inputId = "effect.metric_rad_ssd", # effect metric checklist
                                               label = "Effect Metric:",
                                               choices = levels(aoc_z$effect.metric),
-                                              selected = "HONEC",
+                                              selected = c("HONEC", "NOEC"),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)), # allows for multiple inputs
                           
@@ -975,7 +975,7 @@ column(width = 12,
                                     inputId = "conc.select.rad",
                                     label = "What should be considered the 'sensitive' concentration for each species?",
                                     choices = list("minimum", "lower 95% CI", "median", "mean"),
-                                    selected = "minimum")),
+                                    selected = "mean")),
                            
                     ),#close out column
                     
