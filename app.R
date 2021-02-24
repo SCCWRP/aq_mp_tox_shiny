@@ -779,8 +779,17 @@ column(width = 12,
                     br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     
-                    # widget 1
+                    # Row 1 of Headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Environment & Organism Type")),
+                    ), #closes out column
+                    
+                    # Row 1 of Widgets
                     column(width = 12,
+                           
+                           #Environment widget
                            column(width = 3,
                                   # alternative to fully listed checklists
                                   # requires shinyWidgets package
@@ -790,40 +799,15 @@ column(width = 12,
                                               selected = levels(aoc_z$env_f),   
                                               options = list(`actions-box` = TRUE), # option to de/select all
                                               multiple = TRUE)), # allows for multiple inputs
-                           # Organism widget
+                           
+                           #Organism group widget - reactive to environment
                            column(width = 3,
                                   htmlOutput("GroupSelection")), # organism checklist
+                          
+                           #Species widget - reactive to environment 
                            column(width = 3,
-                                  htmlOutput("SpeciesSelection"))), # dependent Species checklist
-                           br(),
-                           p("Advanced options. Suggest using defaults."),
-                           br(),
-                    
-                    column(width = 12,
-                           #Size widget
-                           column(width = 3,
-                                  pickerInput(inputId = "size_check_ssd", # organism checklist
-                                              label = "Sizes:",
-                                              choices = levels(aoc_z$size_f),
-                                              selected = levels(aoc_z$size_f),
-                                              options = list(`actions-box` = TRUE), # option to de/select all
-                                              multiple = TRUE)), # allows for multiple inputs
-                           #Morphology widget
-                           column(width = 3,
-                                  htmlOutput("shapeSelection")), # dependent on sizes
+                                  htmlOutput("SpeciesSelection")),
                            
-                            #Endpoint widget
-                           column(width = 3,
-                                  htmlOutput("lvl1Selection")), # allows for multiple inputs
-                           column(width = 3,
-                                  htmlOutput("lvl2Selection")), #specific endpoint based on previous checkbox
-                    
-                            ), #closes out column
-                       
-                    column(width = 12,    
-                           #Polymer widget
-                           column(width = 3,
-                                  htmlOutput("polySelection")),# polymer selection based on other inputs
                            #acute/chronic widget
                            column(width = 3,
                                   pickerInput(inputId = "acute.chronic_check_ssd", # chronic/acute checklist
@@ -832,7 +816,137 @@ column(width = 12,
                                               selected = levels(aoc_z$acute.chronic_f),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
+                           ), #closes out column
+                    
+                    # Warning label for exposure duration 
+                    column(width=12,
                            
+                           column(width = 3, offset = 9,
+                                  p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+                           
+                    ), #closes out column
+                     
+                    # Row 2 of Headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Particle Characteristics")),
+                    
+                           column(width = 3,
+                                  h4("Effects")),
+                           
+                           column(width = 3,
+                                  h4("Quality Criteria")),
+                           
+                    ), #closes out column      
+                    
+                    # Row 2 of widgets 
+                    column(width = 12,
+                           
+                           #Size widget
+                           column(width = 3,
+                                  pickerInput(inputId = "size_check_ssd", # organism checklist
+                                              label = "Sizes:",
+                                              choices = levels(aoc_z$size_f),
+                                              selected = levels(aoc_z$size_f),
+                                              options = list(`actions-box` = TRUE), # option to de/select all
+                                              multiple = TRUE)), # allows for multiple inputs
+                           
+                           #Endpoint widget - Broad
+                           column(width = 3,
+                                  htmlOutput("lvl1Selection")), # allows for multiple inputs
+                          
+                           #quality criteria widget for technical quality
+                           column(width = 3,
+                                  pickerInput(inputId = "tech_tier_zero_check_ssd", # chronic/acute checklist
+                                              label = "Technical Quality:", 
+                                              choices = levels(aoc_z$tier_zero_tech_f),
+                                              selected = levels(aoc_z$tier_zero_tech_f),
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)),
+                           
+                            ), #closes out column
+                    
+                    #Row 3 of widgets 
+                    column(width = 12,    
+                           
+                           #Morphology widget
+                           column(width = 3,
+                                  htmlOutput("shapeSelection")), # dependent on sizes
+                           
+                           #Endpoint widget - Specific
+                           column(width = 3,
+                                  htmlOutput("lvl2Selection")), #specific endpoint based on previous checkbox
+                           
+                           #quality criteria widget for applicability to risk assessment
+                           column(width = 3,
+                                  pickerInput(inputId = "risk_tier_zero_check_ssd", # chronic/acute checklist
+                                              label = "Applicability for Risk Assessment:", 
+                                              choices = levels(aoc_z$tier_zero_risk_f),
+                                              selected = levels(aoc_z$tier_zero_risk_f),
+                                              options = list(`actions-box` = TRUE), 
+                                              multiple = TRUE)),
+                           
+                           ),#close out column
+                    
+                    #Row 4 of widgets
+                    column(width = 12,
+                           
+                           #Polymer widget
+                           column(width = 3,
+                                  htmlOutput("polySelection")),# polymer selection based on other inputs
+                           
+
+                           
+                           ),#close out column
+                    
+                    # Row 3 of Headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Exposure Concentrations")),
+                           
+                    ), #closes out column  
+                    
+                    
+                    #Row 5 of widgets
+                    column(width = 12, 
+                           
+                           #Dose unit selection
+                           column(width = 3,
+                                  radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
+                                               label = "Particles/mL, mg/L, or volume(um3)/mL?",
+                                               choices = c("Particles/mL", "mg/L", "um3/mL"),
+                                               selected = "mg/L")),
+                           
+                           #converted or reported doses widget
+                           column(width = 3, 
+                                  radioButtons(
+                                    inputId = "Reported_Converted_rad",
+                                    label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                                    choices = list("reported", "converted", "all"),
+                                    selected = "all")),
+                           
+                           ),#closes out column 
+                    
+                    #Dose conversion description
+                    column(width = 12,
+                           column(width = 6, 
+                          p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Particle volume has been estimated based on morphology. See resources tab for details on calculations.")),
+                    
+                    ), #closes out column 
+                    
+                    # Row 4 of Headers
+                    column(width=12,
+                           
+                           column(width = 3,
+                                  h4("Advanced Options")),
+                           
+                    ), #closes out column  
+                    
+                    column(width = 12,
+                           
+                           #Effect metric widget
                            column(width = 3,
                                   pickerInput(inputId = "effect.metric_rad_ssd", # effect metric checklist
                                               label = "Effect Metric:",
@@ -840,57 +954,30 @@ column(width = 12,
                                               selected = "HONEC",
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)), # allows for multiple inputs
-                           
-                           ),#close out column
-                    
-                    column(width = 3,offset = 3,  
-                           p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
-                    
-                    br(),
-                    br(),
-                    
-                    column(width = 12,
-
+                          
+                           #Assessment factor - time
                            column(width = 3,
                            radioButtons(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
                                         label = "Apply Assessment Factor for acute and sub-chronic to chronic?",
                                         choices = c("yes", "no"),
                                         selected = "no")),
                            
+                           #Assessment factor - noec conversion
                            column(width = 3,
                            radioButtons(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
                                         label = "Apply Assessment Factor to convert dose descriptors into NOECs?",
                                         choices = c("yes", "no"),
                                         selected = "no")),
-                    ),#close out column
-                    
-                    br(),
-                    br(),
-                    
-                    column(width = 12,
-                           column(width = 3,
-                                  radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
-                                       label = "Particles/mL, mg/L, or volume(um3)/mL?",
-                                       choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                       selected = "mg/L")),
-                           
-                           column(width = 3,
-                                     p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Using methods described in ", a(href ="https://pubs.acs.org/doi/10.1021/acs.est.0c02982", "Koelmans et. al (2020)"), " units have been converted."),
-                                     radioButtons(
-                                              inputId = "Reported_Converted_rad",
-                                              label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                                              choices = list("reported", "converted", "all"),
-                                              selected = "all")),
                            
                            #concentration selector (minimum, lower 95% CI, median, mean)
                            column(width = 3,
                                   radioButtons(
                                     inputId = "conc.select.rad",
-                                    label = "What shuold be considered the 'sensitive' concentration for each species?",
+                                    label = "What should be considered the 'sensitive' concentration for each species?",
                                     choices = list("minimum", "lower 95% CI", "median", "mean"),
                                     selected = "minimum")),
-                            
-                    ), #closes out column
+                           
+                    ),#close out column
                     
                     br(),
                             column(width = 12,
@@ -1023,6 +1110,8 @@ column(width = 12,
 tabPanel("5: Resources", 
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
+         br(),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=nlPaGl", 'Quality Screening: Red Criteria')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
@@ -1917,6 +2006,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
     poly_c_ssd <- input$poly_check_ssd #assign polymer input
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
@@ -1925,6 +2016,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       filter(poly_f %in% poly_c_ssd) %>%  # filter polymers from other checkbox
+      filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
     mutate(shape_f_new = factor(as.character(shape_f))) # new subset of factors
     
     #populate picker choices based on available factors
@@ -1943,12 +2036,17 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
+    
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       mutate(lvl1_f_new = factor(as.character(lvl1_f))) # new subset of factors
     #populate picker choices based on available factors
     pickerInput(inputId = "lvl1_check_ssd", 
@@ -1964,11 +2062,16 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
+    
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
     #populate picker choices based on available factors
     pickerInput(inputId = "lvl2_check_ssd", 
@@ -1986,6 +2089,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl2_c_ssd <- input$lvl2_check_ssd #assign endpoints
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
@@ -1994,6 +2099,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       filter(lvl2_f %in% lvl2_c_ssd) %>%  #filter by second level endpoints
+      filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       mutate(poly_f_new = factor(as.character(poly_f))) # new subset of factors
     #populate picker choices based on available factors
     pickerInput(inputId = "poly_check_ssd", 
@@ -2021,6 +2128,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
@@ -2078,6 +2187,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
+      dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
@@ -2110,6 +2221,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     conc.select.r <- input$conc.select.rad #concentration selector (minimum, lower 95% CI, median, mean)
+    tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
+    risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
@@ -2168,6 +2281,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
       dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
+      dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
+      dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
                                   AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new * af.time,
