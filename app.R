@@ -332,10 +332,10 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
                                             af.time_noNA == 1 ~ "Chronic",
                                             af.time_noNA == "Unavailable" ~ "Unavailable"))) %>% #factorize assesment factor time into chronic/acute
-  mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Y" ~ "Red Criteria Failed",
-                                             tech.tier.zero == "N" ~ "Red Criteria Passed"))) %>% 
-  mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Y" ~ "Red Criteria Failed",
-                                             risk.tier.zero == "N" ~ "Red Criteria Passed")))
+  mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
+                                             tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
+  mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
+                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed")))
 
 #### SSD AO Setup ####
 
