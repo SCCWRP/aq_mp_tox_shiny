@@ -8,8 +8,8 @@
 
 # Load packages
 library(tidyverse) #General everything
-library(RColorBrewer)
-library(ggplot2) #General plotting
+library(RColorBrewer) #color palette
+library(ggplot2) #plotting
 library(ggrepel) #For adding text labels that repel away from data points
 library(calecopal) #Color palette
 library(shiny) #Runs shiny
@@ -30,8 +30,6 @@ library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
 #library(bslib) #better themes
 #library(thematic) #complete control over themes (including plots)
-
-
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -504,7 +502,7 @@ column(width = 12,
 
 
 #### Exploration AO UI ####
-                  tabPanel("3: Exploration",
+                tabPanel("3: Exploration",
                     shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
@@ -542,7 +540,7 @@ column(width = 12,
                     column(width = 12,
                       
                       column(width = 3,
-                      pickerInput(inputId = "lvl1_check", # endpoint checklist
+                        pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Broad Endpoint Category:", 
                         choices = levels(aoc_setup$lvl1_f),
                         selected = levels(aoc_setup$lvl1_f),
@@ -550,7 +548,7 @@ column(width = 12,
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                      pickerInput(inputId = "poly_check", # polymer checklist
+                        pickerInput(inputId = "poly_check", # polymer checklist
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
                         selected = levels(aoc_setup$poly_f),
@@ -558,7 +556,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "organism_check", # organismal group checklist
+                        pickerInput(inputId = "organism_check", # organismal group checklist
                         label = "Organisms:", 
                         choices = levels(aoc_setup$org_f),
                         selected = levels(aoc_setup$org_f),
@@ -566,7 +564,7 @@ column(width = 12,
                         multiple = TRUE)), 
                       
                       column(width = 3, 
-                      pickerInput(inputId = "bio_check", # bio org checklist
+                        pickerInput(inputId = "bio_check", # bio org checklist
                         label = "Level of Biological Organization", 
                         choices = levels(aoc_setup$bio_f),
                         selected = levels(aoc_setup$bio_f),
@@ -577,10 +575,10 @@ column(width = 12,
                     column(width = 12,
                       
                       column(width = 3,
-                      htmlOutput("secondSelection")), # dependent endpoint checklist
+                         htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
-                      pickerInput(inputId = "shape_check", # shape checklist
+                        pickerInput(inputId = "shape_check", # shape checklist
                         label = "Shape:", 
                         choices = levels(aoc_setup$shape_f),
                         selected = levels(aoc_setup$shape_f),
@@ -588,7 +586,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "env_check", # Environment checklist
+                        pickerInput(inputId = "env_check", # Environment checklist
                         label = "Environment:", 
                         choices = levels(aoc_setup$env_f),
                         selected = levels(aoc_setup$env_f),
@@ -602,7 +600,7 @@ column(width = 12,
                     column(width = 12,
                         
                       column(width = 3,
-                      pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
                         label = "Effect:",
                         choices = levels(aoc_setup$effect_f),
                         selected = levels(aoc_setup$effect_f),
@@ -610,7 +608,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "size_check", # Environment checklist
+                        pickerInput(inputId = "size_check", # Environment checklist
                         label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
                         selected = levels(aoc_setup$size_f),
@@ -618,7 +616,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "life_check", # life stage checklist
+                        pickerInput(inputId = "life_check", # life stage checklist
                         label = "Life Stages:", 
                         choices = levels(aoc_setup$life_f),
                         selected = levels(aoc_setup$life_f),
@@ -631,8 +629,9 @@ column(width = 12,
                                          choices = levels(aoc_setup$acute.chronic_f),
                                          selected = levels(aoc_setup$acute.chronic_f),
                                          options = list(`actions-box` = TRUE), 
-                                         multiple = TRUE)),
-                      
+                                         multiple = TRUE))),
+                      column(width = 12,
+                             
                       column(width = 3,offset = 9,  
                              p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
 
@@ -697,7 +696,8 @@ column(width = 12,
                                             list(light = "light", dark = "dark")),
                          
                                 selectInput(inputId = "color.type_exp", "Color Theme:", 
-                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")))),
+                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA"))),
+                         ), #close out column
 
 
                     # New row of widgets
@@ -725,8 +725,8 @@ column(width = 12,
                           br(),
                           strong(p("To Begin: Click the 'Update Filters' button above.")),
                           br()),
-                        column(width = 3),
-                        column(width = 3,
+                        
+                        column(width = 3, offset = 3,
                           br(),
                           strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")),
                           br())), 
@@ -1078,7 +1078,7 @@ column(width = 12,
                                      column(width = 4,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
-                                     #),
+                                     
                               br(),
                               
                               selectInput(inputId = "theme.type", "Dark or Light Mode:", 
@@ -1111,7 +1111,7 @@ tabPanel("5: Resources",
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=nlPaGl", 'Quality Screening: Red Criteria')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=AgH5bs", 'Quality Screening: Red Criteria')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
