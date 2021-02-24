@@ -1,7 +1,7 @@
 ---
-title: "DALEX"
+title: "DALEX_TechQualityControl"
 author: "Scott Coffin"
-date: "2/22/2021"
+date: "2/23/2021"
 output: 
   html_document:
     code_folding: hide
@@ -32,6 +32,7 @@ library(ggeffects)
 library(knitr)
 library(doParallel)
 library(modelplotr)
+library(gridExtra)
 ```
 # Setup
 ## Data Import
@@ -359,6 +360,7 @@ aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted
 ## Data Selection
 ```{r}
 df <- aoc_z %>% 
+  filter(tech.tier.zero == "N") %>% #gives studies that pass technical quality criteria
   dplyr::select(c(organism.group, exposure.duration.d, lvl1_f, dose.um3.mL.master, dose.mg.L.master, dose.particles.mL.master, life.stage, bio.org, polymer, shape, size.length.um.used.for.conversions, treatments, effect, effect.metric, particle.volume.um3, density.mg.um.3, environment, exposure.route, lvl2_f)) %>% 
   mutate(effect.metric = as.character(effect.metric)) %>% 
   mutate(effect.metric = (case_when(
@@ -402,7 +404,7 @@ y <- "effect_10"
 x <- setdiff(names(df), y) 
 ```
 
-```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r All Model Training, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 # Examine the environment to be sure # of observations looks like the 75/25 split. 3199:1066.
 classif_rf <- train(effect_10~., data = train, method = "rf", ntree = 100, tuneLength = 1)
 
@@ -448,7 +450,7 @@ explainer_classif_xgbTree <- DALEX::explain(classif_svm,  label = "eXtreme Gradi
 ```
 # Modelling
 ## Model Performance
-```{r}
+```{r model performance, include=FALSE}
 mp_classif_rf <- model_performance(explainer_classif_rf)
 mp_classif_glm <- model_performance(explainer_classif_glm)
 mp_classif_svm <- model_performance(explainer_classif_svm)
@@ -456,7 +458,27 @@ mp_classif_decTree <- model_performance(explainer_classif_decTree)
 mp_classif_nnet <- model_performance(explainer_classif_nnet)
 mp_classif_xgbTree <- model_performance(explainer_classif_xgbTree)
 #mp_classif_logicBag <- model_performance(explainer_classif_logicBag)
+```
 
+### Histogram of Residuals
+```{r}
+plot(mp_classif_rf, mp_classif_glm, geom ="histogram")
+```
+```{r}
+plot(mp_classif_svm, mp_classif_decTree, geom ="histogram")
+```
+
+```{r}
+plot(mp_classif_nnet, mp_classif_xgbTree, geom ="histogram")
+```
+### Precision Recall Curves
+```{r}
+plot(mp_classif_rf, mp_classif_glm, mp_classif_svm, mp_classif_decTree, mp_classif_nnet, mp_classif_xgbTree, geom ="prc")
+```
+
+
+### Reverse Cumulative Distribution of Residuals
+```{r}
 # compare residuals plots
 resid_dist <- plot(mp_classif_rf, mp_classif_glm, mp_classif_svm, mp_classif_decTree, mp_classif_nnet,
                    mp_classif_xgbTree) + #, mp_classif_logicBag) +
@@ -481,7 +503,7 @@ require(gridExtra)
 grid.arrange(resid_box,resid_dist, ncol=2)
 ```
 
-#### Lift Curves
+### Lift Curves
 
 Lift curves describe a performance coefficient (lift) over the cumulative proportion of a population. Lift is calculated as the ratio of "yes's" on a certain sample point (for toxicity) divided by the ratio of "yes's" on the whole dataset. $Lift = Predicted Rate/Average Rate$. 
 
@@ -578,7 +600,7 @@ plot_multiplot(data = plot_input,  custom_line_colors = RColorBrewer::brewer.pal
 ```
 
 
-#### Roc Curves
+### Roc Curves
 ```{r}
 plot(mp_classif_rf, 
      #mp_classif_glm, 
@@ -588,9 +610,9 @@ plot(mp_classif_rf,
      #mp_classif_xgbTree,
      geom = "roc") +
   ggtitle("ROC Curves - All Models",  
-          paste("AUC_rf = ",round(mp_classif_rf$measures$auc,2), 
-                paste("AUC_svm = ",round(mp_classif_svm$measures$auc,2)),
-          paste("AUC_nnet = ",round(mp_classif_nnet$measures$auc,2))
+          paste("AUC_rf = ",round(mp_classif_rf$measures$auc,3), 
+                paste("AUC_svm = ",round(mp_classif_svm$measures$auc,3)),
+          paste("AUC_nnet = ",round(mp_classif_nnet$measures$auc,3))
           )) +
 #,  "AUC_glm = 0.799  AUC_svm = 0.798 AUC_decTree = AUC_nnet = AUC_xgbTree = ") +
   theme_minimal() +
@@ -616,7 +638,7 @@ plot(vi_classif_decTree, vi_classif_nnet, vi_classif_xgbTree)
 
 
 
-#### Partial Dependence Plot
+### Partial Dependence Plot
 ```{r}
 pdp_classif_rf  <- model_profile(explainer_classif_rf, variable = "dose.um3.mL.master", type = "partial")
 pdp_classif_glm  <- model_profile(explainer_classif_glm, variable = "dose.um3.mL.master", type = "partial")
@@ -628,6 +650,7 @@ pdp_classif_xgbTree  <- model_profile(explainer_classif_xgbTree, variable = "dos
 
 plot(pdp_classif_rf, pdp_classif_glm, pdp_classif_svm, pdp_classif_decTree, pdp_classif_nnet, pdp_classif_xgbTree)#, pdp_classif_logicBag)
 ```
+
 ```{r}
 #Partial Dependence organism type
 pdp_classif_rf  <- model_profile(explainer_classif_rf, variable = "organism.group", type = "partial")
@@ -646,8 +669,203 @@ plot(pdp_classif_rf$agr_profiles, pdp_classif_glm$agr_profiles, pdp_classif_svm$
 ```
 
 
+##### Grouped Partial Dependence Plots
+```{r include=FALSE}
+plot(pdp_classif_rf)
+#Partial Dependence by dose.particles.mL.master and effect.metric
+pdp_classif_rf  <- model_profile(explainer_classif_rf, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+pdp_classif_glm  <- model_profile(explainer_classif_glm, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+pdp_classif_svm  <- model_profile(explainer_classif_svm, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+pdp_classif_decTree  <- model_profile(explainer_classif_decTree, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+pdp_classif_nnet  <- model_profile(explainer_classif_nnet, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+pdp_classif_xgbTree  <- model_profile(explainer_classif_xgbTree, variable = "dose.particles.mL.master", 
+                                 groups = "effect.metric")
+```
 
-#### Breakdown
+```{r}
+#plot neural net and glm
+glm <- plot(pdp_classif_glm$agr_profiles) +
+  ggtitle("GLM: Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+nnet <- plot(pdp_classif_nnet$agr_profiles) +
+  ggtitle("Neural Net: Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(glm, nnet)
+```
+
+```{r}
+#plot rf and decision tree
+rf <- plot(pdp_classif_rf$agr_profiles) +
+  ggtitle("Random Forest:Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+decTree <- plot(pdp_classif_decTree$agr_profiles) +
+  ggtitle("Decision Tree: Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(rf, decTree)
+```
+
+```{r}
+#plot rf and decision tree
+svm <- plot(pdp_classif_svm$agr_profiles) +
+  ggtitle("Support Vector Machine:Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+xgbTree <- plot(pdp_classif_xgbTree$agr_profiles) +
+  ggtitle("eXtreme Gradient Boosing Trees: Partial Dependence Profiles by Dose and Effect Metric", "") +
+  xlab("log10(dose particles/mL)") +
+  ylab("Average Prediction for Effect (1 = yes, 0 = no)") +
+  scale_color_discrete(name = "Model x Effect Metric") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(svm, xgbTree)
+```
+
+### Confusion Matrices
+
+```{r include=FALSE}
+#predict test data
+pred_rf <- predict(classif_rf, newdata = test)
+pred_glm <- predict(classif_glm, newdata = test)
+pred_svm <- predict(classif_svm, newdata = test)
+pred_decTree <- predict(classif_decTree, newdata = test)
+pred_nnet <- predict(classif_nnet, newdata = test)
+pred_xgbTree <- predict(classif_xgbTree, newdata = test)
+
+#build confusion matrices
+table_rf <- data.frame(confusionMatrix(pred_rf, test$effect_10)$table)
+table_glm <- data.frame(confusionMatrix(pred_glm, test$effect_10)$table)
+table_svm <- data.frame(confusionMatrix(pred_svm, test$effect_10)$table)
+table_decTree <- data.frame(confusionMatrix(pred_decTree, test$effect_10)$table)
+table_nnet <- data.frame(confusionMatrix(pred_nnet, test$effect_10)$table)
+table_xgbTree <- data.frame(confusionMatrix(pred_xgbTree, test$effect_10)$table)
+
+#build plots
+plotTable_rf <- table_rf %>% mutate(goodbad = ifelse(table_rf$Prediction == table_rf$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+
+plotTable_glm <- table_glm %>% mutate(goodbad = ifelse(table_glm$Prediction == table_glm$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+
+plotTable_svm <- table_svm %>% mutate(goodbad = ifelse(table_svm$Prediction == table_svm$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+
+plotTable_decTree <- table_decTree %>% mutate(goodbad = ifelse(table_decTree$Prediction == table_decTree$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+
+plotTable_nnet <- table_nnet %>% mutate(goodbad = ifelse(table_nnet$Prediction == table_nnet$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+
+plotTable_xgbTree <- table_xgbTree %>% mutate(goodbad = ifelse(table_xgbTree$Prediction == table_xgbTree$Reference, "good", "bad")) %>%
+  group_by(Reference) %>% mutate(prop = Freq/sum(Freq))
+```
+
+Confusion Matrices for the six tested models are below.
+```{r}
+# fill alpha relative to sensitivity/specificity by proportional outcomes within reference groups (see dplyr code above as well as original confusion matrix for comparison)
+CM_rf <- ggplot(data = plotTable_rf, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("Random Forest",
+          paste("Accuracy = ", 100 * round(mp_classif_rf$measures$accuracy,3), "%")) +
+  theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+CM_glm <- ggplot(data = plotTable_glm, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("General Linear Model",
+          paste("Accuracy = ", 100 * round(mp_classif_glm$measures$accuracy,3), "%")) +
+  theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+CM_svm <- ggplot(data = plotTable_svm, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("Support Vector Machine",
+          paste("Accuracy = ", 100 * round(mp_classif_svm$measures$accuracy,3), "%")) +
+  theme_bw() +
+ theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+CM_decTree <- ggplot(data = plotTable_decTree, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("Decision Tree",
+          paste("Accuracy = ", 100 * round(mp_classif_decTree$measures$accuracy,3), "%")) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+CM_nnet <- ggplot(data = plotTable_nnet, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("Neural Net",
+          paste("Accuracy = ", 100 * round(mp_classif_nnet$measures$accuracy,3), "%")) +
+  theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+CM_xgbTree <- ggplot(data = plotTable_xgbTree, mapping = aes(x = Reference, y = Prediction, fill = prop)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), vjust = .5, fontface  = "bold", alpha = 1) +
+  scale_fill_gradient(low = "white", high = "cyan4", name = "Proportion") +
+  scale_x_discrete(labels = c("No Effect", "Effect")) +
+  scale_y_discrete(labels = c("No Effect", "Effect")) +
+  ggtitle("eXtreme Gradient Boosting Trees",
+          paste("Accuracy = ", 100 * round(mp_classif_xgbTree$measures$accuracy,3), "%")) +
+  theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none")
+
+grid.arrange(CM_rf, CM_glm, CM_svm, CM_decTree, CM_nnet, CM_xgbTree,
+             ncol = 2, top = "Confusion Matrices for ML Models")
+```
+
+### Breakdown
 
 ```{r}
 # create a single observation
@@ -724,7 +942,7 @@ All in all random forest is my final model of choice: it appears the more balanc
 
 ## Tuning
 http://rstudio-pubs-static.s3.amazonaws.com/480890_237ad52b09b6440e9c849a3c07a04d2f.html
-```{r include=FALSE}
+```{r Tuning, include=FALSE}
 cache = TRUE
 set.seed(1000)
 train_control <- trainControl(method = "repeatedcv", 
@@ -774,7 +992,7 @@ rf1 %>% my_plot()
 
 I will further refine this model using recursive feature elimination and compare accuracy with the other models.
 
-```{r}
+```{r Recursive Feature Elimination}
 
 my_ctrl <- rfeControl(functions = rfFuncs, #random forests
                       method = "repeatedcv",
@@ -952,7 +1170,7 @@ dotplot(results)
 
 ### Final Model
 Now that we have optimized the variables for our final model, we will build and save the final simplified model that has the highest accuracy.
-```{r}
+```{r Final Model}
 tunegrid <- expand.grid(.mtry=c(7))
 
 final_model <- train(effect_10~., data = train_final, method = "rf", ntree = 2500, tuneLength = 5)
