@@ -8,8 +8,8 @@
 
 # Load packages
 library(tidyverse) #General everything
-library(RColorBrewer)
-library(ggplot2) #General plotting
+library(RColorBrewer) #color palette
+library(ggplot2) #plotting
 library(ggrepel) #For adding text labels that repel away from data points
 library(calecopal) #Color palette
 library(shiny) #Runs shiny
@@ -30,8 +30,6 @@ library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
 #library(bslib) #better themes
 #library(thematic) #complete control over themes (including plots)
-
-
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -332,10 +330,10 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
                                             af.time_noNA == 1 ~ "Chronic",
                                             af.time_noNA == "Unavailable" ~ "Unavailable"))) %>% #factorize assesment factor time into chronic/acute
-  mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Y" ~ "Red Criteria Failed",
-                                             tech.tier.zero == "N" ~ "Red Criteria Passed"))) %>% 
-  mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Y" ~ "Red Criteria Failed",
-                                             risk.tier.zero == "N" ~ "Red Criteria Passed")))
+  mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
+                                             tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
+  mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
+                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed")))
 
 #### SSD AO Setup ####
 
@@ -414,7 +412,7 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
-                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/heili-lowman/", 'Dr. Heili Lowman'),", Southern California Coastal Water Research Project ",
+                    p(align = "center", "Heili Lowman, Southern California Coastal Water Research Project ",
                       tags$a(href="https://twitter.com/heili_lowman", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/hlowman", tags$img(src="github.png", width="2%", height="2%"))), 
                     p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
                       tags$a(href="https://twitter.com/DrSCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
@@ -504,7 +502,7 @@ column(width = 12,
 
 
 #### Exploration AO UI ####
-                  tabPanel("3: Exploration",
+                tabPanel("3: Exploration",
                     shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                     id = "heili-tab", # adds ID for resetting Heili's tab's filters
                     
@@ -542,7 +540,7 @@ column(width = 12,
                     column(width = 12,
                       
                       column(width = 3,
-                      pickerInput(inputId = "lvl1_check", # endpoint checklist
+                        pickerInput(inputId = "lvl1_check", # endpoint checklist
                         label = "Broad Endpoint Category:", 
                         choices = levels(aoc_setup$lvl1_f),
                         selected = levels(aoc_setup$lvl1_f),
@@ -550,7 +548,7 @@ column(width = 12,
                         multiple = TRUE)), # allows for multiple inputs
                       
                       column(width = 3,
-                      pickerInput(inputId = "poly_check", # polymer checklist
+                        pickerInput(inputId = "poly_check", # polymer checklist
                         label = "Polymer:", 
                         choices = levels(aoc_setup$poly_f),
                         selected = levels(aoc_setup$poly_f),
@@ -558,7 +556,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "organism_check", # organismal group checklist
+                        pickerInput(inputId = "organism_check", # organismal group checklist
                         label = "Organisms:", 
                         choices = levels(aoc_setup$org_f),
                         selected = levels(aoc_setup$org_f),
@@ -566,7 +564,7 @@ column(width = 12,
                         multiple = TRUE)), 
                       
                       column(width = 3, 
-                      pickerInput(inputId = "bio_check", # bio org checklist
+                        pickerInput(inputId = "bio_check", # bio org checklist
                         label = "Level of Biological Organization", 
                         choices = levels(aoc_setup$bio_f),
                         selected = levels(aoc_setup$bio_f),
@@ -577,10 +575,10 @@ column(width = 12,
                     column(width = 12,
                       
                       column(width = 3,
-                      htmlOutput("secondSelection")), # dependent endpoint checklist
+                         htmlOutput("secondSelection")), # dependent endpoint checklist
                       
                       column(width = 3,
-                      pickerInput(inputId = "shape_check", # shape checklist
+                        pickerInput(inputId = "shape_check", # shape checklist
                         label = "Shape:", 
                         choices = levels(aoc_setup$shape_f),
                         selected = levels(aoc_setup$shape_f),
@@ -588,7 +586,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "env_check", # Environment checklist
+                        pickerInput(inputId = "env_check", # Environment checklist
                         label = "Environment:", 
                         choices = levels(aoc_setup$env_f),
                         selected = levels(aoc_setup$env_f),
@@ -602,7 +600,7 @@ column(width = 12,
                     column(width = 12,
                         
                       column(width = 3,
-                      pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
                         label = "Effect:",
                         choices = levels(aoc_setup$effect_f),
                         selected = levels(aoc_setup$effect_f),
@@ -610,7 +608,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "size_check", # Environment checklist
+                        pickerInput(inputId = "size_check", # Environment checklist
                         label = "Size Category:", 
                         choices = levels(aoc_setup$size_f),
                         selected = levels(aoc_setup$size_f),
@@ -618,7 +616,7 @@ column(width = 12,
                         multiple = TRUE)),
                       
                       column(width = 3,
-                      pickerInput(inputId = "life_check", # life stage checklist
+                        pickerInput(inputId = "life_check", # life stage checklist
                         label = "Life Stages:", 
                         choices = levels(aoc_setup$life_f),
                         selected = levels(aoc_setup$life_f),
@@ -631,8 +629,9 @@ column(width = 12,
                                          choices = levels(aoc_setup$acute.chronic_f),
                                          selected = levels(aoc_setup$acute.chronic_f),
                                          options = list(`actions-box` = TRUE), 
-                                         multiple = TRUE)),
-                      
+                                         multiple = TRUE))),
+                      column(width = 12,
+                             
                       column(width = 3,offset = 9,  
                              p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
 
@@ -697,7 +696,8 @@ column(width = 12,
                                             list(light = "light", dark = "dark")),
                          
                                 selectInput(inputId = "color.type_exp", "Color Theme:", 
-                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")))),
+                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA"))),
+                         ), #close out column
 
 
                     # New row of widgets
@@ -725,8 +725,8 @@ column(width = 12,
                           br(),
                           strong(p("To Begin: Click the 'Update Filters' button above.")),
                           br()),
-                        column(width = 3),
-                        column(width = 3,
+                        
+                        column(width = 3, offset = 3,
                           br(),
                           strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")),
                           br())), 
@@ -736,37 +736,37 @@ column(width = 12,
                     hr(), # adds divider
                     
                     column(width = 12,
-                    plotOutput(outputId = "organism_plot_react"),
+                    plotOutput(outputId = "organism_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                   
                     column(width = 12,
-                    plotOutput(outputId = "lvl_plot_react"),
+                    plotOutput(outputId = "lvl_plot_react", height = "600px"),
                     br())), 
 
                     column(width = 12,
                     
                     column(width = 12,
-                    plotOutput(outputId = "lvl2_plot_react"),
+                    plotOutput(outputId = "lvl2_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                            
                     column(width = 12,
-                    plotOutput(outputId = "size_plot_react"),
+                    plotOutput(outputId = "size_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                   
                     column(width = 12,
-                    plotOutput(outputId = "shape_plot_react"),
+                    plotOutput(outputId = "shape_plot_react", height = "600px"),
                     br())), 
                     
                     column(width = 12,
                 
                     column(width = 12,
-                    plotOutput(outputId = "poly_plot_react"),
+                    plotOutput(outputId = "poly_plot_react", height = "600px"),
                     br()))), 
 
 #### SSD AO UI ####
@@ -1078,7 +1078,7 @@ column(width = 12,
                                      column(width = 4,
                                      downloadButton("downloadSsdPlot", "Download Plot", class = "btn-info"), #download ssdplot
                                      align = "center"),
-                                     #),
+                                     
                               br(),
                               
                               selectInput(inputId = "theme.type", "Dark or Light Mode:", 
@@ -1111,7 +1111,7 @@ tabPanel("5: Resources",
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=nlPaGl", 'Quality Screening: Red Criteria')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=AgH5bs", 'Quality Screening: Red Criteria')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
@@ -1438,9 +1438,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1474,7 +1474,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       group_by(org_f, effect_f) %>% # need to include so there's a recognized "y"
       summarize(dose_new = quantile(dose_new, .1), # need for recognized "x"
                 measurements = n(),
-                studies = n_distinct(article))
+                studies = n_distinct(article)) 
    
     p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f, fill = effect_f)) +
       plot.type + #adds user-defined geom()
@@ -1488,9 +1488,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_fill_manual(values = c("#FD8D3C", "#7F2704")) +
       geom_label_repel(data = aoc_org1,
                       aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                      hjust = 0,
+                      direction = "y", 
+                      nudge_x = 1000000000,
+                      segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
       theme(text = element_text(size=18), 
@@ -1521,9 +1522,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1570,10 +1571,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       #scale_color_manual(values = c("#A1CAF6", "#4C6FA1")) +
       #scale_fill_manual(values = c("#A1CAF6", "#4C6FA1")) +
       geom_label_repel(data = aoc_size1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       theme(text = element_text(size=18), 
         legend.position = "right") +
@@ -1601,9 +1603,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     #Theme type
     theme.type<-switch(input$theme.type_exp,
@@ -1649,10 +1651,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#C7EAE5","#35978F")) +
       #scale_fill_manual(values = c("#C7EAE5", "#35978F")) +
       geom_label_repel(data = aoc_shape1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       #theme_classic() +
       theme(text = element_text(size=18), 
@@ -1680,9 +1683,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1729,10 +1732,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       #scale_color_manual(values = c("#FAB455", "#A5683C")) +
       #scale_fill_manual(values = c("#FAB455", "#A5683C")) +
       geom_label_repel(data = aoc_poly1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
      theme.type +
       # theme_classic() +
       theme(text = element_text(size=18),
@@ -1761,9 +1765,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1810,10 +1814,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl1_1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
       theme(text = element_text(size=18),
@@ -1842,9 +1847,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #plot types
     plot.type<-switch(input$plot.type,
-                      "boxplot" 	= geom_boxplot(alpha = 0.7, aes(color = effect_f)),
-                      "violin" = geom_violin(alpha = 0.7, aes(color = effect_f)),
-                      "beeswarm" = geom_quasirandom(alpha = 0.7, aes(color = effect_f), 
+                      "boxplot" 	= geom_boxplot(alpha = 0.8, aes(color = effect_f)),
+                      "violin" = geom_violin(alpha = 0.8, aes(color = effect_f)),
+                      "beeswarm" = geom_quasirandom(alpha = 0.8, aes(color = effect_f), 
                                                     method = "smiley", groupOnX = FALSE, cex = 2)) #groupOnX specifies groups on y axis
     
     #Theme type
@@ -1891,10 +1896,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # scale_color_manual(values = c("#A99CD9", "#6C568C")) +
       # scale_fill_manual(values = c("#A99CD9", "#6C568C")) +
       geom_label_repel(data = aoc_lvl2_1,
-                      aes(label = paste("(",measurements,",",studies,")")),
-                      nudge_x = 1000,
-                      nudge_y = 0,
-                      segment.colour = NA, size = 5) +
+                       aes(label = paste("(",measurements,",",studies,")")),
+                       hjust = 0,
+                       direction = "y", 
+                       nudge_x = 1000000000,
+                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       # theme_classic() +
     theme.type +
       theme(text = element_text(size=18),
