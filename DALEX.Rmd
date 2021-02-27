@@ -15,7 +15,22 @@ output:
 ---
 ```{r global-options, include=FALSE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
-                      warning=FALSE, message=FALSE, echo = FALSE)
+                      warning=FALSE, message=FALSE, echo = FALSE,
+                      time_it = TRUE) #report time to knit for all chunks
+
+#knit time reporter
+all_times <- list()  # store the time for all chunks in a list
+knitr::knit_hooks$set(time_it = local({
+  now <- NULL
+  function(before, options) {
+    if (before) {
+      now <<- Sys.time()
+    } else {
+      res <- difftime(Sys.time(), now)
+      all_times[[options$label]] <<- res
+    }
+  }
+}))
 ```
 
 
@@ -358,6 +373,9 @@ aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 ```
 ## Data Selection
+
+**Important**: this dataset has ONLY been filtered for 'red' criteria for technical quality.
+
 ```{r}
 df <- aoc_z %>% 
   filter(tech.tier.zero == "N") %>% #gives studies that pass technical quality criteria
@@ -1225,6 +1243,11 @@ ggplot(data = plotTable, mapping = aes(x = Reference, y = Prediction, fill = pro
 
 
 # Machine Settings
+Time to knit:
+```{r}
+all_times
+```
+
 
 Machine Info:
 ```{r}

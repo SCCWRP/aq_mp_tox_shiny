@@ -15,7 +15,7 @@ output:
 ---
 ```{r global-options, include=FALSE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
-                      warning=FALSE, message=FALSE, echo = FALSE)
+                      warning=FALSE, message=FALSE)
 ```
 ---
 
