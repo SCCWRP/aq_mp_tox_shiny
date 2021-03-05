@@ -307,11 +307,12 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl2 == "shoaling"~"Shoaling",
     lvl2 == "stress"~"Stress",
     lvl2 == "vision.system"~"Vision System"))) %>% #Renames for widget
-  mutate(bio_f = factor(case_when(bio.org == "cell"~"Cell", #Bio Org Data Tidying
-    bio.org == "organism"~"Organism",
-    bio.org == "population"~ "Population",
+  mutate(bio_f = factor(case_when( #Bio Org Data Tidying
     bio.org == "subcell"~"Subcell",
-    bio.org == "tissue" ~ "Tissue")))%>%
+    bio.org == "cell"~"Cell",
+    bio.org == "tissue" ~ "Tissue",
+    bio.org == "organism"~"Organism",
+    bio.org == "population"~ "Population")))%>%
   mutate(vivo_f = factor(case_when(invitro.invivo == "invivo"~"In Vivo",
     invitro.invivo == "invitro"~"In Vitro")))%>% ##Renames for widget (Not using a widget right now, but saving for human health database)
   mutate(life_f = factor(case_when(life.stage == "Early"~"Early",
@@ -810,6 +811,7 @@ column(width = 12,
                            column(width = 2,
                                   htmlOutput("SpeciesSelection")),
                            
+
                            #level of biological organization - reactive to environment, group, and species
                            column(width = 2,
                                   htmlOutput("BiologicalSelection")),
@@ -825,10 +827,12 @@ column(width = 12,
                            
                            ), #closes out column
                     
+                    
+                
                     # Warning label for exposure duration 
                     column(width=12,
                            
-                           column(width = 3, offset = 9,
+                           column(width = 3, 
                                   p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
                            
                     ), #closes out column
@@ -847,7 +851,7 @@ column(width = 12,
                            
                     ), #closes out column      
                     
-                    # Row 2 of widgets 
+                    # Row 3 of widgets 
                     column(width = 12,
                            
                            #Size widget
@@ -874,7 +878,7 @@ column(width = 12,
                            
                             ), #closes out column
                     
-                    #Row 3 of widgets 
+                    #Row 4 of widgets 
                     column(width = 12,    
                            
                            #Morphology widget
@@ -896,7 +900,7 @@ column(width = 12,
                            
                            ),#close out column
                     
-                    #Row 4 of widgets
+                    #Row 5 of widgets
                     column(width = 12,
                            
                            #Polymer widget
@@ -916,7 +920,7 @@ column(width = 12,
                     ), #closes out column  
                     
                     
-                    #Row 5 of widgets
+                    #Row 6 of widgets
                     column(width = 12, 
                            
                            #Dose unit selection
@@ -2042,6 +2046,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
     poly_c_ssd <- input$poly_check_ssd #assign polymer input
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
@@ -2052,6 +2057,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       filter(poly_f %in% poly_c_ssd) %>%  # filter polymers from other checkbox
+      filter(bio_f %in% bio_c_ssd) %>%  # filter bio org from other checkbox
       filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
     mutate(shape_f_new = factor(as.character(shape_f))) # new subset of factors
@@ -2072,6 +2078,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
@@ -2081,6 +2088,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(bio_f %in% bio_c_ssd) %>%  # filter bio org from other checkbox
       filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       mutate(lvl1_f_new = factor(as.character(lvl1_f))) # new subset of factors
@@ -2098,6 +2106,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
@@ -2106,6 +2115,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(bio_f %in% bio_c_ssd) %>%  # filter bio org from other checkbox
       filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
@@ -2124,6 +2134,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     lvl2_c_ssd <- input$lvl2_check_ssd #assign endpoints
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
@@ -2134,6 +2145,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
+      filter(bio_f %in% bio_c_ssd) %>%  # filter bio org from other checkbox
       filter(lvl2_f %in% lvl2_c_ssd) %>%  #filter by second level endpoints
       filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
@@ -2160,6 +2172,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     shape_c_ssd <- input$shape_check_ssd #assign shapes
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
@@ -2229,6 +2242,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
+      dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by bio org inputs
       dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
@@ -2253,6 +2267,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     shape_c_ssd <- input$shape_check_ssd #assign shapes
+    bio_c_ssd <- input$bio_check_ssd #assign bio org input
     effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
@@ -2323,6 +2338,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by specific endpoints inputs
       dplyr::filter(poly_f %in% poly_c_ssd) %>% #filter by polymer inputs
       dplyr::filter(shape_f %in% shape_c_ssd) %>% #filter by shape inputs
+      dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by bio org inputs
       dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
