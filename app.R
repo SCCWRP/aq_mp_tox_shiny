@@ -330,6 +330,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
                                             af.time_noNA == 1 ~ "Chronic",
                                             af.time_noNA == "Unavailable" ~ "Unavailable"))) %>% #factorize assesment factor time into chronic/acute
+  mutate(af.noec = replace_na(af.noec, 1)) %>% #replace assessment factor with 1, or else it get's excluded from analysis
+  mutate(af.time = replace_na(af.time, 1)) %>% #replace assessment factor with 1, or else it get's excluded from analysis
   mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
                                              tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
   mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
@@ -790,7 +792,7 @@ column(width = 12,
                     column(width = 12,
                            
                            #Environment widget
-                           column(width = 3,
+                           column(width = 2,
                                   # alternative to fully listed checklists
                                   # requires shinyWidgets package
                                   pickerInput(inputId = "env_check_ssd", # environment checklist
@@ -801,21 +803,26 @@ column(width = 12,
                                               multiple = TRUE)), # allows for multiple inputs
                            
                            #Organism group widget - reactive to environment
-                           column(width = 3,
+                           column(width = 2,
                                   htmlOutput("GroupSelection")), # organism checklist
                           
                            #Species widget - reactive to environment 
-                           column(width = 3,
+                           column(width = 2,
                                   htmlOutput("SpeciesSelection")),
                            
+                           #level of biological organization - reactive to environment, group, and species
+                           column(width = 2,
+                                  htmlOutput("BiologicalSelection")),
+                           
                            #acute/chronic widget
-                           column(width = 3,
+                           column(width = 2,
                                   pickerInput(inputId = "acute.chronic_check_ssd", # chronic/acute checklist
                                               label = "Exposure Duration Type*:", 
                                               choices = levels(aoc_z$acute.chronic_f),
                                               selected = levels(aoc_z$acute.chronic_f),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
+                           
                            ), #closes out column
                     
                     # Warning label for exposure duration 
@@ -973,8 +980,8 @@ column(width = 12,
                            column(width = 3,
                                   radioButtons(
                                     inputId = "conc.select.rad",
-                                    label = "What should be considered the 'sensitive' concentration for each species?",
-                                    choices = list("minimum", "lower 95% CI", "median", "mean"),
+                                    label = "What summary statistic should be used for each species?",
+                                    choices = list("minimum", "lower95%CI", "1stQuartile", "median", "mean", "3rdQuartile", "upper95%CI", "maximum"),
                                     selected = "mean")),
                            
                     ),#close out column
@@ -1990,6 +1997,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     #Assign user inputs to variables for this reactive
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
@@ -2000,6 +2008,28 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 label = "Species:", 
                 choices = levels(aoc_new$Species_new),
                 selected = levels(aoc_new$Species_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Create dependent dropdown checklists: select biological organization by env, group, and species
+  output$BiologicalSelection <- renderUI({
+    
+    #Assign user inputs to variables for this reactive
+    env_c_ssd <- input$env_check_ssd #assign environments
+    Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    Species_c_ssd <- input$Species_check_ssd #species select
+    
+    #filter based on user input
+    aoc_new <- aoc_z %>% # take original dataset
+      filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
+      filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      filter(Species %in% Species_c_ssd) %>% # filter by organism inputs
+      mutate(bio_f_new = factor(as.character(bio_f))) # new subset of factors
+    
+    pickerInput(inputId = "bio_check_ssd", 
+                label = "Biological Organization:", 
+                choices = levels(aoc_new$bio_f_new),
+                selected = levels(aoc_new$bio_f_new),
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)})
   
@@ -2123,6 +2153,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    bio_c_ssd <- input$bio_check_ssd #level of biological organization
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign broad endpoints
@@ -2185,9 +2216,14 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
+      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new / (af.time * af.noec), #composite assessment factors
+                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new / af.time,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new / af.noec,
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
+      dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by species inputs
       dplyr::filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by broad inputs
       dplyr::filter(lvl2_f %in% lvl2_c_ssd) %>% # filter by level inputs
@@ -2197,14 +2233,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
-      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
-                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new * af.time,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new * af.noec,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       group_by(Species) %>% 
+      drop_na(dose_new) %>% 
             summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
-      mutate_if(is.numeric, ~ signif(., 4)) %>% 
-      drop_na() #must drop NAs or else nothing will work
+      mutate_if(is.numeric, ~ signif(., 4))
         })
   
   # Create new effect dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
@@ -2214,6 +2246,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
+    bio_c_ssd <- input$bio_check_ssd #level of biological organization
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
     lvl1_c_ssd <- input$lvl1_check_ssd #assign general endpoints
@@ -2226,7 +2259,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
-    conc.select.r <- input$conc.select.rad #concentration selector (minimum, lower 95% CI, median, mean)
+    conc.select.r <- input$conc.select.rad #concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
@@ -2277,8 +2310,13 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #right-hand table of just effect data
     aoc_ssd <- aoc_z %>% 
+      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new / (af.time * af.noec),
+                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new / (af.time),
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new / (af.noec),
+                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
+      dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by species inputs
       dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       dplyr::filter(size_f %in% size_c_ssd) %>% #filter by size inputs
       dplyr::filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by generic endpoints inputs
@@ -2290,31 +2328,45 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
-      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new * af.time * af.noec,
-                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new * af.time,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new * af.noec,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
       group_by(Species, Group) %>%
-      summarise(Conc = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
+      summarise(micConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
       mutate_if(is.numeric, ~ signif(., 3))
    
     #dynamically change concentrations used based on user input
+    ###concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")###
     if(conc.select.r == "minimum"){
       aoc_ssd <- aoc_ssd %>% 
-        mutate(Conc = Conc)
+        mutate(Conc = micConcEffect)
     } 
-    if(conc.select.r == "CI95_LCL"){
+    if(conc.select.r == "lower95%CI"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = CI95_LCL)
     }
-    if(conc.select.r == "median"){
+    if(conc.select.r == "1stQuartile"){
       aoc_ssd <- aoc_ssd %>% 
-        mutate(Conc = medianConcEffect)
+        mutate(Conc = firstQuartileConcEffect)
     }
     if(conc.select.r == "mean"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = meanConcEffect)
     }
+    if(conc.select.r == "median"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = medianConcEffect)
+    }
+    if(conc.select.r == "3rdQuartile"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = thirdQuartileConcEffect)
+    }
+    if(conc.select.r == "upper95%CI"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = CI95_UCL)
+    }
+    if(conc.select.r == "maximum"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = MaxConcEffect)
+    }
+    
     #final table
     aoc_ssd
      })
@@ -2327,7 +2379,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     #join datasets (final)
     aoc_z_join <- right_join(aoc_z_L(), aoc_z_R(), by = "Species") 
     #order list
-    col_order <- c("Group", "Species", "Conc", "MinEffectType", "Minlvl2EffectType", "MinEnvironment", "MinDoi", "meanConcEffect", "medianConcEffect", "SDConcEffect", "MaxConcEffect", "CI95_LCL", "CI95_UCL", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
+    col_order <- c("Group", "Species", "Conc", "MinEffectType", "Minlvl2EffectType", "MinEnvironment", "MinDoi", "micConcEffect", "CI95_LCL", "firstQuartileConcEffect", "meanConcEffect", "medianConcEffect", "thirdQuartileConcEffect", "CI95_UCL", "MaxConcEffect", "SDConcEffect", "CountEffect", "MinConcTested", "MaxConcTested", "CountTotal")
     #reorder
     aoc_z_join_order <- aoc_z_join[, col_order]
     
@@ -2349,7 +2401,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 autoWidth = TRUE,
                 scrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
-              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Most Sensitive General Endpoint", "Most Sensitive Specific Endpoint", "Most Sensitive Environment", "DOI", "Average Effect Concentration", "Median Effect Concentration", "Std Dev Effect Concentration", "Maximum Observed Effect Concentration", "95% Lower CI Concentration", "95% Upper CI Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Min Conc. Broad Endpoint", "Min Conc. Specfic Endpoint", "Min Environment", "DOI", "Minimum Effect Concentration", "95% Lower CI Effect Concentration", "1st Quartile Effect Concentration", "Average Effect Concentration", "Median Effect Concentration", "3rd Quartile Effect Concentration", "95% Upper CI Concentration", "Maximum Observed Effect Concentration", "Std Dev Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
         "Conc",
