@@ -331,8 +331,6 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
                                             af.time_noNA == 1 ~ "Chronic",
                                             af.time_noNA == "Unavailable" ~ "Unavailable"))) %>% #factorize assesment factor time into chronic/acute
-  mutate(af.noec = replace_na(af.noec, 1)) %>% #replace assessment factor with 1, or else it get's excluded from analysis
-  mutate(af.time = replace_na(af.time, 1)) %>% #replace assessment factor with 1, or else it get's excluded from analysis
   mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
                                              tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
   mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
@@ -781,7 +779,9 @@ column(width = 12,
                     p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).'), "In brief, an assessment factor of 10 is applied to convert LC/EC25-50 to NOEC, 2 to convert EC/LC20, LOEC, or MIC to NOEC. LC10, EC10 and HONEC are considered equivalent to LOEC. An assessment factor of 10 is applied to convert acute-to-chronic, with determinations of such categories dependent on taxa, as defined in the reference."),
                     br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
-                    
+                    br(),
+                    p(strong("Warning: Using yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+ 
                     # Row 1 of Headers
                     column(width=12,
                            
@@ -819,24 +819,15 @@ column(width = 12,
                            #acute/chronic widget
                            column(width = 2,
                                   pickerInput(inputId = "acute.chronic_check_ssd", # chronic/acute checklist
-                                              label = "Exposure Duration Type*:", 
+                                              label = "Exposure Duration Type:", 
                                               choices = levels(aoc_z$acute.chronic_f),
                                               selected = levels(aoc_z$acute.chronic_f),
-                                              options = list(`actions-box` = TRUE), 
+                                              options = list(`actions-box` = TRUE, style = "btn-warning"), 
                                               multiple = TRUE)),
                            
                            ), #closes out column
                     
                     
-                
-                    # Warning label for exposure duration 
-                    column(width=12,
-                           
-                           column(width = 3, 
-                                  p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
-                           
-                    ), #closes out column
-                     
                     # Row 2 of Headers
                     column(width=12,
                            
@@ -968,28 +959,30 @@ column(width = 12,
                           
                            #Assessment factor - time
                            column(width = 3,
-                           radioButtons(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
+                                  pickerInput(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
                                         label = "Apply Assessment Factor for acute and sub-chronic to chronic?",
-                                        choices = c("yes", "no"),
-                                        selected = "no")),
+                                        choices = c("Yes", "No"),
+                                        options = list(style = "btn-warning"),
+                                        selected = "No")),
                            
                            #Assessment factor - noec conversion
                            column(width = 3,
-                           radioButtons(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
+                                  pickerInput(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
                                         label = "Apply Assessment Factor to convert dose descriptors into NOECs?",
-                                        choices = c("yes", "no"),
-                                        selected = "no")),
+                                        choices = c("Yes", "No"),
+                                        options = list(style = "btn-warning"),
+                                        selected = "No")),
                            
                            #concentration selector (minimum, lower 95% CI, median, mean)
                            column(width = 3,
-                                  radioButtons(
+                                  pickerInput(
                                     inputId = "conc.select.rad",
                                     label = "What summary statistic should be used for each species?",
-                                    choices = list("minimum", "lower95%CI", "1stQuartile", "median", "mean", "3rdQuartile", "upper95%CI", "maximum"),
-                                    selected = "mean")),
+                                    choices = list("Minimum", "Lower 95% CI", "1st Quartile", "Median", "Mean", "3rd Quartile", "Upper 95% CI", "Maximum"),
+                                    selected = "Mean")),
                            
                     ),#close out column
-                    
+
                     br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
@@ -1065,7 +1058,7 @@ column(width = 12,
                                 actionButton("ssdPred", "Predict", class = "btn-success"),
                                 align = "center"), # adds action button, "SSDpred" is the internal name to refer to the button # "Predict" is the title that appears on the app
                               br(),
-                              p("Please be patient as maximum likelihood estimations are calculated. If a high number of boostrap simulations are chosen (>100), this may take up to several minutes."),
+                              p("Please be patient as maximum likelihood estimations are calculated. If a high number of bootstrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
                               h4("Species Sensitivity Distribution", align = "center"),
                               plotOutput(outputId = "aoc_ssd_ggplot", width = "140%", height = "500px", hover = hoverOpts(id = "plot_hover")),
@@ -2229,10 +2222,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
-      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new / (af.time * af.noec), #composite assessment factors
-                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new / af.time,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new / af.noec,
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      mutate(dose_new = case_when(AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.time * af.noec), #composite assessment factors
+                                  AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / af.time,
+                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / af.noec,
+                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -2325,10 +2318,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #right-hand table of just effect data
     aoc_ssd <- aoc_z %>% 
-      mutate(dose_new = case_when(AF.time_r_ssd == "yes" & AF.noec_r_ssd == "yes" ~ dose_new / (af.time * af.noec),
-                                  AF.time_r_ssd == "yes" & AF.noec_r_ssd == "no" ~ dose_new / (af.time),
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "yes" ~ dose_new / (af.noec),
-                                  AF.time_r_ssd == "no" & AF.noec_r_ssd == "no" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      mutate(dose_new = case_when(AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.time * af.noec),
+                                  AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / (af.time),
+                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.noec),
+                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by species inputs
@@ -2350,35 +2343,35 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    
     #dynamically change concentrations used based on user input
     ###concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")###
-    if(conc.select.r == "minimum"){
+    if(conc.select.r == "Minimum"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = micConcEffect)
     } 
-    if(conc.select.r == "lower95%CI"){
+    if(conc.select.r == "Lower 95% CI"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = CI95_LCL)
     }
-    if(conc.select.r == "1stQuartile"){
+    if(conc.select.r == "1st Quartile"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = firstQuartileConcEffect)
     }
-    if(conc.select.r == "mean"){
+    if(conc.select.r == "Mean"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = meanConcEffect)
     }
-    if(conc.select.r == "median"){
+    if(conc.select.r == "Median"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = medianConcEffect)
     }
-    if(conc.select.r == "3rdQuartile"){
+    if(conc.select.r == "3rd Quartile"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = thirdQuartileConcEffect)
     }
-    if(conc.select.r == "upper95%CI"){
+    if(conc.select.r == "Upper 95% CI"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = CI95_UCL)
     }
-    if(conc.select.r == "maximum"){
+    if(conc.select.r == "Maximum"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = MaxConcEffect)
     }
