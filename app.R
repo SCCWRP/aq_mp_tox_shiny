@@ -780,7 +780,7 @@ column(width = 12,
                     br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     br(),
-                    p(strong("Warning: Using yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+                    p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
  
                     # Row 1 of Headers
                     column(width=12,
