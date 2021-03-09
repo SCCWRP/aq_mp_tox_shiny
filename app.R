@@ -1160,12 +1160,12 @@ column(width = 12,
                                          label = "Exposure Duration*:", 
                                          choices = levels(aoc_setup$acute.chronic_f),
                                          selected = levels(aoc_setup$acute.chronic_f),
-                                         options = list(`actions-box` = TRUE), 
+                                         options = list(`actions-box` = TRUE, style = "btn-warning"), 
                                          multiple = TRUE))),
                       column(width = 12,
                              
                       column(width = 3,offset = 9,  
-                             p("*Warning: Exposure duration selections will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae."))),
+                             p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")))),
 
                     # second row of widget headers
                     column(width=12,
