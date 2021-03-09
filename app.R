@@ -1643,10 +1643,33 @@ column(width = 12,
 #### Endpoint Category UI ####
 
 tabPanel("5: Endpoint Categorization", 
+         br(),
+         p("This plot displays the categorization of measured endpoints in the database. Nodes correspond to the Broad Endpoint Category (blue), 
+         the Specific Endpoint Category (green), Endpoints (pink) and the level of biological organization (purple). Alternatively, the widget below may be used to select
+         endpoints at various Biological Levels of Organization. Click nodes to expand and collapse the plot."),
+         br(),
          
+         column(width = 12,
          
+         column(width = 3, 
+                pickerInput(inputId = "bio_check_endpoint", # bio org checklist
+                            label = "Level of Biological Organization", 
+                            choices = levels(aoc_endpoint$bio_f),
+                            selected = levels(aoc_endpoint$bio_f),
+                            options = list(`actions-box` = TRUE),
+                            multiple = TRUE)),
+         ), #closes out button column
+         
+         column(width = 12,
+         
+         #Go button
+         column(width = 3,
+                actionButton("go_endpoint", "Update Filters", class = "btn-success")), # adds update action button
+         
+         ), #closes out button column
+         
+         #collapsible tree plot
          collapsibleTreeOutput("plot", height = "800px"),
-         
          
          ), #closes out tab
 
@@ -3343,25 +3366,34 @@ output$downloadSsdPlot <- downloadHandler(
 
   #### Endpoint Category S ####
   
+  aoc_filter_endpoint <- eventReactive(list(input$go_endpoint),{
+  
+  # biological organization widget
+  bio_c_endpoint <- input$bio_check_endpoint # assign bio values to "bio_c"
+  
+  aoc_endpoint %>% # take original dataset
+        filter(bio_f %in% bio_c_endpoint) #filter by bio organization
+  
+  })
+  
   output$plot <- renderCollapsibleTree({
     
-    collapsibleTree(aoc_endpoint, root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
-                    fontSize = 12,    
+    collapsibleTree(aoc_filter_endpoint(), root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
+                    fontSize = 16, zoomable = FALSE,    
     fill = c(
       # The root
       "seashell",
       # lvl1
-      rep("turquoise", length(unique(aoc_endpoint$lvl1_f))),
+      rep("turquoise", length(unique(aoc_filter_endpoint()$lvl1_f))),
       # lvl2
-      rep("palegreen", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f)))),
+      rep("palegreen", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f)))),
       # lvl3
-      rep("hotpink", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f, aoc_endpoint$lvl3_f)))),
+      rep("hotpink", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f)))),
       # bio org
-      rep("orchid", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f, aoc_endpoint$lvl3_f, aoc_endpoint$bio_f))))))
+      rep("orchid", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f, aoc_filter_endpoint()$bio_f))))))
     
   })  
   
-    
   } #Server end
 
 #### Full App ####
