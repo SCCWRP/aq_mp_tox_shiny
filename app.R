@@ -28,6 +28,7 @@ library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
+library(collapsibleTree) #plot type for endpoint category tree
 #library(bslib) #better themes
 #library(thematic) #complete control over themes (including plots)
 
@@ -271,6 +272,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     lvl2 == "body.condition"~"Body Condition",
     lvl2 == "boldness"~"Boldness",
     lvl2 == "brain.histo"~"Brain Histological Abnormalities",
+    lvl2 == "burrowing"~"Burrowing",
     lvl2 == "carb.metabolism"~"Carb Metabolism",
     lvl2 == "chemokines.cytokines"~"Chemokines",
     lvl2 == "circulatory"~"Circulatory",
@@ -872,6 +874,12 @@ aoc_z <- aoc_setup %>% # start with Heili's altered dataset (no filtration for t
 aoc_z$Species <- as.factor(paste(aoc_setup$genus,aoc_setup$species)) #must make value 'Species" (uppercase)
 aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
+
+#### Endpoint Category Setup ####
+
+aoc_endpoint <- aoc_setup %>% 
+  group_by(lvl1_f,lvl2_f,lvl3_f,bio_f) %>% 
+  summarise()
 
 #### User Interface ####
 #custom themes (EXPERIMENTAL, COMMENT OUT UNTIL SHINY UPDATES BUGS)
@@ -1632,9 +1640,19 @@ column(width = 12,
                           ) #closes out scott's main panel
                     ), #closes out Scott's tab panel
 
+#### Endpoint Category UI ####
+
+tabPanel("5: Endpoint Categorization", 
+         
+         
+         collapsibleTreeOutput("plot", height = "800px"),
+         
+         
+         ), #closes out tab
+
 #### Resources UI ####
 
-tabPanel("5: Resources", 
+tabPanel("6: Resources", 
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
@@ -1645,17 +1663,17 @@ tabPanel("5: Resources",
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXf0crCKDPVHo5xBEdw4PQwBxA8cnu0x4WY477CuEzZcPw?e=qs00V3", 'Dose Conversion Methods')),
          
          
-         verbatimTextOutput(outputId = "Leah2")),
+         verbatimTextOutput(outputId = "Leah3")),
 
 #### Contact UI ####
 
-tabPanel("6: Contact", 
+tabPanel("7: Contact", 
          br(),
          h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
          h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
          
-         verbatimTextOutput(outputId = "Leah3"))
+         verbatimTextOutput(outputId = "Leah4"))
 
 #following three parentheses close out UI. Do not delete. 
         )))   
@@ -3322,10 +3340,29 @@ output$downloadSsdPlot <- downloadHandler(
            legendtext=c("log-normal"),#,"log-logistic"),
            xlab = paste0("log10 ",particle_mass_check_ssd))
   })
+
+  #### Endpoint Category S ####
   
+  output$plot <- renderCollapsibleTree({
+    
+    collapsibleTree(aoc_endpoint, root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
+                    fontSize = 12,    
+    fill = c(
+      # The root
+      "seashell",
+      # lvl1
+      rep("turquoise", length(unique(aoc_endpoint$lvl1_f))),
+      # lvl2
+      rep("palegreen", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f)))),
+      # lvl3
+      rep("hotpink", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f, aoc_endpoint$lvl3_f)))),
+      # bio org
+      rep("orchid", length(unique(paste(aoc_endpoint$lvl1_f, aoc_endpoint$lvl2_f, aoc_endpoint$lvl3_f, aoc_endpoint$bio_f))))))
+    
+  })  
+  
+    
   } #Server end
-
-
 
 #### Full App ####
 shinyApp(ui = ui, server = server)
