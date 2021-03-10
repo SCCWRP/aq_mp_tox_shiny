@@ -28,8 +28,8 @@ library(ggbeeswarm) #plot all points
 library(fitdistrplus) #alt SSD 
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
-#library(bslib) #better themes
-#library(thematic) #complete control over themes (including plots)
+# library(bslib) #better themes. required for dark mode
+# library(thematic) #complete control over themes (including plots) required for dark mode
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -351,17 +351,21 @@ aoc_z$Group <- as.factor(aoc_z$organism.group) #must make value "Group"
 aoc_z$Group <- fct_explicit_na(aoc_z$Group) #makes sure that species get counted even if they're missing a group
 
 #### User Interface ####
+
 #custom themes (EXPERIMENTAL, COMMENT OUT UNTIL SHINY UPDATES BUGS)
-# light <- bs_theme()
-# dark <- bs_theme(bg = "black", fg = "white", primary = "purple")
+# light <- bs_theme() # DARK MODE SWITCH
+# dark <- bs_theme(bg = "black", fg = "white", primary = "purple") # DARK MODE SWITCH
+
 # build UI
 ui <- fluidPage(theme = shinytheme("flatly"), #light, 
-                
-                  # div(class = "custom-control custom-switch", 
-                  #   tags$input(id = "dark_mode", type = "checkbox", class = "custom-control-input",
-                  #     onclick = HTML("Shiny.setInputValue('dark_mode', document.getElementById('dark_mode').value);")),
-                  #   tags$label("Dark mode", `for` = "dark_mode", class = "custom-control-label")
-                  #   ),  
+
+                # #### DARK MODE SWITCH ####
+                #   div(class = "custom-control custom-switch",
+                #     tags$input(id = "dark_mode", type = "checkbox", class = "custom-control-input",
+                #       onclick = HTML("Shiny.setInputValue('dark_mode', document.getElementById('dark_mode').value);")),
+                #     tags$label("Dark mode", `for` = "dark_mode", class = "custom-control-label")
+                #     ),
+                # ####
   
   # App title
   titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
