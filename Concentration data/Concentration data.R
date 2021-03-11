@@ -21,10 +21,11 @@ SFEI <- read.csv("Concentration data/SFEI.csv", stringsAsFactors = TRUE) %>%
 # Adam et al (2019) data needs correcting
 adam <- read.csv("Concentration data/adam2019.csv", na.strings = "N.A.") %>% 
   mutate(x1M = Min.particle.size.um,
-         x2M = Max.particle.size.um)
+         x2M = Max.particle.size.um) %>% 
+  mutate(Sample.Type = "sample")
 
 #function to derive correction factor (CF) from Koelmans et al (equation 2)
-CFfnx = function(a = 1.6, #default alpha from Koelmans et al (2020)
+CFfnx = function(a = 2.5, #default alpha from Koelmans et al (2020)
                  x2D = 5000, #set detault values to convert ranges to (1-5,000 um) #5mm is upper defuault 
                  x1D = 1, #1 um is lower default size
                  x2M, x1M){
@@ -48,7 +49,7 @@ adam <- adam %>%
   mutate(System = factor(System))
 
 #write.csv(adam, "Concentration data/adam.csv") #write file so that I can manually add a column that says "sample"
-adam<- read.csv("Concentration data/adam.csv", stringsAsFactors = TRUE)
+#adam<- read.csv("Concentration data/adam.csv", stringsAsFactors = TRUE)
 
 ##### SSD prep ####
 # Guess_max ensures columns with lots of NAs are not imported as logical vectors, but as numeric/double.
@@ -694,14 +695,62 @@ samplesADAM <- adam %>%
 
 #make new dataframe to plot both histograms together
 sampleSimpleADAM <- samplesADAM %>%
-  select(Conc, Sample.Type) %>% 
+  dplyr::select(Conc, Sample.Type) %>% 
   droplevels()
 
 #make new dataframe to plot both histograms together
 dfADAM <- rbind(sampleSimpleADAM,food.dilution.simple)
 
+##### Environmental Occurence ##### 
+HC5 = 75.6 #Bart's number
 
-#histogram of both tox and concentrations 
+#calculate exceedance
+dfADAM_exceedance <- dfADAM %>% 
+  mutate(aboveHC5 = factor(case_when(
+    Conc >= HC5 ~ "above HC5",
+    Conc < HC5 ~ "below HC5",
+  )))
+
+#give summary stat for exceedance
+exceedance <- dfADAM_exceedance  %>%
+  filter(Sample.Type == "sample") %>% 
+  dplyr::select(c(Conc, aboveHC5)) %>%
+  group_by(aboveHC5) %>%
+  dplyr::summarize(n = n()) %>% 
+  mutate(rel.freq = paste0(round(100 * n/sum(n), 0), "%"))
+
+
+#generate plot
+dfADAM_exceedance %>% 
+  filter(Sample.Type == "sample") %>% 
+  ggplot(aes(x = Conc, fill = aboveHC5))+
+  geom_histogram(aes(y = ..count../sum(..count..)),bins = 50, alpha = 0.9, position = "identity") +
+  #geom_smooth(stat = 'density') +
+  geom_vline(xintercept = HC5, linetype = "dashed", color = "red") +
+  geom_text(aes(x = HC5- 0.5*HC5, y = 0.055), label = paste(HC5,"particles/L"),  color = "red") +
+  geom_text(aes(x = HC5- 0.5*HC5, y = 0.06), label = ("HC5"),  color = "red") +
+  geom_text(aes(x = HC5+ HC5, y = 0.050), label = paste(exceedance$rel.freq[1], "Above HC5"), color = "red") +
+  scale_x_log10() +
+  #coord_cartesian(xlim = c(0,100000000)) +
+  # scale_x_continuous(labels = scales::scientific) +
+  xlab("Concentration (particles/L)")+
+  scale_y_continuous(name = "Relative Density", labels = scales::percent)+
+  #scale_fill_discrete(labels = c("Environmental Concentration", "LOEC")) +
+  #scale_color_discrete(labels = c("Environmental Concentration", "LOEC")) +
+  labs(title = "Histograms of Concentrations in Adam et al 2019 Dataset",
+       caption = "Adam et al. 2019 data; all data corrected to 1-5,000 um; nominal particle/L",
+       fill = "Env. Conc. or Tox. Conc.",
+       color = "Env. Conc. or Tox. Conc.") +
+  theme_minimal() +
+  theme(legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size = 16),
+        axis.text =  element_text(size = 16),
+        legend.text = element_text(size =14),
+        legend.title = element_blank())
+
+
+##### histogram of both tox and concentrations  #####
 hist.tox.occurrence_ADAM <- dfADAM %>% 
   filter(Conc < 1000000000) %>% 
   ggplot(aes(x = Conc, fill = Sample.Type, color = Sample.Type))+
@@ -756,12 +805,12 @@ filter(System != "") %>%
   stat_ecdf(geom = "point", size = 2) +
   stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
   scale_color_manual(values = wes_palette("Darjeeling1"))+
-  geom_vline(xintercept = 75.6, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5, linetype = 'dashed', color = 'red') +
   geom_vline(xintercept = 11, linetype = 'dashed', color = 'red') +
   geom_vline(xintercept = 521, linetype = 'dashed', color = 	'red') +
-  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.07)+
-  geom_text(label = "5% hazard concentration", color = 'red', x = log10(105), y = 0.07)+
-  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.07)+
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.15)+
+  geom_text(label = paste("HC5:",HC5, "particles/L"), color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.15)+
   ylab("Cumulative Density") +
   xlab("Particles/L (1-5,000 um)")+
   scale_y_continuous(labels = scales::percent)+

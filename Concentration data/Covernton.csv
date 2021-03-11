@@ -1,0 +1,63 @@
+study,location,method,mesh,conc,sample.type,depth,volume
+This study,North-east Pacific,Bucket and sieve,63,910,Discrete,Surface,10
+This study,North-east Pacific,Grab sample,8,4780,Discrete,Surface,1
+Amelineau et al. 2016,Arctic Ocean,Vertical tow,500,1.69,Tow,Epipelagic,
+Aytan et al. 2016,Black Sea,Neuston net,200,900,Tow,Surface,
+Barrows et al. 2017,North-west Atlantic,Neuston net,335,5,Tow,Surface,791730
+Barrows et al. 2017,North-west Atlantic,Grab sample,0.45,5900,Discrete,Surface,1
+Barrows et al. 2018,Global Oceans,Jar sample,0.45,11800,Discrete,Surface,1
+Cai et al. 2018,North-west Pacific,Bongo net,333,0.045,Tow,Epipelagic,5789
+Cai et al. 2018,North-west Pacific,Pump,44,2569,Pump,Surface,3000
+Castillo et al. 2016,Persian Gulf,Plankton tow,120,0.71,Tow,Surface,3499
+Castro et al. 2016,South-west Atlantic,Plankton tow,150,16.4,Tow,Surface,
+Chae et al. 2015,North-west Pacific,Surface tension,0.75,1972,Surface,Surface,2.57
+Chae et al. 2015,North-west Pacific,Plankton net,330,0.08,Tow,Surface,100
+Chae et al. 2015,North-west Pacific,Hand-net,20,6.92,Dip net,Surface,100
+Cincinelli et al. 2017,Southern Ocean,Pump,1,0.17,Pump,Epipelagic,
+Cole et al. 2014,North-east Atlantic,Plankton net,200,0.27,Tow,Surface,69100
+Collignon et al. 2012,Mediterranean,Manta-trawl,333,0.116,Tow,Surface,
+Courtene-Jones et al. 2017,North-east Atlantic,Niskin bottles and filter,80,70.8,Discrete,Abyssalpelagic,10
+de Lucia et al. 2014,Mediterranean,Manta-trawl,500,0.15,Tow,Surface,614000
+Desforges et al. 2014,North-east Pacific,Pump,62.5,2080,Pump,Epipelagic,
+Di Mauro et al. 2017,North-west Atlantic,Bongo net,335,6,Tow,Epipelagic,45975
+Di Mauro et al. 2017,North-west Atlantic,Neuston net,335,11.1,Tow,Surface,23650
+Di Mauro et al. 2017,North-west Atlantic,Niskin bottles,0.7,102000,Discrete,Epipelagic,5
+Dubaish and Liebezeit 2013,North-east Atlantic,Bottles,1.2,76000,Discrete,Surface,6
+Frère et al. 2017,North-east Atlantic,Manta-trawl,335,0.24,Tow,Surface,
+Gajšt et al. 2016,Mediterranean,Neuston net,300,6.29,Tow,Surface,
+Gewert et al. 2017,North-east Atlantic,Manta-trawl,335,1.37,Tow,Surface,
+Gray et al. 2018,North-west Atlantic,Sea surface microlayer collection apparatus,63,18700,Surface,Surface,4
+Isobe et al. 2016,North-west Pacific,Neuston net,350,3.7,Tow,Surface,
+Isobe et al. 2017,Southern Ocean,Neuston net,350,0.031,Tow,Surface,415800
+Ivar do Sul et al. 2013,Equatorial Atlantic,Plankton net,300,0.01,Tow,Surface,
+Ivar do Sul et al. 2014,South-west Atlantic,Manta-trawl,300,0.0275,Tow,Surface,938
+Kang et al. 2015,North-east Pacific,Manta-trawl,330,3.71,Tow,Surface,
+Kang et al. 2015,North-east Pacific,Hand-net,50,753.77,Dip net,Surface,100
+Kang et al. 2015,North-east Pacific,Manta-trawl,330,3.72,Tow,Surface,
+Kanhai et al. 2017,South-east Atlantic,Pump,250,1.15,Pump,Epipelagic,2000
+Kanhai et al. 2018,Arctic Ocean,Pump,250,0.97,Pump,Epipelagic,2000
+Kanhai et al. 2018,Arctic Ocean,Niskin bottle,250,46.5,Discrete,Full water column,
+Kooi et al. 2016,North Atlantic,Multi-level trawl,500,0.68,Tow,Surface,
+Kooi et al. 2016,North Atlantic,Multi-level trawl,500,0.11,Tow,Epipelagic,
+Lima et al. 2014,South-west Atlantic,Plankton net,300,0.0217,Tow,Epipelagic,350
+Lusher et al. 2014,North-east Atlantic,Pump,250,2.46,Pump,Epipelagic,2000
+Lusher et al. 2015,Arctic Ocean,Manta-trawl,333,0.34,Tow,Surface,
+Lusher et al. 2015,Arctic Ocean,Pump,250,2.68,Pump,Epipelagic,2000
+Maes et al. 2017,North-east Atlantic,Manta-trawl,333,0.14,Tow,Surface,
+Panti et al. 2015,Mediterranean,Plankton net,200,0.17,Tow,Surface,945
+Sadri et al. 2014,North-east Atlantic,Manta-net,300,0.028,Tow,Surface,278
+Setälä et al. 2016,North-east Atlantic,Manta-trawl,333,0.2,Tow,Surface,2000
+Setälä et al. 2016,North-east Atlantic,Pump,300,0.6,Pump,Surface,2000
+Setälä et al. 2016,North-east Atlantic,Pump,100,1.3,Pump,Surface,2000
+Song et al. 2015,North-west Pacific,Surface-tension,0.75,88000,Surface,Surface,2.6
+Tamminga et al. 2018,North-east Atlantic,Manta trawl,300,0.07,Tow,Surface,156400
+Tamminga et al. 2018,North-east Atlantic,Integrated water sampler,300,1030,Discrete,Epipelagic,5
+Tang et al. 2018,North-west Atlantic,Manta trawl,330,514.3,Tow,Surface,309
+Tsang et al. 2016,North-west Pacific,Plankton tow,153,46.62,Tow,Surface,
+van der Hal et al. 2016,Mediterranean,Manta-trawl,333,7.68,Tow,Surface,111
+Wang et al. 2018,North-west Atlantic,Neuston net,333,0.33,Tow,Surface,
+Zhang et al. 2017,North-west Pacific,Manta-trawl,330,0.33,Tow,Surface,
+Zhao et al. 2014,North-west Pacific,Pump,32,4137,Pump,Surface,16.6
+Zhao et al. 2014,North-west Pacific,Neuston net,333,0.167,Tow,Surface,158000
+Zhao et al. 2015,North-west Pacific,Pump,330,960.4666667,Pump,Surface,20
+Zhu et al. 2018,North-west Atlantic,Niskin bottle,30,545,Discrete,Surface,25
