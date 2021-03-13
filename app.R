@@ -221,11 +221,12 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
     size.category == 1 ~ "1nm < 100nm",
     size.category == 2 ~ "100nm < 1µm",
-    size.category == 3 ~ "1µm < 100µm",
+    size.category == 3.1 ~ "1µm < 10µm",
+    size.category == 3.2 ~ "10µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "Not Reported"),
-    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape_f = factor(case_when(
     shape == "fiber" ~ "Fiber",
