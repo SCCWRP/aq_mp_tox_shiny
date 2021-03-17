@@ -144,17 +144,18 @@ aoc_work <- aoc %>%
 Fiber <- aoc_work %>%
   filter(shape_f == "Fiber") %>%
   filter(org_f != "Annelida") %>%
-  filter(life_f == "Early") %>% 
-  ggplot(aes(x = dose.particles.mL.master, y = org_f)) +
+  filter(effect_f != "NA") %>% 
+  # filter(life_f == "Early") %>% 
+  ggplot(aes(x = dose.particles.mL.master, y = org_f, fill = effect_f, color = effect_f)) +
   # geom_rect(alpha = 0.7, ymin = 0, ymax = Inf, xmin = log10(0), xmax = log10(0.03929), color = "black", fill = "gray87") + #Total particles SFEI grab sample range
   # geom_rect(alpha = 0.1, ymin = 0, ymax = Inf, xmin = log10(0), xmax = log10(0.03368), color = "black", fill = "mediumpurple1") + #Total fibers SFEI grab sample range
-  geom_boxplot(alpha = 0.8, show.legend = TRUE, aes(color = effect_f, fill = effect_f,)) +
+  geom_jitter(alpha = 0.8, size = 5, height = .2, width = .1) +
   scale_fill_manual(values = c("royalblue", "darkcyan"))+
-  scale_color_manual(values = c("black", "black"))+
+  scale_color_manual(values = c("royalblue", "darkcyan"))+
   theme_classic() +
   scale_x_log10() +
   theme(text = element_text(size = 18),
-        legend.position="none", 
+        legend.position="right", 
         legend.title = element_blank(),
         axis.text = element_text(color = "black")) +
   labs(x = "Concentration (particles/mL)", y = "Organism Group")

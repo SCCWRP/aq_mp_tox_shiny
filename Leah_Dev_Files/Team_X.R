@@ -150,15 +150,44 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                              risk.tier.zero == "Pass" ~ "Red Criteria Passed")))
 
 
+
+#### Correlation of Particle Mass to Volume ####
+
+VolumevMass <- aoc_setup %>%
+  mutate(mass_ug = (mass.per.particle.mg*1000)) %>%
+  group_by(particle.volume.um3, mass_ug) %>% 
+  summarise() %>% 
+  drop_na() %>% 
+  ggplot(aes(x = mass_ug, y = particle.volume.um3)) +
+  geom_point(color = "darkcyan", alpha = 0.5, size = 5, position = "jitter") + 
+  theme_bw()+
+  theme(text = element_text(size=14))+
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(title = "Particle Mass (µg) by Particle Volume (µm^3)", x = "Particle Mass (µg)", y = "Particle Volume (µm^3)") +
+  stat_smooth(method = "lm", col = "black")
+
+plot(VolumevMass)
+
+x <- aoc_setup %>%
+  mutate(mass_ug = (mass.per.particle.mg*1000)) %>%
+  group_by(particle.volume.um3, mass_ug) %>% 
+  summarise() %>% 
+  drop_na() %>% 
+  lm(formula = log10(mass_ug) ~ log10(particle.volume.um3))
+
+summary(x)
+
 #### Particle Volume Histogram ####
 
 Volume <- aoc_setup %>% 
   drop_na(particle.volume.um3) %>% 
   ggplot(aes(x = particle.volume.um3)) + 
-  geom_histogram(bins = 100, color = "darkmagenta", fill = "darkmagenta")+
+  geom_histogram(bins = 50, color = "darkmagenta", fill = "darkmagenta")+
   scale_x_log10()+
   theme_minimal()+
   theme(text = element_text(size = 14))+
+  ylim(0,500)+
   labs(title = "Distribution of Particle Volume",
        subtitle = "Aquatic Organisms Database",
        x = "Particle Volume (µm^3)",
@@ -173,10 +202,11 @@ Mass <- aoc_setup %>%
   drop_na(mass.per.particle.mg) %>% 
   mutate(mass_ug = (mass.per.particle.mg*1000)) %>% 
   ggplot(aes(x = mass_ug)) + 
-  geom_histogram(bins = 100, color = "darkcyan", fill = "darkcyan")+
+  geom_histogram(bins = 50, color = "darkcyan", fill = "darkcyan")+
   scale_x_log10()+
   theme_minimal()+
   theme(text = element_text(size = 14))+
+  ylim(0,500)+
   labs(title = "Distribution of Particle Mass",
        subtitle = "Aquatic Organisms Database",
        x = "Particle Mass (µg)",
@@ -184,22 +214,6 @@ Mass <- aoc_setup %>%
        caption = "Each data point is a measured endpoint/row in the database.\nNumber of bins = 100.")
 
 plot(Mass)
-
-#### Particle Mass Histogram ####
-
-Volume <- aoc_setup %>% 
-  ggplot(aes(x = particle.volume.um3)) + 
-  geom_histogram(bins = 100, color = "darkmagenta", fill = "darkmagenta")+
-  scale_x_log10()+
-  theme_minimal()+
-  theme(text = element_text(size = 14))+
-  labs(title = "Distribution of Particle Volume",
-       subtitle = "Aquatic Organisms Database",
-       x = "Particle Volume (µm^3)",
-       y = "Count",
-       caption = "Each data point is a measured endpoint/row in the database.\nNumber of bins = 100.")
-
-plot(Volume)
 
 ### Size Vs. Dose - Counts####
 
@@ -305,6 +319,35 @@ Mass <- aoc_setup %>%
   stat_smooth(method = "lm", col = "black")
 
 plot(Mass)
+
+### Dose - Volume Vs. Dose - Mass ####
+
+Mass_Vol <- aoc_setup %>%
+  filter(dose.mg.L.master.converted.reported == "reported") %>%
+  group_by(dose.mg.L.master, dose.um3.mL.master) %>% 
+  summarise() %>% 
+  distinct() %>% 
+  drop_na() %>% 
+  ggplot(aes(x = dose.mg.L.master, y = dose.um3.mL.master)) +
+  geom_point(color = "deeppink3", alpha = 0.5) +
+  theme_bw()+
+  theme(text = element_text(size=14))+
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(title = "Dose (Volume/Volume) by Dose (Mass/Volume)", x = "Dose (mg/L)", y = "Dose (µm^3/mL)")+
+  stat_smooth(method = "lm", col = "black")
+
+plot(Mass_Vol)
+
+Mass_Vol_Model <- aoc_setup %>%
+  filter(dose.mg.L.master.converted.reported == "reported") %>%
+  group_by(dose.mg.L.master, dose.um3.mL.master) %>% 
+  summarise() %>% 
+  distinct() %>% 
+  drop_na() %>%  
+  lm(formula = log10(dose.mg.L.master) ~ log10(dose.um3.mL.master))
+
+summary(Mass_Vol_Model)
 
 ### Dose - Counts Vs. Dose - Mass ####
 
