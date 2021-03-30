@@ -948,10 +948,10 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
-                    p(align = "center", "Heili Lowman, Southern California Coastal Water Research Project ",
-                      tags$a(href="https://twitter.com/heili_lowman", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/hlowman", tags$img(src="github.png", width="2%", height="2%"))), 
                     p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
                       tags$a(href="https://twitter.com/DrSCoffin", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/ScottCoffin", tags$img(src="github.png", width="2%", height="2%"))),
+                    p(align = "center", "Heili Lowman, Southern California Coastal Water Research Project ",
+                      tags$a(href="https://twitter.com/heili_lowman", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/hlowman", tags$img(src="github.png", width="2%", height="2%"))), 
                     p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
                     p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
                       tags$a(href="https://twitter.com/HermabessiereL", tags$img(src="twitter.png", width="2%", height="2%"))),
@@ -1488,7 +1488,7 @@ column(width = 12,
                                   pickerInput(inputId = "effect.metric_rad_ssd", # effect metric checklist
                                               label = "Effect Metric:",
                                               choices = levels(aoc_z$effect.metric),
-                                              selected = c("HONEC", "NOEC"),
+                                              selected = c("LOEC", "NOEC"),
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)), # allows for multiple inputs
                           
