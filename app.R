@@ -215,17 +215,18 @@ aoc_v1 <- aoc %>% # start with original dataset
     effect == "N" ~ "No"),
     levels = c("No", "Yes"))) %>%
   # removing NAs to make data set nicer
-  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported"))
+  replace_na(list(size.category = 0, shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported", chem.exp.typ.nominal = "Particle Only"))
 
 aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
     size.category == 1 ~ "1nm < 100nm",
     size.category == 2 ~ "100nm < 1µm",
-    size.category == 3 ~ "1µm < 100µm",
+    size.category == 3.1 ~ "1µm < 10µm",
+    size.category == 3.2 ~ "10µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "Not Reported"),
-    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape_f = factor(case_when(
     shape == "fiber" ~ "Fiber",
@@ -859,7 +860,13 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
                                              tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
   mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
-                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed")))
+                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
+  #Remove leachate and additive/chemical transfer experiments
+  dplyr::filter(leachate.only != "Y") %>%
+  mutate(chem.exp.typ.nominal_f = factor(case_when(chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
+                                                   chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
+                                                   chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>% 
+  dplyr::filter(chem.exp.typ.nominal_f == "Particle Only")
 
 #### SSD AO Setup ####
 
