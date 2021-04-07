@@ -1173,10 +1173,6 @@ column(width = 12,
                                          selected = levels(aoc_setup$acute.chronic_f),
                                          options = list(`actions-box` = TRUE, style = "btn-warning"), 
                                          multiple = TRUE))),
-                      column(width = 12,
-                             
-                      column(width = 3,offset = 9,  
-                             p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")))),
 
                     # second row of widget headers
                     column(width=12,
@@ -1322,7 +1318,7 @@ column(width = 12,
                     br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     br(),
-                    p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+                    
  
                     # Row 1 of Headers
                     column(width=12,
