@@ -14,6 +14,9 @@ Dataset created in the [MPToxReview repository](https://github.com/ScottCoffin/M
 
 Application deployed at https://sccwrp.shinyapps.io/aq_mp_tox_shiny/.
 
+Interested Contributors (not on-boarded yet):
+Suze An (University of Washington)
+
 ## Additional Resources Tab
 
 https://rshiny.lifewatch.be/ng-ocean-plastic-challenge/
