@@ -84,12 +84,13 @@ sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
 sizef<-as.data.frame(sizedf)%>%
   filter(effect %in% c("Y","N"))%>%
   mutate(size.category = case_when(
-    size.category == 1 ~ "<1µm",
-    size.category == 2 ~ "1µm < 10µm",
-    size.category == 3 ~ "10µm < 100µm",
+    size.category == 1 ~ "1nm < 100nm",
+    size.category == 2 ~ "100nm < 1µm",
+    size.category == 3.1 ~ "1µm < 10µm",
+    size.category == 3.2 ~ "10µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
-    size.category == 0 ~ "unavailable"))%>%
+    size.category == 0 ~ "Not Reported"))%>% 
   rename(Type = "size.category")%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Size")
@@ -911,7 +912,7 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
   # Title panel subtext
   tags$div("Logo created by J.C. Leapman.", tags$a(href="https://twitter.com/jcleapman", tags$img(src="twitter.png", width="2%", height="2%"))),
   tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
-  actionButton("database_link", label="Go to Mammalian Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right"),
+  actionButton("database_link", label="Go to Human Health Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right"),
   
   br(), # line break
   
@@ -1054,7 +1055,7 @@ column(width = 12,
                     p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, 
                       and polymer, respectively.The values in the parentheses represent the number of measurements and studies, respectively, of each metric along the y-axis."),
                     br(),
-                    p("The data displayed in these figures are not filtered for quality and only display data from in vitro studies or in vivo studies where doses were reported 
+                    p("The data displayed in these figures only display data from in vitro studies or in vivo studies where doses were reported 
                     as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
                     are not displayed but are available in the complete database file."),
                     br(), 
@@ -1168,15 +1169,11 @@ column(width = 12,
                       
                       column(width = 3,
                              pickerInput(inputId = "acute.chronic_check", # chronic/acute checklist
-                                         label = "Exposure Duration*:", 
+                                         label = "Exposure Duration:", 
                                          choices = levels(aoc_setup$acute.chronic_f),
                                          selected = levels(aoc_setup$acute.chronic_f),
-                                         options = list(`actions-box` = TRUE, style = "btn-warning"), 
+                                         options = list(`actions-box` = TRUE), 
                                          multiple = TRUE))),
-                      column(width = 12,
-                             
-                      column(width = 3,offset = 9,  
-                             p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")))),
 
                     # second row of widget headers
                     column(width=12,
@@ -1322,7 +1319,7 @@ column(width = 12,
                     br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     br(),
-                    p(strong("Warning: Using values other than defaults for yellow widgets will limit data to the following organism groups: Fish, Molluscs, Crustacea and Algae.")),
+                    
  
                     # Row 1 of Headers
                     column(width=12,
@@ -1364,7 +1361,7 @@ column(width = 12,
                                               label = "Exposure Duration Type:", 
                                               choices = levels(aoc_z$acute.chronic_f),
                                               selected = levels(aoc_z$acute.chronic_f),
-                                              options = list(`actions-box` = TRUE, style = "btn-warning"), 
+                                              options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
                            
                            ), #closes out column
@@ -1504,7 +1501,7 @@ column(width = 12,
                                   pickerInput(inputId = "AF.time_rad_ssd", # acute/chronic assessment factor
                                         label = "Apply Assessment Factor for acute and sub-chronic to chronic?",
                                         choices = c("Yes", "No"),
-                                        options = list(style = "btn-warning"),
+                                        options = list(`actions-box` = TRUE),
                                         selected = "No")),
                            
                            #Assessment factor - noec conversion
@@ -1512,7 +1509,7 @@ column(width = 12,
                                   pickerInput(inputId = "AF.noec_rad_ssd", # noec/loc assessment factor
                                         label = "Apply Assessment Factor to convert dose descriptors into NOECs?",
                                         choices = c("Yes", "No"),
-                                        options = list(style = "btn-warning"),
+                                        options = list(`actions-box` = TRUE),
                                         selected = "No")),
                            
                            #concentration selector (minimum, lower 95% CI, median, mean)
@@ -1689,6 +1686,8 @@ tabPanel("5: Endpoint Categorization",
 tabPanel("6: Resources", 
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
+         br(),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EVd-oEZ-xxtJnWdOCC7KHfoBIOO3ByJz7omFoeruD0W6Sw?e=a3weoV", 'Assessment Factor Descriptions')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=AgH5bs", 'Quality Screening: Red Criteria')),
          br(),
@@ -2069,7 +2068,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                       aes(label = paste("(",measurements,",",studies,")")),
                       hjust = 0,
                       direction = "y", 
-                      nudge_x = 1000000000,
+                      nudge_x = 10^100,
                       segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
@@ -2153,7 +2152,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        aes(label = paste("(",measurements,",",studies,")")),
                        hjust = 0,
                        direction = "y", 
-                       nudge_x = 1000000000,
+                       nudge_x = 10^100,
                        segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       theme(text = element_text(size=18), 
@@ -2233,7 +2232,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        aes(label = paste("(",measurements,",",studies,")")),
                        hjust = 0,
                        direction = "y", 
-                       nudge_x = 1000000000,
+                       nudge_x = 10^100,
                        segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type + #user theme
       #theme_classic() +
@@ -2314,7 +2313,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        aes(label = paste("(",measurements,",",studies,")")),
                        hjust = 0,
                        direction = "y", 
-                       nudge_x = 1000000000,
+                       nudge_x = 10^100,
                        segment.colour = NA, size = 3.5, show.legend = FALSE) +
      theme.type +
       # theme_classic() +
@@ -2396,7 +2395,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        aes(label = paste("(",measurements,",",studies,")")),
                        hjust = 0,
                        direction = "y", 
-                       nudge_x = 1000000000,
+                       nudge_x = 10^100,
                        segment.colour = NA, size = 3.5, show.legend = FALSE) +
       theme.type +
       #theme_classic() +
@@ -2478,7 +2477,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        aes(label = paste("(",measurements,",",studies,")")),
                        hjust = 0,
                        direction = "y", 
-                       nudge_x = 1000000000,
+                       nudge_x = 10^100,
                        segment.colour = NA, size = 3.5, show.legend = FALSE) +
       # theme_classic() +
     theme.type +
