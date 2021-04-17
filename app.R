@@ -869,6 +869,107 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                                    chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>% 
   dplyr::filter(chem.exp.typ.nominal_f == "Particle Only")
 
+#### Ecologically Relevant Metric calculations ####
+
+###function to derive correction factor (CF) from Koelmans et al (equation 2)
+CFfnx = function(a, #default alpha from Koelmans et al (2020)
+                 x2D, #set detault values to convert ranges to (1-5,000 um) #5mm is upper defuault 
+                 x1D, #1 um is lower default size
+                 x2M, x1M){
+  CF = (x2D^(1-a)-x1D^(1-a))/(x2M^(1-a)-x1M^(1-a)) 
+  return(CF)}
+
+#### equations for mu_x_poly (note that there are three depending on certain alphas for limits of equation)
+###### if alpha does not equal 2 #####
+mux.polyfnx = function(a.x, 
+                       x_UL, 
+                       x_LL){
+  mux.poly = ((1-a.x)/(2-a.x)) * ((x_UL^(2-a.x) - x_LL^(2-a.x))/(x_UL^(1-a.x) - x_LL^(1-a.x)))
+  return(mux.poly)}
+
+##### If alpha does equal 2 #####
+mux.polyfnx.2 = function(x_UL,x_LL){
+  mux.poly = (log(x_UL/x_LL))/(x_LL^(-1) - x_UL^-1)
+  return(mux.poly)}
+
+### Calculating max ingestible parameters ###
+## function to calcualte min and max ingestible surface area ##
+SAfnx = function(a = a, # a = 0.5 * length
+                 b = b, # b = 0.5 * width
+                 c = c # c = 0.5 * height (note that hieght is 0.67 * width)
+){
+  SA = 4*pi*(((a*b)^1.6 + (a*c)^1.6 + (b*c)^1.6) / 3)^(1/1.6)
+  return(SA)}
+
+## max ingestible volume ##
+volumefnx = function(CSF, L){
+  volume = ((pi/6)*(L^3))*(CSF^2)
+  return(volume)}
+
+#max ingestible mass
+massfnx = function(CSF, L, p){
+  mass = p * #density (g/cm^3)
+    ((pi/6)*(L^3))*(CSF^2) * #volume (um^3)
+    1/1e12 * 1e6 #correction factor
+  return(mass)}
+
+#max ingestible specific surface area
+SSAfnx = function(a, # a = 0.5 * length
+                  b,# b = 0.5 * width
+                  c,# c = 0.5 * height (note that hieght is 0.67 * width)
+                  m #mass (ug)
+){
+  SSA = (4*pi*(((a*b)^1.6 + (a*c)^1.6 + (b*c)^1.6) / 3)^(1/1.6))/m
+  return(SSA)}
+
+## parametrization ##
+# Define params for correction #
+alpha = 2.64 #table s4 for freshwater surface water. length
+x2D_set = 5000 #upper size range (default)
+x1D_set = 1 #lower size range (default)
+x1M_set = 1 #lower size range for measured
+
+# define parameters for power law coefficients
+a.sa = 2 #freshwater surface area power law
+a.v = 1.68 #a_V for freshwater volume
+a.m = 1.65 # upper limit fora_m for mass for freshwater surface water in table S4 
+a.ssa = 2.71 # A_SSA for freshwater surface water
+
+#define additional parameters for calculations based on averages in the environment
+CSF.ave = 0.4 #average corey shape factor in water
+p.ave = 1.04 #average density in water
+
+# calculate ERM for each species
+aoc_setup <- aoc_setup  %>% 
+  mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+  mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  #calculate CF_bio
+  mutate(EC_env_p.particles.mL = dose.particles.mL.master * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+  ## Surface area ERM
+  mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to TRM
+  mutate(x_LL_sa = SAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2))) %>%  #calculate lower ingestible surface area
+  mutate(x_UL_sa = SAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2))) %>%  #calculate upper ingestible surface area
+  mutate(mu.sa.poly = if(a.sa == 2){mux.polyfnx.2(x_UL_sa, x_LL_sa)} else if (a.sa != 2){mux.polyfnx(a.sa, x_UL_sa, x_LL_sa)}) %>% #calculate mu_x_poly for surface area
+  mutate(EC_poly_sa.particles.mL = (EC_env_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  #calculate polydisperse effect concentration for surface area (particles/mL)
+  ## volume ERM
+  mutate(mu.v.mono = particle.volume.um3) %>% #define mu_x_mono for alignment to TRM
+  mutate(x_LL_v = volumefnx(CSF = CSF.ave, L = x1D_set)) %>%  #calculate lower ingestible volume (average CSF of 0.4)
+  mutate(x_UL_v = volumefnx(CSF = CSF.ave, L = x2M)) %>%  #calculate maximum ingestible volume (average CSF of 0.4)
+  mutate(mu.v.poly = if(a.v == 2){mux.polyfnx.2(x_UL_v, x_LL_v)} else if (a.v != 2){mux.polyfnx(a.v, x_UL_v, x_LL_v)}) %>% #calculate mu_x_poly for volume
+  mutate(EC_poly_v.particles.mL = (EC_env_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+  ## mass ERM
+  mutate(mu.m.mono = mass.per.particle.mg * 1000) %>% #define mu_x_mono for alignment to TRM (ug)
+  mutate(x_LL_m = massfnx(CSF = CSF.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mas
+  mutate(x_UL_m = massfnx(CSF = CSF.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
+  mutate(mu.m.poly = if(a.m == 2){mux.polyfnx.2(x_UL_m, x_LL_m)} else if (a.m != 2){mux.polyfnx(a.m, x_UL_m, x_LL_m)}) %>% #calculate mu_x_poly for mass
+  mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+  ## specific surface area ERM
+  mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to TRM (um^2/ug)
+  mutate(x_LL_ssa = SSAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2), m = x_LL_m)) %>%  #calculate lower ingestible SSA
+  mutate(x_UL_ssa = SSAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2), m = x_UL_m)) %>%  #calculate upper ingestible SSA  (um^2/ug)
+  mutate(mu.ssa.poly = if(a.ssa == 2){mux.polyfnx.2(x_UL_ssa, x_LL_ssa)} else if (a.ssa != 2){mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)}) %>% #calculate mu_x_poly for specific surface area
+  mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly) #calculate polydisperse effect concentration for specific surface area (particles/mL)
+
+
 #### SSD AO Setup ####
 
 # Master dataset for SSDs
@@ -904,7 +1005,7 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                 #       onclick = HTML("Shiny.setInputValue('dark_mode', document.getElementById('dark_mode').value);")),
                 #     tags$label("Dark mode", `for` = "dark_mode", class = "custom-control-label")
                 #     ),
-                # ####
+                 ####
   
   # App title
   titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
@@ -1206,6 +1307,12 @@ column(width = 12,
                                                selected = "mg/L")),
                            
                            column(width = 3,
+                                  radioButtons(inputId = "ERM_check", # ERM (particle, surface area, mass, volume, specific surface area)
+                                               label = "Ecologically Relevant Metric:",
+                                               choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
+                                               selected = "Unaligned")),
+                           
+                           column(width = 3,
                                   selectInput(inputId = "plot.type", "Plot Type:", 
                                        list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm")),
                                   checkboxInput(inputId = "show.points", "Show All Points", FALSE))),
@@ -1458,8 +1565,9 @@ column(width = 12,
                                   radioButtons(inputId = "particle_mass_check_ssd", # organism checklist
                                                label = "Particles/mL, mg/L, or volume(um3)/mL?",
                                                choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                               selected = "mg/L")),
+                                               selected = "Particles/mL")),
                            
+
                            #converted or reported doses widget
                            column(width = 3, 
                                   radioButtons(
@@ -1521,6 +1629,19 @@ column(width = 12,
                                     selected = "Mean")),
                            
                     ),#close out column
+                    
+                    column(width = 12,
+                           
+                    column(width = 8,
+                                     p("Choose ecologically relevant metric (ERM) for alignment to default size range (1-5,000 um):"),
+                           p("(aligns concentrations from ingestible size range for organism to default range (1-5,000 um))."),
+                                     radioButtons(inputId = "ERM_check_ssd", # ERM (particle, surface area, mass, volume, specific surface area)
+                                                  label = "Ecologically Relevant Metric (note: only reports in particles/mL):",
+                                                  choices = c("Unaligned", "Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
+                                                  selected = "Unaligned")),
+                    
+                    
+                    ), #closes out ERM column
 
                     br(),
                             column(width = 12,
@@ -1599,7 +1720,6 @@ column(width = 12,
                               br(),
                               p("Please be patient as maximum likelihood estimations are calculated. If a high number of bootstrap simulations are chosen (>100), this may take up to several minutes."),
                               br(),
-                              h4("Species Sensitivity Distribution", align = "center"),
                               plotOutput(outputId = "aoc_ssd_ggplot", width = "140%", height = "500px", hover = hoverOpts(id = "plot_hover")),
                               verbatimTextOutput("info"),
                               br(),
@@ -1932,6 +2052,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     risk_tier_zero_c<-input$risk_tier_zero_check #assign values to "risk_tier_zero_c"
     range_n <- input$range # assign values to "range_n"
     dose_check <- input$dose_check #renames selection from radio button
+    ERM_check <- input$ERM_check #chooses aligned dose metric by ecologically relevant metric
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     acute.chronic.c <- input$acute.chronic_check #acute chronic checkbox
     
@@ -1950,18 +2071,18 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       aoc_setup <- aoc_setup %>%
         mutate(dose_new = dose.mg.L.master)}
     
-    #repeat for particles
-    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL"){
+    #repeat for particles (unaligned)
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Unaligned"){
       aoc_setup <- aoc_setup %>%
         filter(dose.particles.mL.master.converted.reported == "reported") %>% 
         mutate(dose_new = dose.particles.mL.master)}
     
-    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL"){
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Unaligned"){
       aoc_setup <- aoc_setup %>%
         filter(dose.particles.mL.master.converted.reported == "converted") %>% 
         mutate(dose_new = dose.particles.mL.master)} 
     
-    if(Rep_Con_rad == "all" & dose_check == "Particles/mL"){
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Unaligned"){
       aoc_setup <- aoc_setup %>%
         mutate(dose_new = dose.particles.mL.master)}
     
@@ -1979,6 +2100,82 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     if(Rep_Con_rad == "all" & dose_check == "um3/mL"){
       aoc_setup <- aoc_setup %>%
         mutate(dose_new = dose.um3.mL.master)}
+    
+    ## ERM ## NOTE: ERM doses reported ONLY in particles/mL
+    #repeat for particles with ERM = Particles
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Particles"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Particles"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Particles"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    #repeat for particles with ERM = Surface Area
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new =EC_poly_sa.particles.mL)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    #repeat for particles with ERM = Volume
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Volume"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Volume"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Volume"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    #repeat for particles with ERM = Mass
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Mass"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Mass"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Mass"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    #repeat for particles with ERM = Specific Surface Area
+    if(Rep_Con_rad == "reported" & dose_check == "Particles/mL" & ERM_check == "Specific Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Rep_Con_rad == "converted" & dose_check == "Particles/mL" & ERM_check == "Specific Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Rep_Con_rad == "all" & dose_check == "Particles/mL" & ERM_check == "Specific Surface Area"){
+      aoc_setup <- aoc_setup %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
   
     # new dataset based on filtering
     aoc_setup %>% # take original dataset
@@ -2744,6 +2941,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    ERM_check_ssd <- input$ERM_check_ssd #ERM
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
@@ -2763,19 +2961,19 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.mg.L.master)
       
-      #repeat for particles
+      #repeat for particles (un-aligned)
     }
-    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
       aoc_z <- aoc_z %>% 
         filter(dose.particles.mL.master.converted.reported == "reported") %>% 
         mutate(dose_new = dose.particles.mL.master)
     } 
-    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL"){
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
       aoc_z <- aoc_z %>% 
         filter(dose.particles.mL.master.converted.reported == "converted") %>% 
         mutate(dose_new = dose.particles.mL.master)
     } 
-    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL"){
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.particles.mL.master)
     }
@@ -2786,13 +2984,89 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         mutate(dose_new = dose.um3.mL.master)}
     
     if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "um3/mL"){
-      aocz <- aoc_z %>%
+      aoc_z <- aoc_z %>%
         filter(dose.particles.mL.master.converted.reported == "converted") %>%
         mutate(dose_new = dose.um3.mL.master)}
     
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "um3/mL"){
       aoc_z <- aoc_z %>%
         mutate(dose_new = dose.um3.mL.master)}
+    
+    ## ERM ## NOTE: ERM doses reported ONLY in particles/mL
+    #repeat for particles with ERM = Particles
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    #repeat for particles with ERM = Surface Area
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    #repeat for particles with ERM = Volume
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    #repeat for particles with ERM = Mass
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    #repeat for particles with ERM = Specific Surface Area
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
@@ -2839,6 +3113,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
     AF.noec_r_ssd <- input$AF.noec_rad_ssd #yes/no apply assessment factor for LOEC/ECXX -> NOEC
     Reported_Converted_rad <- input$Reported_Converted_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
+    ERM_check_ssd <- input$ERM_check_ssd #ERM
     particle_mass_check_ssd <- input$particle_mass_check_ssd #rename variable
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     conc.select.r <- input$conc.select.rad #concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")
@@ -2860,20 +3135,21 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       aoc_z <- aoc_z %>% 
         mutate(dose_new = dose.mg.L.master)
     }
-    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        dplyr::filter(dose.particles.mL.master.converted.reported == "reported") %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    } 
-    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        dplyr::filter(dose.particles.mL.master.converted.reported == "converted") %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    } 
-    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL"){
-      aoc_z <- aoc_z %>% 
-        mutate(dose_new = dose.particles.mL.master)
-    }
+    #repeat for particles (un-aligned)
+  if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
+    aoc_z <- aoc_z %>% 
+      filter(dose.particles.mL.master.converted.reported == "reported") %>% 
+      mutate(dose_new = dose.particles.mL.master)
+  } 
+  if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
+    aoc_z <- aoc_z %>% 
+      filter(dose.particles.mL.master.converted.reported == "converted") %>% 
+      mutate(dose_new = dose.particles.mL.master)
+  } 
+  if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd ==  "Unaligned"){
+    aoc_z <- aoc_z %>% 
+      mutate(dose_new = dose.particles.mL.master)
+  }
     #repeat for volume
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "um3/mL"){
       aoc_z <- aoc_z %>%
@@ -2888,6 +3164,82 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "um3/mL"){
       aoc_z <- aoc_z %>%
         mutate(dose_new = dose.um3.mL.master)}
+    
+    ## ERM ## NOTE: ERM doses reported ONLY in particles/mL
+    #repeat for particles with ERM = Particles
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Particles"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_env_p.particles.mL)}
+    
+    #repeat for particles with ERM = Surface Area
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Surface Area"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_sa.particles.mL)}
+    
+    #repeat for particles with ERM = Volume
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Volume"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_v.particles.mL)}
+    
+    #repeat for particles with ERM = Mass
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Mass"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_m.particles.mL)}
+    
+    #repeat for particles with ERM = Specific Surface Area
+    if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "reported") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Reported_Converted_rad == "converted" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        filter(dose.particles.mL.master.converted.reported == "converted") %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
+    
+    if(Reported_Converted_rad == "all" & particle_mass_check_ssd == "Particles/mL" & ERM_check_ssd == "Specific Surface Area"){
+      aoc_z <- aoc_z %>%
+        mutate(dose_new = EC_poly_ssa.particles.mL)}
     
     
     #right-hand table of just effect data
@@ -3213,6 +3565,8 @@ output$downloadSsdPlot <- downloadHandler(
       scale_y_continuous("Species Affected (%)", labels = scales::percent, limits = c(0,1)) +
       #expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
       xlab(particle_mass_check_ssd)+
+      labs(title = "Microplastics Species Sensitivity Distribution",
+             subtitle = paste("(ERM = ",input$ERM_check_ssd,")")) +
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 15),
                          labels = trans_format("log10", scales::math_format(10^.x))) + #comma_signif)+
