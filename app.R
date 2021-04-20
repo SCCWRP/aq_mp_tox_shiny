@@ -902,14 +902,14 @@ SAfnx = function(a = a, # a = 0.5 * length
   return(SA)}
 
 ## max ingestible volume ##
-volumefnx = function(CSF, L){
-  volume = ((pi/6)*(L^3))*(CSF^2)
+volumefnx = function(R, L){
+  volume = 0.111667 * pi * R^2 * L^3 #assumes height = 0.67 * Width, and Width:Length ratio is 'R' (compartment-specific)
   return(volume)}
 
 #max ingestible mass
-massfnx = function(CSF, L, p){
+massfnx = function(R, L, p){
   mass = p * #density (g/cm^3)
-    ((pi/6)*(L^3))*(CSF^2) * #volume (um^3)
+    0.111667 * pi * R^2 * L^3 # volume (um^3): assumes height = 0.67 * Width, and Width:Length ratio is 'R' (compartment-specific)
     1/1e12 * 1e6 #correction factor
   return(mass)}
 
@@ -924,23 +924,23 @@ SSAfnx = function(a, # a = 0.5 * length
 
 ## parametrization ##
 # Define params for correction #
-alpha = 2.64 #table s4 for freshwater surface water. length
+alpha = 2.07 #table s4 for marine surface water. length
 x2D_set = 5000 #upper size range (default)
 x1D_set = 1 #lower size range (default)
 x1M_set = 1 #lower size range for measured
 
 # define parameters for power law coefficients
-a.sa = 2 #freshwater surface area power law
-a.v = 1.68 #a_V for freshwater volume
-a.m = 1.65 # upper limit fora_m for mass for freshwater surface water in table S4 
-a.ssa = 2.71 # A_SSA for freshwater surface water
+a.sa = 1.5 #marine surface area power law
+a.v = 1.48 #a_V for marine surface water volume
+a.m = 1.32 # upper limit fora_m for mass for marine surface water in table S4 
+a.ssa = 1.98 # A_SSA for marine surface water
 
 #define additional parameters for calculations based on averages in the environment
-CSF.ave = 0.4 #average corey shape factor in water
-p.ave = 1.04 #average density in water
+R.ave = 0.77 #average width to length ratio for microplastics in marine enviornment
+p.ave = 1.10 #average density in marine surface water
 
 # calculate ERM for each species
-aoc_setup <- aoc_setup  %>% 
+aoc_ERM_default <- aoc_setup  %>% 
   mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
   mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  #calculate CF_bio
   mutate(EC_env_p.particles.mL = dose.particles.mL.master * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
@@ -952,14 +952,14 @@ aoc_setup <- aoc_setup  %>%
   mutate(EC_poly_sa.particles.mL = (EC_env_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  #calculate polydisperse effect concentration for surface area (particles/mL)
   ## volume ERM
   mutate(mu.v.mono = particle.volume.um3) %>% #define mu_x_mono for alignment to TRM
-  mutate(x_LL_v = volumefnx(CSF = CSF.ave, L = x1D_set)) %>%  #calculate lower ingestible volume (average CSF of 0.4)
-  mutate(x_UL_v = volumefnx(CSF = CSF.ave, L = x2M)) %>%  #calculate maximum ingestible volume (average CSF of 0.4)
+  mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%  #calculate lower ingestible volume 
+  mutate(x_UL_v = volumefnx(R = R.ave, L = x2M)) %>%  #calculate maximum ingestible volume 
   mutate(mu.v.poly = if(a.v == 2){mux.polyfnx.2(x_UL_v, x_LL_v)} else if (a.v != 2){mux.polyfnx(a.v, x_UL_v, x_LL_v)}) %>% #calculate mu_x_poly for volume
   mutate(EC_poly_v.particles.mL = (EC_env_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
   ## mass ERM
   mutate(mu.m.mono = mass.per.particle.mg * 1000) %>% #define mu_x_mono for alignment to TRM (ug)
-  mutate(x_LL_m = massfnx(CSF = CSF.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mas
-  mutate(x_UL_m = massfnx(CSF = CSF.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
+  mutate(x_LL_m = massfnx(R = R.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mas
+  mutate(x_UL_m = massfnx(R = R.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
   mutate(mu.m.poly = if(a.m == 2){mux.polyfnx.2(x_UL_m, x_LL_m)} else if (a.m != 2){mux.polyfnx(a.m, x_UL_m, x_LL_m)}) %>% #calculate mu_x_poly for mass
   mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
   ## specific surface area ERM
@@ -1182,6 +1182,7 @@ column(width = 12,
                         h4("Biological Factors"))),
                     
                     # widgets
+                    h4("Filters"),
                     column(width = 12,
                       
                       column(width = 3,
@@ -1300,17 +1301,12 @@ column(width = 12,
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
                            
+                           p("Choose dosing metric (if ERM calculations desired, choose particles/mL)"),
                            column(width = 3, 
                                   radioButtons(inputId = "dose_check", # dosing units
                                                label = "Particles/mL, mg/L, or um3/mL:",
                                                choices = c("Particles/mL", "mg/L", "um3/mL"),
                                                selected = "mg/L")),
-                           
-                           column(width = 3,
-                                  radioButtons(inputId = "ERM_check", # ERM (particle, surface area, mass, volume, specific surface area)
-                                               label = "Ecologically Relevant Metric:",
-                                               choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
-                                               selected = "Unaligned")),
                            
                            column(width = 3,
                                   selectInput(inputId = "plot.type", "Plot Type:", 
@@ -1345,6 +1341,37 @@ column(width = 12,
                                 selectInput(inputId = "color.type_exp", "Color Theme:", 
                                             list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA"))),
                          ), #close out column
+                  
+                  #Ecologically Relevant Metric Row
+                  conditionalPanel(condition = "input.dose_check == 'Particles/mL'",
+                  h4("Ecologically Relevant Metric Alignment"),
+                  p("A monodisperse effect concentration (e.g. 5 micron spheres) may be re-scaled to a default size range (e.g. 1 - 5,000 microns) using methods described in Kooi et al (2021). Re-scaling to a default size range allows direct comparison to exposure concentrations for a default size range (which may also be re-scaled). The following radio buttons apply corrections for bioavailability (i.e. limiting available particles to max ingestable size), and a further correction for the ecologically relevant metric (ERM). For a given ERM, the threshold may be related to both mono- or polydisperse particles interchangeably so long as the total magnitude of ERM remains the same (Koelmans et al, 2020). If, for example, 'volume' is chosen below as an ERM, the monodisperse effect concentration is first corrected for bioavailability and aligned to whichever default size range the user chooses below. This aligned threshold (in particles/mL) is then multiplied by a correction for polydisperse volume based on the average volumes for the given range of microplastics in the environment "),
+                  column(width = 12,
+                         
+                         #ERM Checkbox
+                         column(width = 3,
+                                radioButtons(inputId = "ERM_check", # ERM (particle, surface area, mass, volume, specific surface area)
+                                             label = "Ecologically Relevant Metric:",
+                                             choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
+                                             selected = "Unaligned")),
+                         #Alpha checkbox
+                          # column(width = 3,
+                          #        numericInput(inputId = "alpha_exploration",
+                          #                     label = "Length Alpha Value (default of 2.07 for marine surface water)",
+                          #                     value = 2.07)),
+                         
+                         # lower length input
+                         column(width = 3,
+                                numericInput(inputId = "lower_length_exploration",
+                                             label = "Lower length for default size range (um)",
+                                             value = 1)),
+                         # upper length input
+                         column(width = 3,
+                                numericInput(inputId = "upper_length_exploration",
+                                             label = "Upper length the default size range (um)",
+                                             value = 5000))
+                          ), #end of 12-point column
+                  ), #end of conditional Panel
 
 
                     # New row of widgets
@@ -1630,19 +1657,37 @@ column(width = 12,
                            
                     ),#close out column
                     
-                    column(width = 12,
-                           
-                    column(width = 8,
-                                     p("Choose ecologically relevant metric (ERM) for alignment to default size range (1-5,000 um):"),
-                           p("(aligns concentrations from ingestible size range for organism to default range (1-5,000 um))."),
-                                     radioButtons(inputId = "ERM_check_ssd", # ERM (particle, surface area, mass, volume, specific surface area)
-                                                  label = "Ecologically Relevant Metric (note: only reports in particles/mL):",
-                                                  choices = c("Unaligned", "Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
-                                                  selected = "Unaligned")),
+                    #Ecologically Relevant Metric Row
+                    conditionalPanel(condition = "input.particle_mass_check_ssd == 'Particles/mL'",
+                                     h4("Ecologically Relevant Metric Alignment"),
+                                     p("A monodisperse effect concentration (e.g. 5 micron spheres) may be re-scaled to a default size range (e.g. 1 - 5,000 microns) using methods described in Kooi et al (2021). Re-scaling to a default size range allows direct comparison to exposure concentrations for a default size range (which may also be re-scaled). The following radio buttons apply corrections for bioavailability (i.e. limiting available particles to max ingestable size), and a further correction for the ecologically relevant metric (ERM). For a given ERM, the threshold may be related to both mono- or polydisperse particles interchangeably so long as the total magnitude of ERM remains the same (Koelmans et al, 2020). If, for example, 'volume' is chosen below as an ERM, the monodisperse effect concentration is first corrected for bioavailability and aligned to whichever default size range the user chooses below. This aligned threshold (in particles/mL) is then multiplied by a correction for polydisperse volume based on the average volumes for the given range of microplastics in the environment "),
+                                     column(width = 12,
+                                            
+                                            #ERM Checkbox
+                                            column(width = 3,
+                                                   radioButtons(inputId = "ERM_check_ssd", # ERM (particle, surface area, mass, volume, specific surface area)
+                                                                label = "Ecologically Relevant Metric:",
+                                                                choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
+                                                                selected = "Unaligned")),
+                                            # #Alpha checkbox
+                                            # column(width = 3,
+                                            #        numericInput(inputId = "alpha_ssd",
+                                            #                     label = "Length Alpha Value (default of 2.07 for marine surface water)",
+                                            #                     value = 2.07)),
+                                           
+                                            # lower length input
+                                            column(width = 3,
+                                                   numericInput(inputId = "lower_length_ssd",
+                                                                label = "Lower length for default size range (um)",
+                                                                value = 1)),
+                                            # upper length input
+                                            column(width = 3,
+                                                   numericInput(inputId = "upper_length_ssd",
+                                                                label = "Upper length the default size range (um)",
+                                                                value = 5000))
+                                     ), #end of 12-point column
+                    ), #end of conditional Panel
                     
-                    
-                    ), #closes out ERM column
-
                     br(),
                             column(width = 12,
                                   actionButton("SSDgo", "Submit", class = "btn-success"),
@@ -2056,6 +2101,53 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     acute.chronic.c <- input$acute.chronic_check #acute chronic checkbox
     
+    ## ERM parametrization ##
+    # Define params for correction #
+    alpha = 2.07#input$alpha_exploration #table s4 for marine surface water. length
+    x2D_set = input$upper_length_exploration #upper size range (default)
+    x1D_set = input$lower_length_exploration #lower size range (default)
+    x1M_set = 1 #lower size range for ingestible plastic
+    
+    # define parameters for power law coefficients
+    a.sa = 1.5 #marine surface area power law
+    a.v = 1.48 #a_V for marine surface water volume
+    a.m = 1.32 # upper limit fora_m for mass for marine surface water in table S4 
+    a.ssa = 1.98 # A_SSA for marine surface water
+    
+    #define additional parameters for calculations based on averages in the environment
+    R.ave = 0.77 #average width to length ratio for microplastics in marine enviornment
+    p.ave = 1.10 #average density in marine surface water
+    
+    # calculate ERM for each species
+    aoc_setup <- aoc_setup %>% 
+      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  #calculate CF_bio
+      mutate(EC_env_p.particles.mL = dose.particles.mL.master * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      ## Surface area ERM
+      mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_sa = SAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2))) %>%  #calculate lower ingestible surface area
+      mutate(x_UL_sa = SAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2))) %>%  #calculate upper ingestible surface area
+      mutate(mu.sa.poly = if(a.sa == 2){mux.polyfnx.2(x_UL_sa, x_LL_sa)} else if (a.sa != 2){mux.polyfnx(a.sa, x_UL_sa, x_LL_sa)}) %>% #calculate mu_x_poly for surface area
+      mutate(EC_poly_sa.particles.mL = (EC_env_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  #calculate polydisperse effect concentration for surface area (particles/mL)
+      ## volume ERM
+      mutate(mu.v.mono = particle.volume.um3) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%  #calculate lower ingestible volume 
+      mutate(x_UL_v = volumefnx(R = R.ave, L = x2M)) %>%  #calculate maximum ingestible volume 
+      mutate(mu.v.poly = if(a.v == 2){mux.polyfnx.2(x_UL_v, x_LL_v)} else if (a.v != 2){mux.polyfnx(a.v, x_UL_v, x_LL_v)}) %>% #calculate mu_x_poly for volume
+      mutate(EC_poly_v.particles.mL = (EC_env_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## mass ERM
+      mutate(mu.m.mono = mass.per.particle.mg * 1000) %>% #define mu_x_mono for alignment to TRM (ug)
+      mutate(x_LL_m = massfnx(R = R.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mass
+      mutate(x_UL_m = massfnx(R = R.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
+      mutate(mu.m.poly = if(a.m == 2){mux.polyfnx.2(x_UL_m, x_LL_m)} else if (a.m != 2){mux.polyfnx(a.m, x_UL_m, x_LL_m)}) %>% #calculate mu_x_poly for mass
+      mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## specific surface area ERM
+      mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to TRM (um^2/ug)
+      mutate(x_LL_ssa = SSAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2), m = x_LL_m)) %>%  #calculate lower ingestible SSA
+      mutate(x_UL_ssa = SSAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2), m = x_UL_m)) %>%  #calculate upper ingestible SSA  (um^2/ug)
+      mutate(mu.ssa.poly = if(a.ssa == 2){mux.polyfnx.2(x_UL_ssa, x_LL_ssa)} else if (a.ssa != 2){mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)}) %>% #calculate mu_x_poly for specific surface area
+      mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly)  #calculate polydisperse effect concentration for specific surface area (particles/mL)
+    
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Rep_Con_rad == "reported" & dose_check == "mg/L"){
       aoc_setup <- aoc_setup %>% 
@@ -2192,11 +2284,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       filter(env_f %in% env_c) %>% #filter by environment
       filter(acute.chronic_f %in% acute.chronic.c) %>%  #acute/chronic
       filter(tier_zero_tech_f %in% tech_tier_zero_c) %>% #technical quality
-      filter(tier_zero_risk_f %in% risk_tier_zero_c) #risk assessment quality
+      filter(tier_zero_risk_f %in% risk_tier_zero_c)   #risk assessment quality
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
-
+    
   })
-     
+
+#caption ouput       
   output$caption<-renderText({ #rename plot types in UI
     switch(input$plot.type,
            "boxplot" 	= 	"Boxplot",
@@ -2946,6 +3039,53 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
     
+    ## ERM parametrization ##
+    # Define params for correction #
+    alpha = 2.07#input$alpha_ssd #table s4 for marine surface water. length
+    x2D_set = input$upper_length_ssd #upper size range (default)
+    x1D_set = input$lower_length_ssd #lower size range (default)
+    x1M_set = 1 #lower size range for ingestible plastic
+    
+    # define parameters for power law coefficients
+    a.sa = 1.5 #marine surface area power law
+    a.v = 1.48 #a_V for marine surface water volume
+    a.m = 1.32 # upper limit fora_m for mass for marine surface water in table S4 
+    a.ssa = 1.98 # A_SSA for marine surface water
+    
+    #define additional parameters for calculations based on averages in the environment
+    R.ave = 0.77 #average width to length ratio for microplastics in marine enviornment
+    p.ave = 1.10 #average density in marine surface water
+    
+    # calculate ERM for each species
+    aoc_z <- aoc_z %>% 
+      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  #calculate CF_bio
+      mutate(EC_env_p.particles.mL = dose.particles.mL.master * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      ## Surface area ERM
+      mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_sa = SAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2))) %>%  #calculate lower ingestible surface area
+      mutate(x_UL_sa = SAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2))) %>%  #calculate upper ingestible surface area
+      mutate(mu.sa.poly = if(a.sa == 2){mux.polyfnx.2(x_UL_sa, x_LL_sa)} else if (a.sa != 2){mux.polyfnx(a.sa, x_UL_sa, x_LL_sa)}) %>% #calculate mu_x_poly for surface area
+      mutate(EC_poly_sa.particles.mL = (EC_env_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  #calculate polydisperse effect concentration for surface area (particles/mL)
+      ## volume ERM
+      mutate(mu.v.mono = particle.volume.um3) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%  #calculate lower ingestible volume 
+      mutate(x_UL_v = volumefnx(R = R.ave, L = x2M)) %>%  #calculate maximum ingestible volume 
+      mutate(mu.v.poly = if(a.v == 2){mux.polyfnx.2(x_UL_v, x_LL_v)} else if (a.v != 2){mux.polyfnx(a.v, x_UL_v, x_LL_v)}) %>% #calculate mu_x_poly for volume
+      mutate(EC_poly_v.particles.mL = (EC_env_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## mass ERM
+      mutate(mu.m.mono = mass.per.particle.mg * 1000) %>% #define mu_x_mono for alignment to TRM (ug)
+      mutate(x_LL_m = massfnx(R = R.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mass
+      mutate(x_UL_m = massfnx(R = R.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
+      mutate(mu.m.poly = if(a.m == 2){mux.polyfnx.2(x_UL_m, x_LL_m)} else if (a.m != 2){mux.polyfnx(a.m, x_UL_m, x_LL_m)}) %>% #calculate mu_x_poly for mass
+      mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## specific surface area ERM
+      mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to TRM (um^2/ug)
+      mutate(x_LL_ssa = SSAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2), m = x_LL_m)) %>%  #calculate lower ingestible SSA
+      mutate(x_UL_ssa = SSAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2), m = x_UL_m)) %>%  #calculate upper ingestible SSA  (um^2/ug)
+      mutate(mu.ssa.poly = if(a.ssa == 2){mux.polyfnx.2(x_UL_ssa, x_LL_ssa)} else if (a.ssa != 2){mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)}) %>% #calculate mu_x_poly for specific surface area
+      mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly)  #calculate polydisperse effect concentration for specific surface area (particles/mL)
+    
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
       aoc_z <- aoc_z %>% 
@@ -3119,6 +3259,53 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     conc.select.r <- input$conc.select.rad #concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")
     tech_tier_zero_c_ssd<-input$tech_tier_zero_check_ssd #assign values to "design_tier_zero_c"
     risk_tier_zero_c_ssd<-input$risk_tier_zero_check_ssd #assign values to "risk_tier_zero_c"
+    
+    ## ERM parametrization ##
+    # Define params for correction #
+    alpha = 2.07#input$alpha_ssd #table s4 for marine surface water. length
+    x2D_set = input$upper_length_ssd #upper size range (default)
+    x1D_set = input$lower_length_ssd #lower size range (default)
+    x1M_set = 1 #lower size range for ingestible plastic
+    
+    # define parameters for power law coefficients
+    a.sa = 1.5 #marine surface area power law
+    a.v = 1.48 #a_V for marine surface water volume
+    a.m = 1.32 # upper limit fora_m for mass for marine surface water in table S4 
+    a.ssa = 1.98 # A_SSA for marine surface water
+    
+    #define additional parameters for calculations based on averages in the environment
+    R.ave = 0.77 #average width to length ratio for microplastics in marine enviornment
+    p.ave = 1.10 #average density in marine surface water
+    
+    # calculate ERM for each species
+    aoc_z <- aoc_z %>% 
+      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  #calculate CF_bio
+      mutate(EC_env_p.particles.mL = dose.particles.mL.master * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      ## Surface area ERM
+      mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_sa = SAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2))) %>%  #calculate lower ingestible surface area
+      mutate(x_UL_sa = SAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2))) %>%  #calculate upper ingestible surface area
+      mutate(mu.sa.poly = if(a.sa == 2){mux.polyfnx.2(x_UL_sa, x_LL_sa)} else if (a.sa != 2){mux.polyfnx(a.sa, x_UL_sa, x_LL_sa)}) %>% #calculate mu_x_poly for surface area
+      mutate(EC_poly_sa.particles.mL = (EC_env_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  #calculate polydisperse effect concentration for surface area (particles/mL)
+      ## volume ERM
+      mutate(mu.v.mono = particle.volume.um3) %>% #define mu_x_mono for alignment to TRM
+      mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%  #calculate lower ingestible volume 
+      mutate(x_UL_v = volumefnx(R = R.ave, L = x2M)) %>%  #calculate maximum ingestible volume 
+      mutate(mu.v.poly = if(a.v == 2){mux.polyfnx.2(x_UL_v, x_LL_v)} else if (a.v != 2){mux.polyfnx(a.v, x_UL_v, x_LL_v)}) %>% #calculate mu_x_poly for volume
+      mutate(EC_poly_v.particles.mL = (EC_env_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## mass ERM
+      mutate(mu.m.mono = mass.per.particle.mg * 1000) %>% #define mu_x_mono for alignment to TRM (ug)
+      mutate(x_LL_m = massfnx(R = R.ave, L = x1D_set, p = p.ave)) %>%  #calculate lower ingestible mass
+      mutate(x_UL_m = massfnx(R = R.ave, L = x2M, p = p.ave)) %>%  #calculate upper ingestible mass
+      mutate(mu.m.poly = if(a.m == 2){mux.polyfnx.2(x_UL_m, x_LL_m)} else if (a.m != 2){mux.polyfnx(a.m, x_UL_m, x_LL_m)}) %>% #calculate mu_x_poly for mass
+      mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%  #calculate polydisperse effect concentration for volume (particles/mL)
+      ## specific surface area ERM
+      mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to TRM (um^2/ug)
+      mutate(x_LL_ssa = SSAfnx(a = x1D_set/2, b = x1D_set/2, c = (2/3)*(x1D_set/2), m = x_LL_m)) %>%  #calculate lower ingestible SSA
+      mutate(x_UL_ssa = SSAfnx(a = x2M/2, b = x2M/2, c = (2/3)*(x2M/2), m = x_UL_m)) %>%  #calculate upper ingestible SSA  (um^2/ug)
+      mutate(mu.ssa.poly = if(a.ssa == 2){mux.polyfnx.2(x_UL_ssa, x_LL_ssa)} else if (a.ssa != 2){mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)}) %>% #calculate mu_x_poly for specific surface area
+      mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly)  #calculate polydisperse effect concentration for specific surface area (particles/mL)
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on mg/L or particles/mL
     if(Reported_Converted_rad == "reported" & particle_mass_check_ssd == "mg/L"){
