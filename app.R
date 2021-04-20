@@ -867,7 +867,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(chem.exp.typ.nominal_f = factor(case_when(chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
                                                    chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
                                                    chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>% 
-  dplyr::filter(chem.exp.typ.nominal_f == "Particle Only")
+  dplyr::filter(chem.exp.typ.nominal_f == "Particle Only") %>% 
+  #calculate maximum ingestible size (if not already in database)
+  mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
+    10^(0.9341 * log10(body.length.cm - 1.1200)) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+    max.size.ingest.mm)) # if already present, just use that
 
 #### Ecologically Relevant Metric calculations ####
 
@@ -3751,7 +3755,10 @@ output$downloadSsdPlot <- downloadHandler(
       geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent, limits = c(0,1)) +
       #expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
-      xlab(particle_mass_check_ssd)+
+      # reactive x axis based on alignment
+      xlab(ifelse(input$ERM_check_ssd == "Unaligned", particle_mass_check_ssd,
+           paste0(particle_mass_check_ssd, " (",input$lower_length_ssd, " to ",input$upper_length_ssd, " um)"))
+           )+
       labs(title = "Microplastics Species Sensitivity Distribution",
              subtitle = paste("(ERM = ",input$ERM_check_ssd,")")) +
       coord_trans(x = "log10") +
@@ -3764,7 +3771,9 @@ output$downloadSsdPlot <- downloadHandler(
       geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) + #label for distribution
       fill.type + #user-selected
       color.type + #user-selected
-      theme.type #user theme
+      theme.type + #user theme
+      theme(plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5))
   })
   
   
