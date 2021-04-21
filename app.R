@@ -1214,7 +1214,9 @@ column(width = 12,
                     p("The data displayed in these figures only display data from in vitro studies or in vivo studies where doses were reported 
                     as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
                     are not displayed but are available in the complete database file."),
-                    br(), 
+                    br(),
+                    p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
+                    br(),
                     p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button 
                       to refresh the data displayed according to your selections."),
                     br(),
@@ -1237,7 +1239,7 @@ column(width = 12,
                         h4("Biological Factors"))),
                     
                     # widgets
-                    h4("Filters"),
+                    
                     column(width = 12,
                       
                       column(width = 3,
@@ -1349,6 +1351,7 @@ column(width = 12,
                     column(width = 12,
                            
                            column(width = 3,
+                                  
                                   pickerInput(inputId = "tech_tier_zero_check", # chronic/acute checklist
                                               label = "Technical Quality:", 
                                               choices = levels(aoc_setup$tier_zero_tech_f),
@@ -1356,8 +1359,10 @@ column(width = 12,
                                               options = list(`actions-box` = TRUE), 
                                               multiple = TRUE)),
                            
-                           p("Choose dosing metric (if ERM calculations desired, choose particles/mL)"),
                            column(width = 3, 
+                                  
+                                  p("Choose dosing metric (if ERM calculations desired, choose particles/mL)"),
+                                  
                                   radioButtons(inputId = "dose_check", # dosing units
                                                label = "Particles/mL, mg/L, or um3/mL:",
                                                choices = c("Particles/mL", "mg/L", "um3/mL"),
@@ -1506,6 +1511,8 @@ column(width = 12,
                     br(), # line break
                     p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).'), "In brief, an assessment factor of 10 is applied to convert LC/EC25-50 to NOEC, 2 to convert EC/LC20, LOEC, or MIC to NOEC. LC10, EC10 and HONEC are considered equivalent to LOEC. An assessment factor of 10 is applied to convert acute-to-chronic, with determinations of such categories dependent on taxa, as defined in the reference."),
                     br(),
+                    p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
+                    br(),
                     p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
                     br(),
                     
@@ -1588,6 +1595,7 @@ column(width = 12,
                           
                            #quality criteria widget for technical quality
                            column(width = 3,
+                                  
                                   pickerInput(inputId = "tech_tier_zero_check_ssd", # chronic/acute checklist
                                               label = "Technical Quality:", 
                                               choices = levels(aoc_z$tier_zero_tech_f),
@@ -1909,7 +1917,7 @@ tabPanel("6: Resources",
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EVd-oEZ-xxtJnWdOCC7KHfoBIOO3ByJz7omFoeruD0W6Sw?e=a3weoV", 'Assessment Factor Descriptions')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXOluRMsb_RPpjsqTjhmuaUBNz3Pd9vkl7Hl09lKFxaxEA?e=AgH5bs", 'Quality Screening: Red Criteria')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EWZha9ygAihPi5sHlOpgR1UBNS9BEoLGZW6TqwCInf0bwg?e=tEe84g", 'Study Screening Rubric')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
