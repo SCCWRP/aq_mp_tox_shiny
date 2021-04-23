@@ -870,8 +870,9 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   dplyr::filter(chem.exp.typ.nominal_f == "Particle Only") %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
-    10^(0.9341 * log10(body.length.cm - 1.1200)) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
-    max.size.ingest.mm)) # if already present, just use that
+    10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+    max.size.ingest.mm)) %>%  # if already present, just use that
+  mutate(max.size.ingest.um = 1000 * max.size.ingest.mm) #makes it less confusing below
 
 #### Ecologically Relevant Metric calculations ####
 
@@ -926,7 +927,7 @@ SSAfnx = function(sa, #surface area, calcaulted elsewhere
 ## parametrization ##
 # Define params for correction #
 alpha = 2.07 #table s4 for marine surface water. length
-x2D_set = 5000 #upper size range (default)
+x2D_set = 5000 #upper size length (default)
 x1D_set = 1 #lower size range (default)
 x1M_set = 1 #lower size range for measured
 
@@ -942,8 +943,10 @@ p.ave = 1.10 #average density in marine surface water
 
 # calculate ERM for each species
 aoc_ERM_default <- aoc_setup  %>% 
-  # define upper size length for ingestion
-  mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+  # define upper size WIDTH for ingestion (based on average width:length ratio)
+  mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
+                         (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
+                         (max.size.ingest.um * (1/R.ave)) > x2D_set ~ (x2D_set * (1/R.ave)))) %>% #set to 10um for upper limit or max size ingest, whichever is smaller
   # calculate effect threshold for particles
   mutate(EC_mono_p.particles.mL = dose.particles.mL.master) %>% 
   mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
@@ -3148,8 +3151,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     # calculate ERM for each species
     aoc_z <- aoc_z %>% 
-      # define upper size length for ingestion
-      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      # define upper size WIDTH for ingestion (based on average width:length ratio)
+      mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
+                             (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
+                             (max.size.ingest.um * (1/R.ave)) > x2D_set ~ (x2D_set * (1/R.ave)))) %>% #set to 10um for upper limit or max size ingest, whichever is smaller
       # calculate effect threshold for particles
       mutate(EC_mono_p.particles.mL = dose.particles.mL.master) %>% 
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
@@ -3403,8 +3408,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     # calculate ERM for each species
     aoc_z <- aoc_z %>% 
-      # define upper size length for ingestion
-      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      # define upper size WIDTH for ingestion (based on average width:length ratio)
+      mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
+                             (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
+                             (max.size.ingest.um * (1/R.ave)) > x2D_set ~ (x2D_set * (1/R.ave)))) %>% #set to 10um for upper limit or max size ingest, whichever is smaller
       # calculate effect threshold for particles
       mutate(EC_mono_p.particles.mL = dose.particles.mL.master) %>% 
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
