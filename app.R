@@ -870,7 +870,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   dplyr::filter(chem.exp.typ.nominal_f == "Particle Only") %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
-    10^(0.9341 * log10(body.length.cm - 1.1200)) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+    10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
     max.size.ingest.mm)) # if already present, just use that
 
 #### Ecologically Relevant Metric calculations ####
