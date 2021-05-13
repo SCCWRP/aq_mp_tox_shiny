@@ -25,6 +25,7 @@ https://wincowger.shinyapps.io/OpenSpecy/
 
 ## *Potential* Funding Sources
 Lounsberry foundation
+
 Pogo Network
 
 ## To-do List
