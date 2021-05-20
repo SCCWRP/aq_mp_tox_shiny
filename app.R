@@ -31,6 +31,7 @@ library(ggsci) #color palettes
 # library(bslib) #better themes. required for dark mode
 # library(thematic) #complete control over themes (including plots) required for dark mode
 library(collapsibleTree) #plot type for endpoint category tree
+library(hrbrthemes) #theme for screening plot
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -40,20 +41,6 @@ aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 # All text inputs below.
 
 #### Overview AO Setup ####
-
-#Final_effect_dataset <- read_csv("Final_effect_dataset.csv")%>%
-  #mutate(plot_f = case_when(
-    #plot_f == "Polymer" ~ "Polymer",
-    #plot_f == "Size" ~ "Size",
-    #plot_f == "Shape" ~ "Shape",
-    #plot_f == "Organism" ~ "Organism",
-    #plot_f == "Lvl1" ~ "Endpoint Category",
-    #plot_f == "Life.stage" ~ "Life Stage",
-    #plot_f == "Invivo.invivo" ~ "In Vivo or In Vitro",
-    #plot_f == "Exposure.route" ~ "Exposure Route"))%>%
-  #mutate(plot_f = factor(plot_f))%>%
-  #mutate(logEndpoints = log(Endpoints))%>%
-  #rename(Percent = Freq)
 
 polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
 polyf<-as.data.frame(polydf)%>% #Makes data frame 
@@ -861,7 +848,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
                                              tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
   mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
-                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
+                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>%
+  #Paste the range of treatments used within each study - there is often a range because this is different depending on the endpoint
+  group_by(doi) %>% 
+  mutate(treatment_range = ifelse(min(treatments) == max(treatments), paste0(treatments), paste0(min(treatments),"-",max(treatments)))) %>% 
+  ungroup() %>% 
   #Remove leachate and additive/chemical transfer experiments
   dplyr::filter(leachate.only != "Y") %>%
   mutate(chem.exp.typ.nominal_f = factor(case_when(chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
@@ -1913,15 +1904,161 @@ tabPanel("5: Endpoint Categorization",
          
          ), #closes out tab
 
+#### Study Screening UI ####
+
+tabPanel("6: Study Screening", 
+         h3("Study Screening Results", align = "center"),
+         br(),
+         p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
+         br(),
+         p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
+         br(),
+         
+         # widget headers
+         column(width=12,
+                
+                column(width = 3,
+                       h4("Effects")),
+                
+                column(width = 3,
+                       h4("Particle Characteristics")),
+                
+                column(width = 3,
+                       h4("Biological Factors"))),
+         
+         # widgets
+         
+         column(width = 12,
+                
+                column(width = 3,
+                       pickerInput(inputId = "lvl1_quality", # endpoint checklist
+                                   label = "Broad Endpoint Category:", 
+                                   choices = levels(aoc_setup$lvl1_f),
+                                   selected = levels(aoc_setup$lvl1_f),
+                                   options = list(`actions-box` = TRUE), # option to de/select all
+                                   multiple = TRUE)), # allows for multiple inputs
+                
+                column(width = 3,
+                       pickerInput(inputId = "poly_quality", # polymer checklist
+                                   label = "Polymer:", 
+                                   choices = levels(aoc_setup$poly_f),
+                                   selected = levels(aoc_setup$poly_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       pickerInput(inputId = "organism_quality", # organismal group checklist
+                                   label = "Organisms:", 
+                                   choices = levels(aoc_setup$org_f),
+                                   selected = levels(aoc_setup$org_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)), 
+                
+                column(width = 3, 
+                       pickerInput(inputId = "bio_quality", # bio org checklist
+                                   label = "Level of Biological Organization", 
+                                   choices = levels(aoc_setup$bio_f),
+                                   selected = levels(aoc_setup$bio_f),
+                                   options = list(`actions-box` = TRUE),
+                                   multiple = TRUE))), 
+         
+         # New row of widgets
+         column(width = 12,
+                
+                column(width = 3,
+                       htmlOutput("secondSelection_quality")), # dependent endpoint checklist
+                
+                column(width = 3,
+                       pickerInput(inputId = "shape_quality", # shape checklist
+                                   label = "Shape:", 
+                                   choices = levels(aoc_setup$shape_f),
+                                   selected = levels(aoc_setup$shape_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       pickerInput(inputId = "env_quality", # Environment checklist
+                                   label = "Environment:", 
+                                   choices = levels(aoc_setup$env_f),
+                                   selected = levels(aoc_setup$env_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       htmlOutput("SpeciesSelection_exp_quality"))), # dependent checklist
+         
+         # New row of widgets
+         column(width = 12,
+                
+                column(width = 3,
+                       pickerInput(inputId = "effect_quality",  # Effect Yes/No widget
+                                   label = "Effect:",
+                                   choices = levels(aoc_setup$effect_f),
+                                   selected = levels(aoc_setup$effect_f),
+                                   options = list(`actions-box` = TRUE),
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       pickerInput(inputId = "size_quality", # Environment checklist
+                                   label = "Size Category:", 
+                                   choices = levels(aoc_setup$size_f),
+                                   selected = levels(aoc_setup$size_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       pickerInput(inputId = "life_quality", # life stage checklist
+                                   label = "Life Stages:", 
+                                   choices = levels(aoc_setup$life_f),
+                                   selected = levels(aoc_setup$life_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
+                column(width = 3,
+                       pickerInput(inputId = "acute.chronic_quality", # chronic/acute checklist
+                                   label = "Exposure Duration:", 
+                                   choices = levels(aoc_setup$acute.chronic_f),
+                                   selected = levels(aoc_setup$acute.chronic_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE))),
+         
+         #Go Button and Reset Button
+         
+         column(width = 12,
+                br(),
+                column(width = 3,
+                       actionButton("go_quality", "Update Filters", class = "btn-success")),
+                
+                column(width = 3,
+                       actionButton("reset_quality", "Reset Filters"))),
+         
+         #Button Text
+         
+         column(width = 12,
+                column(width=2,  
+                       strong(p("To Begin: Click the 'Update Filters' button above. This plot may take several minutes to appear."))),
+                
+                column(width=2, offset = 1, 
+                       strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")))),
+         
+# build plotly
+
+fluidRow(
+  column(12,plotlyOutput("quality_plot", height = "1500px")),
+  
+) # closes out fluidRow
+
+), #closes out tab
+
 #### Resources UI ####
 
-tabPanel("6: Resources", 
+tabPanel("7: Resources", 
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EVd-oEZ-xxtJnWdOCC7KHfoBIOO3ByJz7omFoeruD0W6Sw?e=a3weoV", 'Assessment Factor Descriptions')),
          br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EWZha9ygAihPi5sHlOpgR1UBNS9BEoLGZW6TqwCInf0bwg?e=tEe84g", 'Study Screening Rubric')),
+         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EWZha9ygAihPi5sHlOpgR1UBNS9BEoLGZW6TqwCInf0bwg?e=yn8Iim", 'Study Screening Rubric')),
          br(),
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
          br(),
@@ -1932,7 +2069,7 @@ tabPanel("6: Resources",
 
 #### Contact UI ####
 
-tabPanel("7: Contact", 
+tabPanel("8: Contact", 
          br(),
          h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
@@ -4124,6 +4261,220 @@ output$downloadSsdPlot <- downloadHandler(
       rep("orchid", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f, aoc_filter_endpoint()$bio_f))))))
     
   })  
+  
+  #### Screening S ####
+  
+  #Specific endpoint (lvl2) widget that is reactive to Broad endpoint (lvl1) widget selections
+  output$secondSelection_quality <- renderUI({
+    
+    #Assign lvl1 selection values to variable
+    lvl1_c <- input$lvl1_quality 
+    
+    aoc_new <- aoc_setup %>% 
+      #Filter by lvl1 selection
+      filter(lvl1_f %in% lvl1_c) %>%
+      #Create new subset based on lvl1 selection
+      mutate(lvl2_f_new = factor(as.character(lvl2_f))) 
+    
+    #lvl2 widget parameters
+    pickerInput(inputId = "lvl2_quality", 
+                label = "Specific Endpoint within Broad Category:", 
+                choices = levels(aoc_new$lvl2_f_new),
+                selected = levels(aoc_new$lvl2_f_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Species widget that is reactive to organism group (org) and environment (env) widget selections
+  output$SpeciesSelection_exp_quality <- renderUI({
+    
+    #Assign env and org selection values to variables
+    env_c <- input$env_quality 
+    org_c <- input$organism_quality 
+    
+    aoc_new <- aoc_setup %>% 
+      #Filter by env and org selections
+      filter(env_f %in% env_c) %>% 
+      filter(org_f %in% org_c) %>%
+      #Create new subset based on env and org selection
+      mutate(species_new = factor(as.character(species_f))) 
+    
+    #Species widget parameters
+    pickerInput(inputId = "species_quality", 
+                label = "Species:", 
+                choices = levels(aoc_new$species_new),
+                selected = levels(aoc_new$species_new),
+                options = list(`actions-box` = TRUE),
+                multiple = TRUE)})
+  
+  #Filter data based on widget selections
+  quality_filtered <- eventReactive(list(input$go_quality),{
+    
+    #Assign every widget selection to a variable
+    lvl1_c <- input$lvl1_quality 
+    lvl2_c <- input$lvl2_quality 
+    bio_c <- input$bio_quality 
+    effect_c <- input$effect_quality 
+    life_c <- input$life_quality 
+    poly_c <- input$poly_quality 
+    shape_c <- input$shape_quality 
+    size_c <- input$size_quality 
+    species_c<-input$species_quality
+    env_c<-input$env_quality
+    org_c<-input$organism_quality
+    acute_chronic_c<-input$acute.chronic_quality
+    
+  #Create summary data set based on widget filters
+  aoc_setup %>%
+      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+      filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs
+      filter(bio_f %in% bio_c) %>% #filter by bio organization
+      filter(effect_f %in% effect_c) %>% #filter by effect
+      filter(life_f %in% life_c) %>% #filter by life stage
+      filter(poly_f %in% poly_c) %>% #filter by polymer
+      filter(shape_f %in% shape_c) %>% #filter by shape
+      filter(size_f %in% size_c) %>% #filter by size class
+      filter(species_f %in% species_c) %>%   #filter by species
+      filter(env_f %in% env_c) %>%
+      filter(org_f %in% org_c) %>%
+      filter(acute.chronic_f %in% acute_chronic_c) %>%
+      mutate(Study = paste0(authors, " (", year,")")) %>%
+      distinct(Study, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+               tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20) %>%   
+      drop_na() %>% 
+      pivot_longer(!c(Study, doi, treatment_range),
+                   names_to ="Criteria", 
+                   values_to ="Score") %>%
+      #Assign descriptions to numerical scores
+      mutate(Score_f = factor(case_when(Score == 0 ~ "Inadequate",
+                                        Score == 1 ~ "Adequate with Restrictions",
+                                        Score == 2 ~ "Adequate"))) %>%
+      #Assign each criteria to appropriate category
+      mutate(Category = case_when(Criteria == "tech.a1" ~ "Technical Criteria",
+                                  Criteria == "tech.a2" ~ "Technical Criteria",
+                                  Criteria == "tech.a3" ~ "Technical Criteria",
+                                  Criteria == "tech.a4" ~ "Technical Criteria",
+                                  Criteria == "tech.a5" ~ "Technical Criteria",
+                                  Criteria == "tech.a6" ~ "Technical Criteria",
+                                  Criteria == "tech.1" ~ "Technical Criteria",
+                                  Criteria == "tech.2" ~ "Technical Criteria",
+                                  Criteria == "tech.3" ~ "Technical Criteria",
+                                  Criteria == "tech.4" ~ "Technical Criteria",
+                                  Criteria == "tech.5" ~ "Technical Criteria",
+                                  Criteria == "tech.6" ~ "Technical Criteria",
+                                  Criteria == "tech.7" ~ "Technical Criteria",
+                                  Criteria == "tech.8" ~ "Technical Criteria",
+                                  Criteria == "tech.9" ~ "Technical Criteria",
+                                  Criteria == "tech.10" ~ "Technical Criteria",
+                                  Criteria == "tech.11" ~ "Technical Criteria",
+                                  Criteria == "tech.12" ~ "Technical Criteria",
+                                  Criteria == "risk.13" ~ "Risk Assessment",
+                                  Criteria == "risk.13" ~ "Risk Assessment",
+                                  Criteria == "risk.14" ~ "Risk Assessment",
+                                  Criteria == "risk.15" ~ "Risk Assessment",
+                                  Criteria == "risk.16" ~ "Risk Assessment",
+                                  Criteria == "risk.17" ~ "Risk Assessment",
+                                  Criteria == "risk.18" ~ "Risk Assessment",
+                                  Criteria == "risk.19" ~ "Risk Assessment",
+                                  Criteria == "risk.20" ~ "Risk Assessment")) %>%
+      #Set order of categories so they plot in correct order
+      mutate(Category_f = factor(Category, levels = c("Technical Criteria", "Risk Assessment"))) %>% 
+      #Assign descriptions to each criteria
+      mutate(Criteria = case_when(Criteria == "tech.a1" ~ "Test Medium Reported*",
+                                  Criteria == "tech.a2" ~ "Administration Route Reported*",
+                                  Criteria == "tech.a3" ~ "Test Species Reported*",
+                                  Criteria == "tech.a4" ~ "Sample Size Reported*",
+                                  Criteria == "tech.a5" ~ "Control Group Reported*",
+                                  Criteria == "tech.a6" ~ "Exposure Duration Reported*",
+                                  Criteria == "tech.1" ~ "Particle Size*",
+                                  Criteria == "tech.2" ~ "Particle Shape*",
+                                  Criteria == "tech.3" ~ "Polymer Type*",
+                                  Criteria == "tech.4" ~ "Source of Microplastics*",
+                                  Criteria == "tech.5" ~ "Data Reporting*",
+                                  Criteria == "tech.6" ~ "Chemical Purity",
+                                  Criteria == "tech.7" ~ "Laboratory Preparation",
+                                  Criteria == "tech.8" ~ "Background Contamination",
+                                  Criteria == "tech.9" ~ "Exposure Verification",
+                                  Criteria == "tech.10" ~ "Exposure Homogeneity",
+                                  Criteria == "tech.11" ~ "Exposure Assessment",
+                                  Criteria == "tech.12" ~ "Replication",
+                                  Criteria == "risk.13" ~ "Endpoints",
+                                  Criteria == "risk.14" ~ "Food Availability",
+                                  Criteria == "risk.15" ~ "Effect Thresholds",
+                                  Criteria == "risk.16" ~ "Dose Response",
+                                  Criteria == "risk.17" ~ "Concentration Range",
+                                  Criteria == "risk.18" ~ "Aging and Biofouling",
+                                  Criteria == "risk.18" ~ "Risk Assessment",
+                                  Criteria == "risk.19" ~ "Microplastic Diversity",
+                                  Criteria == "risk.20" ~ "Exposure Time")) %>% 
+      #Create factor for criteria and set order - need to be in reverse order here to plot correctly
+      mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Risk Assessment", "Aging and Biofouling", "Concentration Range", "Dose Response",
+                                                      "Effect Thresholds", "Food Availability", "Endpoints", "Replication", "Exposure Assessment", "Exposure Homogeneity",
+                                                      "Exposure Verification", "Background Contamination", "Laboratory Preparation","Chemical Purity","Data Reporting*",
+                                                      "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration Reported*","Control Group Reported*",
+                                                      "Sample Size Reported*", "Test Species Reported*", "Administration Route Reported*","Test Medium Reported*"))) 
+    
+  })
+  
+  #Create plot for quality screening scores from quality_filtered data
+  quality_plotly <- eventReactive(list(input$go_quality),{
+    
+    quality_filtered() %>%   
+      ggplot(aes(Study, Criteria_f)) + 
+      geom_tile(aes(fill = Score_f,
+                    #Define information for hover over
+                    text = paste("Study:", Study, "\n",
+                                 "Criteria:", Criteria_f, "\n",
+                                 "Category:", Category_f, "\n",
+                                 "Score:", Score_f, "\n",
+                                 "Number of Treatments", treatment_range, "\n",
+                                 "DOI:", paste0(doi), "\n")),
+                    color = "white", size = 0.25) +
+      theme_ipsum() +
+      scale_fill_manual(name = "Score",
+                        values = c("dodgerblue4","deepskyblue1","#ebcccd")) +
+      labs(title = "Screening & Prioritization Scores (Chemical Effect Data Excluded, Red Criteria Indicated with (*))",
+           subtitle = "Red Criteria are indicated with an askterisk") +
+      coord_cartesian(clip = "off") + #Keeps labels from disappearing
+      theme_minimal(base_size = 14) +
+      scale_y_discrete(labels = label_wrap(30)) +
+      facet_grid(Category_f ~ ., scales = "free", space = "free") + #Adds criteria category labels
+      theme(axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+            panel.grid.minor=element_blank(),
+            panel.grid.major=element_blank(),
+            axis.text.x = element_text(size = 7, angle = 90, vjust = 0.5, hjust = .5),
+            plot.title = element_text(hjust = 0.5)) %>% 
+      req(nrow(quality_filtered()) > 0) #Supresses warning message text before submit button is clicked
+      
+  })
+  
+  #Render plotly
+  output$quality_plot <- renderPlotly({
+    ggplotly(quality_plotly(), tooltip = c("text")) %>% 
+      layout(legend = list(orientation = "h", #Displays legend horizontally
+                           xanchor = "center", #Use the center of the legend as an anchor
+                           x = 0.5, #Center the legend on the x axis
+                           y = 1.025)) #Places the legend at the top of the plot
+  })
+  
+  # Create "reset" button to revert all filters back to what they began as
+  # Need to call all widgets individually by their ids
+  # See https://stackoverflow.com/questions/44779775/reset-inputs-with-reactive-app-in-shiny for more information.
+  observeEvent(input$reset_quality, {
+    shinyjs::reset("lvl1_quality")
+    shinyjs::reset("lvl2_quality")
+    shinyjs::reset("bio_quality")
+    shinyjs::reset("effect_quality")
+    shinyjs::reset("life_quality")
+    shinyjs::reset("poly_quality")
+    shinyjs::reset("shape_quality")
+    shinyjs::reset("size_quality")
+    shinyjs::reset("species_quality")
+    shinyjs::reset("env_quality")
+    shinyjs::reset("organism_quality")
+    shinyjs::reset("acute.chronic_quality")
+    
+  }) 
   
   } #Server end
 
