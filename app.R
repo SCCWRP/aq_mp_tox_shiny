@@ -1443,7 +1443,7 @@ column(width = 12,
                     # "Download Data" is the title that appears on the button
                       
                         column(width = 3,
-                        actionButton("reset_input", "Reset Filters"))), # adds update button
+                        actionButton("reset_input", "Reset Filters", class = "btn-primary"))), # adds update button
                       
                       # "Reset_input" is the internal name
                       # "Reset Filter" is the title that appears on the button  
@@ -1910,8 +1910,10 @@ tabPanel("6: Study Screening",
          h3("Study Screening Results", align = "center"),
          br(),
          p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
-         br(),
+         b(),
          p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
+         br(),
+         p("The range of treatment groups used with each study is displayed in the hover over text box."),
          br(),
          
          # widget headers
@@ -2022,19 +2024,41 @@ tabPanel("6: Study Screening",
                                    options = list(`actions-box` = TRUE), 
                                    multiple = TRUE))),
          
-         #Go Button and Reset Button
-         
+         #Second row of widget headers
+         column(width=12,
+                
+                column(width = 3,
+                       h4("Quality Criteria"))),
+
+         #New row of widgets
          column(width = 12,
-                br(),
+                
+                column(width = 3,
+                       pickerInput(inputId = "tech_tier_zero_quality", # chronic/acute checklist
+                                   label = "Technical Quality:", 
+                                   choices = levels(aoc_setup$tier_zero_tech_f),
+                                   selected = levels(aoc_setup$tier_zero_tech_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
                 column(width = 3,
                        actionButton("go_quality", "Update Filters", class = "btn-success")),
                 
                 column(width = 3,
-                       actionButton("reset_quality", "Reset Filters"))),
-         
+                       actionButton("reset_quality", "Reset Filters", class = "btn-primary"))),
+
          #Button Text
          
          column(width = 12,
+                
+                column(width = 3,
+                       pickerInput(inputId = "risk_tier_zero_quality", # chronic/acute checklist
+                                   label = "Risk Assessment Quality:", 
+                                   choices = levels(aoc_setup$tier_zero_risk_f),
+                                   selected = levels(aoc_setup$tier_zero_risk_f),
+                                   options = list(`actions-box` = TRUE), 
+                                   multiple = TRUE)),
+                
                 column(width=2,  
                        strong(p("To Begin: Click the 'Update Filters' button above. This plot may take several minutes to appear."))),
                 
@@ -4322,6 +4346,8 @@ output$downloadSsdPlot <- downloadHandler(
     env_c<-input$env_quality
     org_c<-input$organism_quality
     acute_chronic_c<-input$acute.chronic_quality
+    tech_c<-input$tech_tier_zero_quality
+    risk_c<-input$risk_tier_zero_quality
     
   #Create summary data set based on widget filters
   aoc_setup %>%
@@ -4337,6 +4363,8 @@ output$downloadSsdPlot <- downloadHandler(
       filter(env_f %in% env_c) %>%
       filter(org_f %in% org_c) %>%
       filter(acute.chronic_f %in% acute_chronic_c) %>%
+      filter(tier_zero_tech_f %in% tech_c) %>% 
+      filter(tier_zero_risk_f %in% risk_c) %>%
       mutate(Study = paste0(authors, " (", year,")")) %>%
       distinct(Study, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20) %>%   
@@ -4473,6 +4501,8 @@ output$downloadSsdPlot <- downloadHandler(
     shinyjs::reset("env_quality")
     shinyjs::reset("organism_quality")
     shinyjs::reset("acute.chronic_quality")
+    shinyjs::reset("tech_tier_zero_quality")
+    shinyjs::reset("risk_tier_zero_quality")
     
   }) 
   
