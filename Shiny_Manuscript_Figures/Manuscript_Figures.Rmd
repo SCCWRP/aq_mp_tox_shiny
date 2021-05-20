@@ -689,7 +689,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     max.size.ingest.mm)) # if already present, just use that
 ```
 
-```{r collapsible tree example}
+```{r collapsible tree example, include=FALSE}
 
 collapsibleTree(aoc_setup, root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
                     fontSize = 16, zoomable = FALSE,    
@@ -708,7 +708,7 @@ collapsibleTree(aoc_setup, root = "Aquatic Organisms Database", hierarchy = c("l
 
 ```
 
-```{r endpoints and organism groups, fig.width = 15}
+```{r endpoints and organism groups, fig.width = 15, include=FALSE}
 library(viridis)
 a <- aoc_setup %>% 
   filter(effect_f != "NA") %>%
@@ -729,7 +729,7 @@ plot(a)
 
 ```
 
-```{r particle characteristics}
+```{r particle characteristics, include=FALSE}
 
 particle <- aoc_setup %>%
   group_by(size_f) %>%

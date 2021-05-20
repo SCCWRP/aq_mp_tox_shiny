@@ -1910,7 +1910,7 @@ tabPanel("6: Study Screening",
          h3("Study Screening Results", align = "center"),
          br(),
          p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
-         b(),
+         br(),
          p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
          br(),
          p("The range of treatment groups used with each study is displayed in the hover over text box."),
@@ -4472,7 +4472,7 @@ output$downloadSsdPlot <- downloadHandler(
             panel.grid.major=element_blank(),
             axis.text.x = element_text(size = 7, angle = 90, vjust = 0.5, hjust = .5),
             plot.title = element_text(hjust = 0.5)) %>% 
-      req(nrow(quality_filtered()) > 0) #Supresses warning message text before submit button is clicked
+      req(nrow(quality_filtered()) > 0) #Suppresses warning message text before submit button is clicked
       
   })
   
