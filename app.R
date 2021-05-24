@@ -73,8 +73,7 @@ sizef<-as.data.frame(sizedf)%>%
   mutate(size.category = case_when(
     size.category == 1 ~ "1nm < 100nm",
     size.category == 2 ~ "100nm < 1µm",
-    size.category == 3.1 ~ "1µm < 10µm",
-    size.category == 3.2 ~ "10µm < 100µm",
+    size.category == 3 ~ "1µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "Not Reported"))%>% 
@@ -209,12 +208,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(size_f = factor(case_when(
     size.category == 1 ~ "1nm < 100nm",
     size.category == 2 ~ "100nm < 1µm",
-    size.category == 3.1 ~ "1µm < 10µm",
-    size.category == 3.2 ~ "10µm < 100µm",
+    size.category == 3 ~ "1µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
     size.category == 0 ~ "Not Reported"),
-    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape_f = factor(case_when(
     shape == "fiber" ~ "Fiber",
@@ -1204,11 +1202,11 @@ column(width = 12,
                     h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
                     br(), 
                     p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, 
-                      and polymer, respectively.The values in the parentheses represent the number of measurements and studies, respectively, of each metric along the y-axis."),
+                      and polymer, respectively. The values in the parentheses represent the number of measurements and studies, respectively, of each metric along the y-axis."),
                     br(),
                     p("The data displayed in these figures only display data from in vitro studies or in vivo studies where doses were reported 
                     as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
-                    are not displayed but are available in the complete database file."),
+                    are not displayed but are available in the complete database file. Leachate, chemical co-exposure and chemical transfer data have also been excluded from this tab for the purposes of this workshop."),
                     br(),
                     p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
                     br(),
@@ -1500,10 +1498,12 @@ column(width = 12,
 
 #### SSD AO UI ####
                   tabPanel("4: Species Sensitivity Distribution", 
-                    br(), # line break
+                    br(), 
                     h3("Species Sensitivity Distribution", align = "center"),
                     p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
-                    br(), # line break
+                    br(), 
+                    strong("Leachate, chemical co-exposure and chemical transfer data have been excluded from this tab for the purposes of this workshop."),
+                    br(),
                     p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).'), "In brief, an assessment factor of 10 is applied to convert LC/EC25-50 to NOEC, 2 to convert EC/LC20, LOEC, or MIC to NOEC. LC10, EC10 and HONEC are considered equivalent to LOEC. An assessment factor of 10 is applied to convert acute-to-chronic, with determinations of such categories dependent on taxa, as defined in the reference."),
                     br(),
                     p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
