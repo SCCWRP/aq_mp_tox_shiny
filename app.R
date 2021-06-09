@@ -1730,24 +1730,68 @@ column(width = 12,
                                      column(width = 12,
                                             
                                             #ERM Checkbox
-                                            column(width = 3,
+                                            column(width = 1,
                                                    radioButtons(inputId = "ERM_check_ssd", # ERM (particle, surface area, mass, volume, specific surface area)
                                                                 label = "Ecologically Relevant Metric:",
                                                                 choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
                                                                 selected = "Unaligned")),
-                                            # #Alpha checkbox
-                                            # column(width = 3,
-                                            #        numericInput(inputId = "alpha_ssd",
-                                            #                     label = "Length Alpha Value (default of 2.07 for marine surface water)",
-                                            #                     value = 2.07)),
+                                            #Alpha checkbox
+                                            column(width = 1,
+                                                   numericInput(inputId = "alpha_ssd",
+                                                                label = "Length Alpha Value (default of 2.07 for marine surface water)",
+                                                                value = 2.07,
+                                                                step = 0.01)),
+                                            
+                                            #Alpha surface area input
+                                            column(width = 1,
+                                                   numericInput(inputId = "a.sa_ssd",
+                                                                label = "Surface Area Alpha Value (default of 1.50 for marine surface water)",
+                                                                value = 1.50,
+                                                                step = 0.01)),
+                                            
+                                            #Alpha volume input
+                                            column(width = 1,
+                                                   numericInput(inputId = "a.v_ssd",
+                                                                label = "Volume Alpha Value (default of 1.48 for marine surface water)",
+                                                                value = 1.48,
+                                                                step = 0.01)),
+                                            
+                                            #Alpha mass input
+                                            column(width = 1,
+                                                   numericInput(inputId = "a.m_ssd",
+                                                                label = "Mass Alpha Value (default of 1.32 for marine surface water)",
+                                                                value = 1.32,
+                                                                step = 0.01)),
+                                            
+                                            #Alpha ssa input
+                                            column(width = 1,
+                                                   numericInput(inputId = "a.ssa_ssd",
+                                                                label = "Specific Surface Area Alpha Value (default of 1.98 for marine surface water)",
+                                                                value = 1.98,
+                                                                step = 0.01)),
+                                            
+                                            #average width to length ratio for microplastics in marine enviornment input
+                                            column(width = 1,
+                                                   numericInput(inputId = "R.ave_ssd",
+                                                                label = "Average width to length ratio for microplastics (default of 0.77 for marine surface water)",
+                                                                value = 0.77,
+                                                                step = 0.01)),
+                                            
+                                            #average width to length ratio for microplastics in marine enviornment input
+                                            column(width = 1,
+                                                   numericInput(inputId = "p.ave_ssd",
+                                                                label = "Average microplastics density (g/cm^3) (default of 1.10 for marine surface water)",
+                                                                value = 1.10,
+                                                                step = 0.01)),
+                                            
                                            
                                             # lower length input
-                                            column(width = 3,
+                                            column(width = 1,
                                                    numericInput(inputId = "lower_length_ssd",
                                                                 label = "Lower length for default size range (um)",
                                                                 value = 1)),
                                             # upper length input
-                                            column(width = 3,
+                                            column(width = 1,
                                                    numericInput(inputId = "upper_length_ssd",
                                                                 label = "Upper length the default size range (um)",
                                                                 value = 5000))
@@ -3142,20 +3186,20 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     ## ERM parametrization ##
     # Define params for correction #
-    alpha = 2.07#input$alpha_ssd #table s4 for marine surface water. length
+    alpha = input$alpha_ssd #2.07 #table s4 for marine surface water. length
     x2D_set = input$upper_length_ssd #upper size range (default)
     x1D_set = input$lower_length_ssd #lower size range (default)
     x1M_set = 1 #lower size range for ingestible plastic
     
     # define parameters for power law coefficients
-    a.sa = 1.5 #marine surface area power law
-    a.v = 1.48 #a_V for marine surface water volume
-    a.m = 1.32 # upper limit fora_m for mass for marine surface water in table S4 
-    a.ssa = 1.98 # A_SSA for marine surface water
+    a.sa = input$a.sa_ssd #1.5 #marine surface area power law
+    a.v = input$a.v_ssd#1.48 #a_V for marine surface water volume
+    a.m = input$a.m_ssd#1.32 # upper limit fora_m for mass for marine surface water in table S4 
+    a.ssa = input$a.ssa_ssd #1.98 # A_SSA for marine surface water
     
     #define additional parameters for calculations based on averages in the environment
-    R.ave = 0.77 #average width to length ratio for microplastics in marine enviornment
-    p.ave = 1.10 #average density in marine surface water
+    R.ave = input$R.ave_ssd #0.77 #average width to length ratio for microplastics in marine enviornment
+    p.ave = input$p.ave_ssd#1.10 #average density in marine surface water
     
     # calculate ERM for each species
     aoc_z <- aoc_z %>% 
