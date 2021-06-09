@@ -23,6 +23,10 @@ https://rshiny.lifewatch.be/ng-ocean-plastic-challenge/
 
 https://wincowger.shinyapps.io/OpenSpecy/
 
+## *Potential* Funding Sources
+Lounsberry foundation
+
+Pogo Network
 
 ## To-do List
 
@@ -40,3 +44,4 @@ Build BMD tab for human health https://efsa.onlinelibrary.wiley.com/doi/pdfdirec
 *Leah* Effect metrics. Add type of effect threshold concentration metric as a categorial variable, but also add a column of assessment factors; ‘AF_dose descriptor’. This would allow users to align thresholds.
 
 *Leah* Add rescaling methods to align threshold effect concentrations assessed for particle of different size, assuming food dilution as a ‘baseline toxicity’ mode of action for plastic.
+

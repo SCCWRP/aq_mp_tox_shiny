@@ -1,7 +1,7 @@
 ---
-title: 'Shiny App Manuscript Figures: Aquatic Organisms'
+title: 'Team X Manuscript Figures: Aquatic Organisms'
 author: "Leah Thornton Hampton"
-date: "4/2/2021"
+date: "4/26/2021"
 output:
   html_document: 
     toc: true
@@ -15,12 +15,16 @@ output:
 ```{r Data Import and Packages, echo = FALSE, results = 'hide', error = FALSE, warning = FALSE, message = FALSE}
 
 #Import packages
-library(tidyverse) 
+library(tidyverse)
+library(collapsibleTree) #plot type for endpoint category tree
+library(calecopal) #colors 
+library(wesanderson) #colors
 
 #Import Data
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
 
 #Data Tidying
+# Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
    # full dataset filters.
   mutate(effect_f = factor(case_when(effect == "Y" ~ "Yes",
@@ -37,8 +41,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     size.category == 3.2 ~ "10µm < 100µm",
     size.category == 4 ~ "100µm < 1mm",
     size.category == 5 ~ "1mm < 5mm",
-    size.category == 0 ~ "Not Reported"),
-    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+    size.category == 0 ~ "Size Not Reported"),
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Size Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   # shape category data tidying.
   mutate(shape_f = factor(case_when(
     shape == "fiber" ~ "Fiber",
@@ -672,16 +676,125 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(tier_zero_tech_f = factor(case_when(tech.tier.zero == "Fail" ~ "Red Criteria Failed",
                                              tech.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
   mutate(tier_zero_risk_f = factor(case_when(risk.tier.zero == "Fail" ~ "Red Criteria Failed",
-                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed")))
+                                             risk.tier.zero == "Pass" ~ "Red Criteria Passed"))) %>% 
+  #Remove leachate and additive/chemical transfer experiments
+  dplyr::filter(leachate.only != "Y") %>%
+  mutate(chem.exp.typ.nominal_f = factor(case_when(chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
+                                                   chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
+                                                   chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>% 
+  dplyr::filter(chem.exp.typ.nominal_f == "Particle Only") %>% 
+  #calculate maximum ingestible size (if not already in database)
+  mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
+    10^(0.9341 * log10(body.length.cm - 1.1200)) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+    max.size.ingest.mm)) # if already present, just use that
 ```
 
-```{r Organism Groups, echo = FALSE, results = 'hide', error = FALSE, warning = FALSE, message = FALSE}
+```{r collapsible tree example, include=FALSE}
 
+collapsibleTree(aoc_setup, root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
+                    fontSize = 16, zoomable = FALSE,    
+    fill = c(
+      # The root
+      "seashell",
+      # lvl1
+      rep("turquoise", length(unique(aoc_setup$lvl1_f))),
+      # lvl2
+      rep("palegreen", length(unique(paste(aoc_setup$lvl1_f, aoc_setup$lvl2_f)))),
+      # lvl3
+      rep("hotpink", length(unique(paste(aoc_setup$lvl1_f, aoc_setup$lvl2_f, aoc_setup$lvl3_f)))),
+      # bio org
+      rep("orchid", length(unique(paste(aoc_setup$lvl1_f, aoc_setup$lvl2_f, aoc_setup$lvl3_f, aoc_setup$bio_f))))))
+    
+
+```
+
+```{r endpoints and organism groups, fig.width = 15, include=FALSE}
+library(viridis)
 a <- aoc_setup %>% 
-  filter(environment != "Terrestrial") %>% 
-  ggplot(aes(x = org_f, fill = environment)) +
-  geom_bar()
+  filter(effect_f != "NA") %>%
+  count(lvl1_f, org_f) %>% #how many obs of each organism group within each lvl1
+  group_by(lvl1_f) %>%
+  mutate(n_lvl1 = sum(n)) %>% #how many obs within each lvl1
+  ungroup() %>%   
+  ggplot(aes(x = fct_reorder(lvl1_f, n_lvl1), y = n, group = n, fill = org_f)) +
+  geom_bar(stat = "identity", position = position_dodge2(preserve = "single"), color = "black", width = 1) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_manual(values= wes_palette("Zissou1", type = "continuous", 13)) +
+  theme_classic() +
+  theme(text = element_text(size = 16))+
+  labs(y = "Number of Endpoints in Database", x = "Endpoint Category", fill = "Organism\nGroup")
 
 plot(a)
+
 ```
+
+```{r particle characteristics, include=FALSE}
+
+particle <- aoc_setup %>%
+  group_by(size_f) %>%
+  #count the number of data points in each size category
+  mutate(size_count = n()) %>% 
+  #percentage that report polymer
+  mutate(poly_pct = (sum(poly_f != "Not Reported")/size_count)*100) %>% 
+  #percentage that report shape
+  mutate(shape_pct = (sum(shape_f != "Not Reported")/size_count)*100) %>%
+  #percentage that report density
+  replace_na(list(density.reported.estimated = "Not Reported")) %>%   
+  mutate(density_f = as.factor(density.reported.estimated)) %>% 
+  mutate(density_pct = (sum(density_f == "reported")/size_count)*100) %>%  
+  #percentage that report charge
+  mutate(charge_pct = (sum(!is.na(charge))/size_count)*100) %>%
+  #percentage that report functional group
+  mutate(fxngroup_pct = (sum(!is.na(functional.group))/size_count)*100) %>%
+  #validate size
+  mutate(sizevalid_f = as.factor(size.valid)) %>% 
+  mutate(sizevalid_pct = (sum(sizevalid_f == "Y")/size_count)*100) %>% 
+  #validate shape
+  mutate(shapevalid_f = as.factor(shape.valid)) %>% 
+  mutate(shapevalid_pct = (sum(shapevalid_f == "Y")/size_count)*100) %>% 
+  #validate polymer
+  mutate(polyvalid_f = as.factor(polymer.valid)) %>% 
+  mutate(polyvalid_pct = (sum(polyvalid_f == "Y")/size_count)*100) %>% 
+  ungroup() %>% 
+  group_by(size_f, poly_pct, shape_pct, density_pct, charge_pct, fxngroup_pct, sizevalid_pct, shapevalid_pct, polyvalid_pct) %>% 
+  summarise() %>% 
+  rename("Polymer Type" = poly_pct, "Morphology" = shape_pct, "Density" = density_pct, "Charge" = charge_pct, "Functional Group" = fxngroup_pct, "Size Validated" = sizevalid_pct, "Morphology Validated" = shapevalid_pct, "Polymer Validated" = polyvalid_pct)
+  
+
+require(pheatmap)
+require(RColorBrewer)  
+
+# Make column 1 equal to the row name and remove data from column 1 and arrange size levels
+
+All_data <- data.frame(particle, row.names = 1)%>% 
+  arrange("1nm < 100nm", "100nm < 1µm", "1µm < 10µm", "10µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Size Not Reported")
+
+#Turn data into a matrix format
+
+All_matrix <- data.matrix(All_data) 
+
+color <- brewer.pal(n=8, name = "Blues")
+
+Pretty_heatmap <- pheatmap(All_matrix,
+        main = "Frequency (%) of Particle Characteristics Reported",
+        fontsize = 12,
+        treeheight_row = 0, treeheight_col = 0,
+        cluster_rows = FALSE, cluster_cols = FALSE,
+        display_numbers = TRUE,
+        color = color,
+        number_format = "%.0f", fontsize_number = 10, number_color = "black")
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
