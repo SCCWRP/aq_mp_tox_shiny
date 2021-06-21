@@ -17,6 +17,7 @@ output:
 
 #Import packages
 library(tidyverse) 
+library(wesanderson)
 
 #Import Data
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -752,5 +753,62 @@ d <- aoc_setup %>%
   scale_y_discrete(labels = function(x) stringr::str_wrap(x, width = 10))
 
 plot(d)
+```
+
+# Leah 
+
+```{r Leah, warning = FALSE, message = FALSE, fig.height = 7, fig.width = 12}
+
+a <- aoc_setup %>%
+  #Remove studies that don't report doses in mass OR counts per volume
+  filter_at(vars(dose.mg.L.master, dose.particles.mL.master), any_vars(!is.na(.))) %>% 
+  #Designate if doses were reported in mass, counts or both
+  mutate(mass_count = ifelse(dose.mg.L.master.converted.reported == "reported" & dose.particles.mL.master.converted.reported == "converted", 1, 0)) %>%  
+  mutate(particles_count = ifelse(dose.particles.mL.master.converted.reported == "reported" & dose.mg.L.master.converted.reported == "converted", 1, 0)) %>% 
+  mutate(both_count = ifelse(dose.particles.mL.master.converted.reported == "reported" & dose.mg.L.master.converted.reported == "reported", 1, 0)) %>% 
+  #Unique particles within each study
+  distinct(doi, year, poly_f, shape_f, size.length.um.used.for.conversions, dose.mg.L.master.converted.reported, dose.particles.mL.master.converted.reported, mass_count, particles_count, both_count) %>%  
+  #Remove letters from years if they exist
+  mutate(year = str_remove(year,"[abc]")) %>% 
+  #Count of the frequency of doses reported in mass, count or both within each year
+  group_by(year) %>% 
+  mutate(`Mass Only` = sum(mass_count, na.rm = TRUE)) %>% 
+  mutate(`Particles Only` = sum(particles_count, na.rm = TRUE)) %>% 
+  mutate(Both = sum(both_count, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  distinct(year, Both, `Mass Only`, `Particles Only`) %>% 
+  pivot_longer(!year, names_to = "dose_metric", values_to = "freq")
+
+b <- a %>%
+  ggplot(aes(x = year, y = freq, fill = fct_rev(dose_metric))) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme_classic() +
+  scale_fill_manual(values = c("#3B9AB2", "#EBCC2A", "#F21A00")) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(y = "Frequency", x = "Year", fill = "Dose Metric") +
+  theme(text = element_text(size = 16))
+
+plot(b)
+
+#Find studies that use multiple sizes
+c <- aoc_setup %>% 
+  group_by(doi, size.length.um.used.for.conversions) %>% 
+  summarise() %>% 
+  ungroup() %>% 
+  count(doi)
+
+#Find studies that use multiple shapes
+d <- aoc_setup %>% 
+  group_by(doi, shape_f) %>% 
+  summarise() %>% 
+  ungroup() %>% 
+  count(doi)
+
+#Find studies that use multiple polymers
+e <- aoc_setup %>% 
+  group_by(doi, poly_f) %>% 
+  summarise() %>% 
+  ungroup() %>% 
+  count(doi)
 ```
 
