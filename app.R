@@ -4,8 +4,6 @@
 
 #### Setup ####
 
-# Anything that should only happen ONCE should be placed in this setup section, prior to the actual shiny structure.
-
 # Load packages
 library(tidyverse) #General everything
 library(RColorBrewer) #color palette
@@ -32,6 +30,7 @@ library(ggsci) #color palettes
 # library(thematic) #complete control over themes (including plots) required for dark mode
 library(collapsibleTree) #plot type for endpoint category tree
 library(hrbrthemes) #theme for screening plot
+library(shinydashboard)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -955,7 +954,7 @@ aoc_ERM_default <- aoc_setup  %>%
   mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
   
   #### Surface area ERM ####
-mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to ERM
+mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
   #calculate lower ingestible surface area
   mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, 
                          b = 0.5 * R.ave * x1D_set, 
@@ -972,7 +971,7 @@ mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignme
   mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
   #### volume ERM ####
 #define mu_x_mono for alignment to ERM
-mutate(mu.v.mono = particle.volume.um3) %>% 
+mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
   #calculate lower ingestible volume 
   mutate(x_LL_v = volumefnx(R = R.ave,
                             L = x1D_set)) %>%
@@ -1044,9 +1043,10 @@ aoc_endpoint <- aoc_setup %>%
 # light <- bs_theme() # DARK MODE SWITCH
 # dark <- bs_theme(bg = "black", fg = "white", primary = "purple") # DARK MODE SWITCH
 
-# build UI
-ui <- fluidPage(theme = shinytheme("flatly"), #light, 
+ui <- dashboardPage(
+  # theme = shinytheme("flatly"), #light, 
 
+      dashboardHeader(title = "Toxicity of Microplastics Explorer", titleWidth = 400),
                 # #### DARK MODE SWITCH ####
                 #   div(class = "custom-control custom-switch",
                 #     tags$input(id = "dark_mode", type = "checkbox", class = "custom-control-input",
@@ -1056,24 +1056,47 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                  ####
   
   # App title
-  titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
-
-  # Title panel subtext
-  tags$div("Logo created by J.C. Leapman.", tags$a(href="https://twitter.com/jcleapman", tags$img(src="twitter.png", width="2%", height="2%"))),
-  tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
-  actionButton("database_link", label="Go to Human Health Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right"),
-  
-  br(), # line break
+  # titlePanel(title=div(img(src = "main_logo.png", width = "10%", height = "10%"), "Toxicity of Microplastics Explorer: Aquatic Organisms")),
+  # 
+  # # Title panel subtext
+  # tags$div("Logo created by J.C. Leapman.", tags$a(href="https://twitter.com/jcleapman", tags$img(src="twitter.png", width="2%", height="2%"))),
+  # tags$div("This website is only intended for use by invited participants of the Microplastics Health Effects Workshop."),
+  # actionButton("database_link", label="Go to Human Health Database", class = "btn-primary", onclick ="window.open('https://sccwrp.shinyapps.io/human_mp_tox_shiny-/', '_blank')", style = "float:right"),
+  # 
+  # br(), # line break
   
   # Main panel for displaying outputs
-  mainPanel(width = 12,
-    
-      # Output: set of 6 tabs
-      tabsetPanel(type = "tabs",
+  # mainPanel(width = 12,
+  #   
+  #     # Output: set of 6 tabs
+  #     tabsetPanel(type = "tabs",
+  
+  dashboardSidebar(width = 150,
+                   
+                   sidebarMenu(
+                     
+                     #Logo image
+                     br(),
+                     tags$img(src="main_logo_drop.png", width = "100%", height = "100%", style = 'display: block; margin-left: auto; margin-right: auto;'),
+                     br(),
+                     
+                     #List of tabs
+                     menuItem("Welcome", tabName = "Welcome", icon = icon("home")),
+                     menuItem("Overview", tabName = "Overview", icon = icon("globe")),
+                     menuItem("Search", tabName = "Search", icon = icon("search")),
+                     menuItem("Exploration", tabName = "Exploration", icon = icon("chart-bar")),
+                     menuItem("SSD", tabName = "Species Sensitivity Distribution", icon = icon("fish")),
+                     menuItem("Study Screening", tabName = "Study Screening"),
+                     menuItem("Resources", tabName = "Resources"),
+                     menuItem("Contact", tabName = "Contact"))
+  
+                   ), #End dashboard sidebar
 
+  dashboardBody(
+    
+    tabItems(
 #### Introduction UI ####        
-                  tabPanel("1: Introduction", 
-                    
+                  tabItem(tabName = "Welcome",
                     br(), 
                     h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
                     
@@ -1101,7 +1124,7 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                       additional-research-areas/trash-pollution/microplastics-health-effects-webinar-series/history-california-microplastics-legislation/", 'legislative mandates', 
                       .noWS = "outside")," regarding the management of microplastics in drinking water and the aquatic environment."),
                    
-                    h3("Contributors", align = "center"), #Section 3: Contributors list with links to twitter and github
+                    h3("Contributors", align = "center"), #Section 3
                  
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
                       tags$a(href="https://twitter.com/DrLeahTH", tags$img(src="twitter.png", width="2%", height="2%")), tags$a(href="https://github.com/leahth", tags$img(src="github.png", width="2%", height="2%"))),
@@ -1133,383 +1156,386 @@ ui <- fluidPage(theme = shinytheme("flatly"), #light,
                   tags$a(href="https://www.utoronto.ca", tags$img(src="toronto.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%"))),
                   
-                    br(), 
+                  br(), 
                     
-                    verbatimTextOutput(outputId = "Introduction1")),
-                
+                  ),
+                  
 #### Overview AO UI ####
 
-tabPanel("2: Overview", 
-         br(), 
-         h3("Overview of Toxicological Effects in Aquatic Organisms", align = "center"),
-         br(),
-         p("Each bar displays the total number of measured endpoints where a statistically signifcant effect was detected (Y) or where a measurement was made but a significant effect was not detected (N)."), 
-         br(), 
-         p("Detailed descriptions of data categories may be found under the Resources tab."),
-         br(),
-           
-#pickerInput(inputId = "Emily_check", # endpoint checklist
-            #label = "Overview", 
-            #choices = levels(Final_effect_dataset$plot_f),
-            #selected = levels(Final_effect_dataset$plot_f), 
-            #options = list(`actions-box` = TRUE), # option to de/select all
-            #multiple = TRUE), # allows for multiple inputs
-            #br(),
-
-column(width = 12,
-        column(width = 12,
-        plotOutput(outputId = "tax_plot"),
-        br())), 
-       
-column(width = 12,
-       column(width = 6,
-              plotOutput(outputId = "vivo_plot"),
-              br()), 
-
-    
-        column(width = 6,
-              plotOutput(outputId = "life_plot"),
-              br())), 
-       
-column(width = 12,
-       
-      column(width = 6,
-              plotOutput(outputId = "polymer_plot"),
-              br()), 
-
+tabItem(tabName = "Overview", 
+         
+        box(title = "Database Overview", status = "primary", width = 12,
         
-
-      column(width = 6,
-              plotOutput(outputId = "exposure_plot"),
-              br())), 
-
-column(width = 12,   
-
-      column(width = 6,
-              plotOutput(outputId = "shape_plot"),
-              br()),
-
-      column(width = 6,
-       plotOutput(outputId = "size_plot"),
-       br()))),
-
+        p("Select tabs below to explore the database. Each bar displays the total number of measured endpoints where a 
+          statistically signifcant effect was detected (Y) or where a measurement was made but a significant effect was not detected (N)."),
+        
+        br(),
+        
+        fluidRow(
+          tabBox(width = 12,
+            tabPanel("Organism Group", 
+                     plotOutput(outputId = "tax_plot"),
+                     ),
+            
+            tabPanel(div(HTML("<i>In vitro</i> vs <i>In vivo</i>")),
+                     plotOutput(outputId = "vivo_plot"),
+                     ),
+            
+            tabPanel("Life Stage",
+                     plotOutput(outputId = "life_plot"),
+                     ),
+            
+            tabPanel("Exposure Route",
+                     plotOutput(outputId = "exposure_plot"),
+                     ),
+            
+            tabPanel("Polymer Type",
+                     plotOutput(outputId = "polymer_plot"),
+                     ),
+            
+            tabPanel("Particle Morphology",
+                     plotOutput(outputId = "shape_plot"),
+                     ),
+            
+            tabPanel("Particle Size",
+                     plotOutput(outputId = "size_plot"),
+                     )),
+         
+            ), #close fluid row
+            ), #close box
+        
+        box(title = "Biological Endpoint Catgorization", status = "primary", width = 12,
+        
+        br(),
+        p("This plot displays the categorization of measured endpoints in the database. Nodes correspond to the Broad Endpoint Category (blue), 
+        the Specific Endpoint Category (green), Endpoints (pink) and the level of biological organization (purple). Alternatively, the widget 
+        below may be used to select endpoints at various Biological Levels of Organization. Click nodes to expand and collapse the plot."),
+        br(),
+            
+        fluidRow(
+          
+          column(width = 12,
+                 
+                 column(width = 3,
+                        pickerInput(inputId = "bio_check_endpoint", # bio org checklist
+                                    label = "Level of Biological Organization",
+                                    choices = levels(aoc_endpoint$bio_f),
+                                    selected = levels(aoc_endpoint$bio_f),
+                                    options = list(`actions-box` = TRUE),
+                                    multiple = TRUE)),
+          ), #closes out column
+          
+          column(width = 12,
+                 
+                 #Go button
+                 column(width = 3,
+                        actionButton("go_endpoint", "Update Filters", class = "btn-success")), # adds update action button
+                 
+          ), #closes out column
+          
+          column(width = 12,
+          #collapsible tree plot
+          collapsibleTreeOutput("plot", height = "400px"),
+          
+          ), #closes out column
+          
+        ), #close fluid row
+        ), #close box
+      
+), #close tab
 
 #### Exploration AO UI ####
-                tabPanel("3: Exploration",
-                    shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
-                    id = "heili-tab", # adds ID for resetting Heili's tab's filters
-                    
-                    h3("Exploration of Toxicological Effects in Aquatic Organisms", align = "center"),
-                    br(), 
-                    p("Each figure displays a different metric along the y-axis - organism group, broad endpoint category, specific endpoint category, size, shape, 
-                      and polymer, respectively. The values in the parentheses represent the number of measurements and studies, respectively, of each metric along the y-axis."),
-                    br(),
-                    p("The data displayed in these figures only display data from in vitro studies or in vivo studies where doses were reported 
-                    as mass or counts per volume - other dosing units (e.g., particle mass/food mass) 
-                    are not displayed but are available in the complete database file. Leachate, chemical co-exposure and chemical transfer data have also been excluded from this tab for the purposes of this workshop."),
-                    br(),
-                    p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
-                    br(),
-                    p("Filter the data: The data may be filtered using the drop-down menus located below. Then, click the 'Update Filters' button 
-                      to refresh the data displayed according to your selections."),
-                    br(),
-                    p("Change the plot type: The data may be visualized as a boxplot, violin plot or beeswarm plot using the drop-down menu below. Users may also visualize all individual data points by using the checkbox."),
-                    br(),
-                    p("Download the data: Click the 'Download Data' button to retrieve the selected dataset as a '.csv' file."),
-                    br(), 
-                    
-                    
-                    # widget headers
-                    column(width=12,
+  
+tabItem(tabName = "Exploration",
+            
+         box(title = "Data Selection", status = "primary", width = 12, collapsible = TRUE,
+            
+             shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
+             id = "heili-tab", # adds ID for resetting filters
+             
+         fluidRow(
+           tabBox(width = 12, height = "200px",
+             
+             tabPanel("Data Type",
                       
-                      column(width = 3,
-                        h4("Effects")),
+                      "place holder for widget for particle only, leachate, particle + chemical"
                       
-                      column(width = 3,
-                        h4("Particle Characteristics")),
+                      ),
+             
+             tabPanel("Effect", 
                       
-                      column(width = 3,
-                        h4("Biological Factors"))),
-                    
-                    # widgets
-                    
-                    column(width = 12,
-                      
-                      column(width = 3,
+                      #Broad endpoint selection
+                      column(width = 4,
                         pickerInput(inputId = "lvl1_check", # endpoint checklist
-                        label = "Broad Endpoint Category:", 
+                        label = "Broad Endpoint Category:",
                         choices = levels(aoc_setup$lvl1_f),
                         selected = levels(aoc_setup$lvl1_f),
                         options = list(`actions-box` = TRUE), # option to de/select all
                         multiple = TRUE)), # allows for multiple inputs
                       
-                      column(width = 3,
-                        pickerInput(inputId = "poly_check", # polymer checklist
-                        label = "Polymer:", 
-                        choices = levels(aoc_setup$poly_f),
-                        selected = levels(aoc_setup$poly_f),
-                        options = list(`actions-box` = TRUE), 
-                        multiple = TRUE)),
+                      #Specific endpoint selection
+                      column(width = 4, htmlOutput("secondSelection")), # dependent endpoint checklist
                       
-                      column(width = 3,
-                        pickerInput(inputId = "organism_check", # organismal group checklist
-                        label = "Organisms:", 
-                        choices = levels(aoc_setup$org_f),
-                        selected = levels(aoc_setup$org_f),
-                        options = list(`actions-box` = TRUE), 
-                        multiple = TRUE)), 
-                      
-                      column(width = 3, 
-                        pickerInput(inputId = "bio_check", # bio org checklist
-                        label = "Level of Biological Organization", 
-                        choices = levels(aoc_setup$bio_f),
-                        selected = levels(aoc_setup$bio_f),
-                        options = list(`actions-box` = TRUE),
-                        multiple = TRUE))), 
-                      
-                    # New row of widgets
-                    column(width = 12,
-                      
-                      column(width = 3,
-                         htmlOutput("secondSelection")), # dependent endpoint checklist
-                      
-                      column(width = 3,
-                        pickerInput(inputId = "shape_check", # shape checklist
-                        label = "Shape:", 
-                        choices = levels(aoc_setup$shape_f),
-                        selected = levels(aoc_setup$shape_f),
-                        options = list(`actions-box` = TRUE), 
-                        multiple = TRUE)),
-                      
-                      column(width = 3,
-                        pickerInput(inputId = "env_check", # Environment checklist
-                        label = "Environment:", 
-                        choices = levels(aoc_setup$env_f),
-                        selected = levels(aoc_setup$env_f),
-                        options = list(`actions-box` = TRUE), 
-                        multiple = TRUE)),
-                      
-                      column(width = 3,
-                             htmlOutput("SpeciesSelection_exp"))), # dependent checklist
-                      
-                    # New row of widgets
-                    column(width = 12,
-                        
-                      column(width = 3,
-                        pickerInput(inputId = "effect_check",  # Effect Yes/No widget
+                      #Effect y/n selection
+                      column(width = 4,
+                        pickerInput(inputId = "effect_check", 
                         label = "Effect:",
                         choices = levels(aoc_setup$effect_f),
                         selected = levels(aoc_setup$effect_f),
                         options = list(`actions-box` = TRUE),
                         multiple = TRUE)),
                       
-                      column(width = 3,
-                        pickerInput(inputId = "size_check", # Environment checklist
-                        label = "Size Category:", 
-                        choices = levels(aoc_setup$size_f),
-                        selected = levels(aoc_setup$size_f),
-                        options = list(`actions-box` = TRUE), 
+                      ), #close tabpanel
+             
+             tabPanel("Biology", 
+                      
+                      #organism group selection
+                      column(width = 4,
+                        pickerInput(inputId = "organism_check",
+                        label = "Organisms:",
+                        choices = levels(aoc_setup$org_f),
+                        selected = levels(aoc_setup$org_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE),
+                      
+                      #environment selection
+                        pickerInput(inputId = "env_check", 
+                        label = "Environment:",
+                        choices = levels(aoc_setup$env_f),
+                        selected = levels(aoc_setup$env_f),
+                        options = list(`actions-box` = TRUE),
                         multiple = TRUE)),
                       
-                      column(width = 3,
-                        pickerInput(inputId = "life_check", # life stage checklist
-                        label = "Life Stages:", 
+                      #life stage selection
+                      column(width = 4,
+                        pickerInput(inputId = "life_check", 
+                        label = "Life Stages:",
                         choices = levels(aoc_setup$life_f),
                         selected = levels(aoc_setup$life_f),
-                        options = list(`actions-box` = TRUE), 
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE),
+                        
+                      #biological organization selection
+                        pickerInput(inputId = "bio_check", 
+                        label = "Biological Organization:",
+                        choices = levels(aoc_setup$bio_f),
+                        selected = levels(aoc_setup$bio_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
+                        
+                      #species selection
+                      column(width = 4,
+                             htmlOutput("SpeciesSelection_exp"), 
+                      
+                      #exposure duration
+                             pickerInput(inputId = "acute.chronic_check", 
+                             label = "Exposure Duration:",
+                             choices = levels(aoc_setup$acute.chronic_f),
+                             selected = levels(aoc_setup$acute.chronic_f),
+                             options = list(`actions-box` = TRUE),
+                             multiple = TRUE)),
+                      
+                      ), #close tabpanel
+             
+             tabPanel("Particles", 
+                      
+                      #polymer selection
+                      column(width = 4,
+                        pickerInput(inputId = "poly_check", 
+                        label = "Polymer:",
+                        choices = levels(aoc_setup$poly_f),
+                        selected = levels(aoc_setup$poly_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
+                        
+                      #shape selection
+                      column(width = 4,
+                        pickerInput(inputId = "shape_check", 
+                        label = "Shape:",
+                        choices = levels(aoc_setup$shape_f),
+                        selected = levels(aoc_setup$shape_f),
+                        options = list(`actions-box` = TRUE),
                         multiple = TRUE)),
                       
-                      column(width = 3,
-                             pickerInput(inputId = "acute.chronic_check", # chronic/acute checklist
-                                         label = "Exposure Duration:", 
-                                         choices = levels(aoc_setup$acute.chronic_f),
-                                         selected = levels(aoc_setup$acute.chronic_f),
-                                         options = list(`actions-box` = TRUE), 
-                                         multiple = TRUE))),
+                      #size category selection
+                      column(width = 4,
+                        pickerInput(inputId = "size_check", 
+                        label = "Size Category:",
+                        choices = levels(aoc_setup$size_f),
+                        selected = levels(aoc_setup$size_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
 
-                    # second row of widget headers
-                    column(width=12,
-                           
-                           column(width = 3,
-                                  h4("Quality Criteria")),
-                           
-                           column(width = 3,
-                                  h4("Exposure Concentrations")),
-                           
-                           column(width = 3,
-                                  h4("Aesthetics"))),
-                    
-                    #New row of widgets
-                    
-                    column(width = 12,
-                           
-                           column(width = 3,
-                                  
-                                  pickerInput(inputId = "tech_tier_zero_check", # chronic/acute checklist
-                                              label = "Technical Quality:", 
-                                              choices = levels(aoc_setup$tier_zero_tech_f),
-                                              selected = levels(aoc_setup$tier_zero_tech_f),
-                                              options = list(`actions-box` = TRUE), 
-                                              multiple = TRUE)),
-                           
-                           column(width = 3, 
-                                  
-                                  p("Choose dosing metric (if ERM calculations desired, choose particles/mL)"),
-                                  
-                                  radioButtons(inputId = "dose_check", # dosing units
-                                               label = "Particles/mL, mg/L, or um3/mL:",
-                                               choices = c("Particles/mL", "mg/L", "um3/mL"),
-                                               selected = "mg/L")),
-                           
-                           column(width = 3,
-                                  selectInput(inputId = "plot.type", "Plot Type:", 
-                                       list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm")),
-                                  checkboxInput(inputId = "show.points", "Show All Points", FALSE))),
-                           
-                  #New row of widgets
-                    
-                  column(width = 12,
-                         
-                         column(width = 3,
-                                pickerInput(inputId = "risk_tier_zero_check", # chronic/acute checklist
-                                            label = "Applicability for Risk Assessment:", 
-                                            choices = levels(aoc_setup$tier_zero_risk_f),
-                                            selected = levels(aoc_setup$tier_zero_risk_f),
-                                            options = list(`actions-box` = TRUE), 
-                                            multiple = TRUE)),
-                         
-                         column(width = 3, 
-                                
-                                p("Concentrations may be reported in mass/volume or particle #/volume (or sometimes both). Particle volume has been estimated based on morphology. See resources tab for details on calculations."),
-                                
-                                radioButtons(inputId = "Rep_Con_rad",
-                                             label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
-                                             choices = c("reported", "converted", "all"),
-                                             selected = "all")),
-                         
-                         column(width = 3, 
-                                selectInput(inputId = "theme.type_exp", "Dark or Light Mode:", 
-                                            list(light = "light", dark = "dark")),
-                         
-                                selectInput(inputId = "color.type_exp", "Color Theme:", 
-                                            list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA"))),
-                         ), #close out column
-                  
-                  #Ecologically Relevant Metric Row
-                  conditionalPanel(condition = "input.dose_check == 'Particles/mL'",
-                  h4("Ecologically Relevant Metric Alignment"),
-                  p("A monodisperse effect concentration (e.g. 5 micron spheres) may be re-scaled to a default size range (e.g. 1 - 5,000 microns) using methods described in Kooi et al (2021). Re-scaling to a default size range allows direct comparison to exposure concentrations for a default size range (which may also be re-scaled). The following radio buttons apply corrections for bioavailability (i.e. limiting available particles to max ingestable size), and a further correction for the ecologically relevant metric (ERM). For a given ERM, the threshold may be related to both mono- or polydisperse particles interchangeably so long as the total magnitude of ERM remains the same (Koelmans et al, 2020). If, for example, 'volume' is chosen below as an ERM, the monodisperse effect concentration is first corrected for bioavailability and aligned to whichever default size range the user chooses below. This aligned threshold (in particles/mL) is then multiplied by a correction for polydisperse volume based on the average volumes for the given range of microplastics in the environment "),
-                  column(width = 12,
-                         
-                         #ERM Checkbox
-                         column(width = 3,
-                                radioButtons(inputId = "ERM_check", # ERM (particle, surface area, mass, volume, specific surface area)
-                                             label = "Ecologically Relevant Metric:",
-                                             choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
-                                             selected = "Unaligned")),
-                         #Alpha checkbox
-                          # column(width = 3,
-                          #        numericInput(inputId = "alpha_exploration",
-                          #                     label = "Length Alpha Value (default of 2.07 for marine surface water)",
-                          #                     value = 2.07)),
-                         
-                         # lower length input
-                         column(width = 3,
-                                numericInput(inputId = "lower_length_exploration",
-                                             label = "Lower length for default size range (um)",
-                                             value = 1)),
-                         # upper length input
-                         column(width = 3,
-                                numericInput(inputId = "upper_length_exploration",
-                                             label = "Upper length the default size range (um)",
-                                             value = 5000))
-                          ), #end of 12-point column
-                  ), #end of conditional Panel
-
-
-                    # New row of widgets
-                    column(width=12,
-                        column(width = 3,
-                        actionButton("go", "Update Filters", class = "btn-success")), # adds update action button
-                    # "go" is the internal name to refer to the button
-                    # "Update Filters" is the title that appears on the app
-
-                        column(width = 3,
-                        downloadButton("downloadData", "Download Data", class = "btn-info")), # adds download button
-                       
-                    # "downloadData" is the internal name
-                    # "Download Data" is the title that appears on the button
+                      ), #close tabpanel
+           
+             tabPanel("Study Screening", 
                       
-                        column(width = 3,
-                        actionButton("reset_input", "Reset Filters", class = "btn-primary"))), # adds update button
+                      #technical quality selection
+                      column(width = 4,
+                        pickerInput(inputId = "tech_tier_zero_check", 
+                        label = "Technical Criteria:",
+                        choices = levels(aoc_setup$tier_zero_tech_f),
+                        selected = levels(aoc_setup$tier_zero_tech_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
                       
-                      # "Reset_input" is the internal name
-                      # "Reset Filter" is the title that appears on the button  
-                    
-                    # New row
-                    column(width=12,  
-                        column(width = 3,
-                          br(),
-                          strong(p("To Begin: Click the 'Update Filters' button above.")),
-                          br()),
-                        
-                        column(width = 3, offset = 3,
-                          br(),
-                          strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")),
-                          br())), 
-                    
-                    # New row
-                    column(width = 12,
-                    hr(), # adds divider
-                    
-                    column(width = 12,
-                    plotOutput(outputId = "organism_plot_react", height = "600px"),
-                    br())), 
-                    
-                    column(width = 12,
-                  
-                    column(width = 12,
-                    plotOutput(outputId = "lvl_plot_react", height = "600px"),
-                    br())), 
+                      #risk assessment quality selection
+                      column(width = 4,
+                            pickerInput(inputId = "risk_tier_zero_check", 
+                            label = "Risk Assessment Criteria:",
+                            choices = levels(aoc_setup$tier_zero_risk_f),
+                            selected = levels(aoc_setup$tier_zero_risk_f),
+                            options = list(`actions-box` = TRUE),
+                            multiple = TRUE)),
+                      
+                      ), #close tabpanel
+             
+             tabPanel("Dose Metric",
+                      
+                       column(width = 6,
 
-                    column(width = 12,
-                    
-                    column(width = 12,
-                    plotOutput(outputId = "lvl2_plot_react", height = "600px"),
-                    br())), 
-                    
-                    column(width = 12,
-                           
-                    column(width = 12,
-                    plotOutput(outputId = "size_plot_react", height = "600px"),
-                    br())), 
-                    
-                    column(width = 12,
-                  
-                    column(width = 12,
-                    plotOutput(outputId = "shape_plot_react", height = "600px"),
-                    br())), 
-                    
-                    column(width = 12,
-                
-                    column(width = 12,
-                    plotOutput(outputId = "poly_plot_react", height = "600px"),
-                    br()))), 
+                              p("Select 'particles/mL' to align data as described in", a(href = "https://pubs.acs.org/doi/abs/10.1021/acs.est.0c02982",'Koelmans et al. 2020')),
+
+                              radioButtons(inputId = "dose_check", 
+                              label = "Dose Metric:",
+                              choices = c("Particles/mL", "mg/L", "um3/mL"),
+                              selected = "mg/L")),
+                      
+                       column(width = 6,
+
+                              radioButtons(inputId = "Rep_Con_rad",
+                              label = "Do you want to use just the reported, just the converted, or all exposure concentrations?",
+                              choices = c("reported", "converted", "all"),
+                              selected = "all")),
+                      
+                      #Ecologically Relevant Metric Row
+                      column(width = 12,
+                             
+                      conditionalPanel(condition = "input.dose_check == 'Particles/mL'",
+                              br(),
+                              h4("Ecologically Relevant Metric Alignment"),
+                              p("A monodisperse effect concentration (e.g. 5 micron spheres) may be re-scaled to a default size range (e.g. 1 - 5,000 microns) using methods described in Kooi et al (2021). Re-scaling to a default size range allows direct comparison to exposure concentrations for a default size range (which may also be re-scaled). The following radio buttons apply corrections for bioavailability (i.e. limiting available particles to max ingestable size), and a further correction for the ecologically relevant metric (ERM). For a given ERM, the threshold may be related to both mono- or polydisperse particles interchangeably so long as the total magnitude of ERM remains the same (Koelmans et al, 2020). If, for example, 'volume' is chosen below as an ERM, the monodisperse effect concentration is first corrected for bioavailability and aligned to whichever default size range the user chooses below. This aligned threshold (in particles/mL) is then multiplied by a correction for polydisperse volume based on the average volumes for the given range of microplastics in the environment "),
+                              
+                              #ERM Checkbox
+                              column(width = 3,
+                                     radioButtons(inputId = "ERM_check", # ERM (particle, surface area, mass, volume, specific surface area)
+                                                  label = "Ecologically Relevant Metric:",
+                                                  choices = c("Unaligned","Particles", "Surface Area", "Volume", "Mass", "Specific Surface Area"),
+                                                  selected = "Unaligned")),
+                              #Alpha checkbox
+                              # column(width = 3,
+                              #        numericInput(inputId = "alpha_exploration",
+                              #                     label = "Length Alpha Value (default of 2.07 for marine surface water)",
+                              #                     value = 2.07)),
+                              
+                              # lower length input
+                              column(width = 3,
+                                     numericInput(inputId = "lower_length_exploration",
+                                                  label = "Lower length for default size range (um)",
+                                                  value = 1)),
+                              # upper length input
+                              column(width = 3,
+                                     numericInput(inputId = "upper_length_exploration",
+                                                  label = "Upper length the default size range (um)",
+                                                  value = 5000)),
+                                       
+                      )), #end of conditional Panel
+                      
+                      ), #close tabpanel
+             
+             tabPanel("Aesthetics", 
+                      
+                       column(width = 4,
+                            selectInput(inputId = "plot.type", "Plot Type:",
+                            list(boxplot = "boxplot", violin = "violin", beeswarm = "beeswarm")),
+                            checkboxInput(inputId = "show.points", "Show All Points", FALSE)),
+                      
+                      column(width = 4,
+                             selectInput(inputId = "theme.type_exp", "Dark or Light Mode:",
+                             list(light = "light", dark = "dark"))),
+                             
+                      column(width = 4,
+                      selectInput(inputId = "color.type_exp", "Color Theme:",
+                      list(default = "default", viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA"))),
+                         
+                      ) #close tabpanel
+
+         ), #close tab box
+         ), #close fluid row
+         
+         column(width = 3,
+                actionButton("go", "Plot Current Selection", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655")),
+         
+         column(width = 3,
+                actionButton("reset_input", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
+         
+         column(width = 3,
+                downloadButton("downloadData", "Download Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+         
+         ), #close box
+        
+        box(title = "Data Visualization", status = "primary", width = 12,
+            
+            fluidRow(
+              tabBox(width = 12, height = "650px",
+                     
+                     tabPanel("Organism Group",
+                        column(width = 12,      
+                        plotOutput(outputId = "organism_plot_react", height = "600px")),
+                              
+                     ),#closes tab panel
+                     
+                     tabPanel("Broad Endpoint Category",
+                        column(width = 12,      
+                        plotOutput(outputId = "lvl_plot_react", height = "600px")),
+                              
+                     ),#closes tab panel
+                     
+                     tabPanel("Specific Endpoint Category",
+                        column(width = 12,      
+                        plotOutput(outputId = "lvl2_plot_react", height = "600px")),
+                              
+                     ),#closes tab panel
+                     
+                     tabPanel("Size",
+                        column(width = 12,      
+                        plotOutput(outputId = "size_plot_react", height = "600px")),
+                              
+                     ),#closes tab panel
+                     
+                     tabPanel("Shape",
+                        column(width = 12,      
+                        plotOutput(outputId = "shape_plot_react", height = "600px")),
+                              
+                     ),#closes tab panel
+                     
+                     tabPanel("Polymer",
+                        column(width = 12,      
+                        plotOutput(outputId = "poly_plot_react", height = "600px")),
+                              
+                     )#closes tab panel
+
+            ), #closes tab box
+            ), #closes fluid tab
+            ), #closes box
+              
+        ), #closes out exploration tab
 
 #### SSD AO UI ####
-                  tabPanel("4: Species Sensitivity Distribution", 
-                    br(), 
-                    h3("Species Sensitivity Distribution", align = "center"),
-                    p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
-                    br(), 
-                    strong("Leachate, chemical co-exposure and chemical transfer data have been excluded from this tab for the purposes of this workshop."),
-                    br(),
-                    p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).'), "In brief, an assessment factor of 10 is applied to convert LC/EC25-50 to NOEC, 2 to convert EC/LC20, LOEC, or MIC to NOEC. LC10, EC10 and HONEC are considered equivalent to LOEC. An assessment factor of 10 is applied to convert acute-to-chronic, with determinations of such categories dependent on taxa, as defined in the reference."),
-                    br(),
-                    p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
-                    br(),
-                    p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
-                    br(),
+
+tabItem(tabName = "Species Sensitivity Distribution", 
+  br(), 
+  h3("Species Sensitivity Distribution", align = "center"),
+  p("Species sensitivity distributions (SSDs) are cumulative probability distributions that estimate the percent of species affected by a given concentration of exposure using Maximum Likelihood and model averaging. A useful metric often used for setting risk-based thresholds is the concentration that affects 5% of the species, and is reffered to as the 5% Hazard Concentration (HC). For more information on SSDs, refer to", a(href = "https://bit.ly/2Hy4q10", 'Posthuma, Suter II, and Traas (2001).')),
+  br(), 
+  strong("Leachate, chemical co-exposure and chemical transfer data have been excluded from this tab for the purposes of this workshop."),
+  br(),
+  p("The choice of effect metrics (e.g. NOEC, LOEC, HONEC, ECXX and LCXX) should be carefully considered. Assessment factors are available for converting acute exposures to chronic exposure and estimating NOECs from other effect metrics (e.g. LOEC's), according to the methods described in ", a(href = "https://setac.onlinelibrary.wiley.com/doi/epdf/10.1002/ieam.4214", 'Wigger et al (2019).'), "In brief, an assessment factor of 10 is applied to convert LC/EC25-50 to NOEC, 2 to convert EC/LC20, LOEC, or MIC to NOEC. LC10, EC10 and HONEC are considered equivalent to LOEC. An assessment factor of 10 is applied to convert acute-to-chronic, with determinations of such categories dependent on taxa, as defined in the reference."),
+  br(),
+  p("Quality Criteria: For more information about quality criteria filters, please see the 'Study Screening Rubric' Document in the Resources tab."),
+  br(),
+  p("Use the options below to filter the toxicity thresholds dataset. Once complete, hit the 'submit' button"),
+  br(),
                     
  
                     # Row 1 of Headers
@@ -1913,44 +1939,11 @@ column(width = 12,
                               p(align = "center", style = "font-size: 12px;", "This app is built using the R package ", a(href = "https://github.com/bcgov/ssdtools", 'ssdtools', .noWS = "outside"), " version 0.3.2 and share the same functionality."),
                               p(align = "center", style = "font-size: 12px;", "Citation: Thorley, J. and Schwarz C., (2018). ssdtools An R package to fit species Sensitivity Distributions. Journal of Open Source Software, 3(31), 1082. https://doi.org/10.21105/joss.01082."),
                           ) #closes out scott's main panel
-                    ), #closes out Scott's tab panel
-
-#### Endpoint Category UI ####
-
-tabPanel("5: Endpoint Categorization", 
-         br(),
-         p("This plot displays the categorization of measured endpoints in the database. Nodes correspond to the Broad Endpoint Category (blue), 
-         the Specific Endpoint Category (green), Endpoints (pink) and the level of biological organization (purple). Alternatively, the widget below may be used to select
-         endpoints at various Biological Levels of Organization. Click nodes to expand and collapse the plot."),
-         br(),
-         
-         column(width = 12,
-         
-         column(width = 3, 
-                pickerInput(inputId = "bio_check_endpoint", # bio org checklist
-                            label = "Level of Biological Organization", 
-                            choices = levels(aoc_endpoint$bio_f),
-                            selected = levels(aoc_endpoint$bio_f),
-                            options = list(`actions-box` = TRUE),
-                            multiple = TRUE)),
-         ), #closes out button column
-         
-         column(width = 12,
-         
-         #Go button
-         column(width = 3,
-                actionButton("go_endpoint", "Update Filters", class = "btn-success")), # adds update action button
-         
-         ), #closes out button column
-         
-         #collapsible tree plot
-         collapsibleTreeOutput("plot", height = "800px"),
-         
-         ), #closes out tab
+                          ), #closes out Scott's tab panel
 
 #### Study Screening UI ####
 
-tabPanel("6: Study Screening", 
+tabItem(tabName = "Study Screening", 
          h3("Study Screening Results", align = "center"),
          br(),
          p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
@@ -2120,7 +2113,7 @@ fluidRow(
 
 #### Resources UI ####
 
-tabPanel("7: Resources", 
+tabItem(tabName = "Resources", 
          br(),     
          h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
          br(),
@@ -2137,7 +2130,7 @@ tabPanel("7: Resources",
 
 #### Contact UI ####
 
-tabPanel("8: Contact", 
+tabItem(tabName = "Contact", 
          br(),
          h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
@@ -2163,9 +2156,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
 #### Overview AO S ####
   
-  # Effect plot code for check box 
+  #Box #1
   
-  # Insert the right number of plot output objects into the page using the function from the setup section.
    output$polymer_plot <- renderPlot({
     
     # generate plot
@@ -2176,7 +2168,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("Polymer Type")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17), plot.title = element_text(hjust = 0.5, face="bold",size=20))+
        theme(legend.position = "right",
@@ -2197,7 +2188,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("In Vitro or In Vivo")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -2217,7 +2207,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("Particle Size")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -2237,7 +2226,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("Plastic Shapes")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -2256,7 +2244,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        scale_fill_manual(values = cal_palette("lake"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       ggtitle("Life Stage")+
        labs(fill="Effect") +
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
@@ -2277,7 +2264,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("Organism Group")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -2297,7 +2283,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        theme_classic() +
        ylab("Number of Endpoints Measured") +
        labs(fill="Effect") +
-       ggtitle("Exposure Route")+
        guides(x = guide_axis(angle = 45))+
        theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
@@ -2307,8 +2292,35 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
              axis.title.x = element_blank())
    })
    
+   #Box #2
    
+   aoc_filter_endpoint <- eventReactive(list(input$go_endpoint),{
+     
+     # biological organization widget
+     bio_c_endpoint <- input$bio_check_endpoint # assign bio values to "bio_c"
+     
+     aoc_endpoint %>% # take original dataset
+       filter(bio_f %in% bio_c_endpoint) #filter by bio organization
+     
+   })
    
+   output$plot <- renderCollapsibleTree({
+     
+     collapsibleTree(aoc_filter_endpoint(), root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
+                     fontSize = 12, zoomable = FALSE,    
+                     fill = c(
+                       # The root
+                       "seashell",
+                       # lvl1
+                       rep("turquoise", length(unique(aoc_filter_endpoint()$lvl1_f))),
+                       # lvl2
+                       rep("palegreen", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f)))),
+                       # lvl3
+                       rep("hotpink", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f)))),
+                       # bio org
+                       rep("orchid", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f, aoc_filter_endpoint()$bio_f))))))
+     
+   }) 
    
 #### Exploration AO S ####
   
@@ -2322,7 +2334,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
       
     pickerInput(inputId = "lvl2_check", 
-      label = "Specific Endpoint within Broad Category:", 
+      label = "Specific Endpoint Category:", 
       choices = levels(aoc_new$lvl2_f_new),
       selected = levels(aoc_new$lvl2_f_new),
       options = list(`actions-box` = TRUE),
@@ -2405,7 +2417,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       ## Calculate environmentally relevant effect threshold for particles
       mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
       #### Surface area ERM ####
-    mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to ERM
+    mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
       #calculate lower ingestible surface area
       mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, b = 0.5 * R.ave * x1D_set, c = 0.5 * R.ave * 0.67 * x1D_set)) %>%  
       #calculate upper ingestible surface area
@@ -2418,7 +2430,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
       #### volume ERM ####
     #define mu_x_mono for alignment to ERM
-    mutate(mu.v.mono = particle.volume.um3) %>% 
+    mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
       #calculate lower ingestible volume 
       mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%
       #calculate maximum ingestible volume 
@@ -3380,7 +3392,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       ## Calculate environmentally relevant effect threshold for particles
       mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
       # Surface area ERM ##
-    mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to ERM
+    mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
       #calculate lower ingestible surface area
       mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, b = 0.5 * R.ave * x1D_set, c = 0.5 * R.ave * 0.67 * x1D_set)) %>%  
       #calculate upper ingestible surface area
@@ -3393,7 +3405,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
       # volume ERM ##
     #define mu_x_mono for alignment to ERM
-    mutate(mu.v.mono = particle.volume.um3) %>% 
+    mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
       #calculate lower ingestible volume 
       mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%
       #calculate maximum ingestible volume 
@@ -3637,7 +3649,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       ## Calculate environmentally relevant effect threshold for particles
       mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
       # Surface area ERM ##
-    mutate(mu.sa.mono = particle.surface.area.um2) %>% #define mu_x_mono for alignment to ERM
+    mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
       #calculate lower ingestible surface area
       mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, b = 0.5 * R.ave * x1D_set, c = 0.5 * R.ave * 0.67 * x1D_set)) %>%  
       #calculate upper ingestible surface area
@@ -3650,7 +3662,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
       # volume ERM ##
     #define mu_x_mono for alignment to ERM
-    mutate(mu.v.mono = particle.volume.um3) %>% 
+    mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
       #calculate lower ingestible volume 
       mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%
       #calculate maximum ingestible volume 
@@ -4300,35 +4312,7 @@ output$downloadSsdPlot <- downloadHandler(
            xlab = paste0("log10 ",particle_mass_check_ssd))
   })
 
-  #### Endpoint Category S ####
-  
-  aoc_filter_endpoint <- eventReactive(list(input$go_endpoint),{
-  
-  # biological organization widget
-  bio_c_endpoint <- input$bio_check_endpoint # assign bio values to "bio_c"
-  
-  aoc_endpoint %>% # take original dataset
-        filter(bio_f %in% bio_c_endpoint) #filter by bio organization
-  
-  })
-  
-  output$plot <- renderCollapsibleTree({
-    
-    collapsibleTree(aoc_filter_endpoint(), root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
-                    fontSize = 16, zoomable = FALSE,    
-    fill = c(
-      # The root
-      "seashell",
-      # lvl1
-      rep("turquoise", length(unique(aoc_filter_endpoint()$lvl1_f))),
-      # lvl2
-      rep("palegreen", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f)))),
-      # lvl3
-      rep("hotpink", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f)))),
-      # bio org
-      rep("orchid", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f, aoc_filter_endpoint()$bio_f))))))
-    
-  })  
+ 
   
   #### Screening S ####
   
