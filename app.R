@@ -1452,7 +1452,13 @@ tabItem(tabName = "Exploration",
                         multiple = TRUE)), # allows for multiple inputs
                       
                       #Specific endpoint selection
-                      column(width = 4, htmlOutput("secondSelection")), # dependent endpoint checklist
+                      column(width = 4,
+                        pickerInput(inputId = "lvl2_check", 
+                        label = "Specific Endpoint Category:", 
+                        choices = levels(aoc_setup$lvl2_f),
+                        selected = levels(aoc_setup$lvl2_f),
+                        options = list(`actions-box` = TRUE),
+                        multiple = TRUE)),
                       
                       #Effect y/n selection
                       column(width = 4,
@@ -1486,7 +1492,12 @@ tabItem(tabName = "Exploration",
                       
                       #species selection
                       column(width = 4,
-                        htmlOutput("SpeciesSelection_exp"), 
+                      pickerInput(inputId = "species_check", 
+                                  label = "Species:", 
+                                  choices = levels(aoc_setup$species_f),
+                                  selected = levels(aoc_setup$species_f),
+                                  options = list(`actions-box` = TRUE),
+                                  multiple = TRUE),
                         
                       #biological organization selection
                         pickerInput(inputId = "bio_check", 
@@ -2367,47 +2378,46 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    
 #### Exploration S ####
   
-  #Create dependent dropdown checklists: select lvl2 by lvl1.
-  output$secondSelection <- renderUI({
-    
-    lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-    
-    aoc_new <- aoc_setup %>% # take original dataset
-      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
-      mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
-      
-    pickerInput(inputId = "lvl2_check", 
-      label = "Specific Endpoint Category:", 
-      choices = levels(aoc_new$lvl2_f_new),
-      selected = levels(aoc_new$lvl2_f_new),
-      options = list(`actions-box` = TRUE),
-      multiple = TRUE)})
+  # #Create dependent dropdown checklists: select lvl2 by lvl1.
+  # output$secondSelection <- renderUI({
+  #   
+  #   lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
+  #   
+  #   aoc_new <- aoc_setup %>% # take original dataset
+  #     filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
+  #     mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
+  #     
+  #   pickerInput(inputId = "lvl2_check", 
+  #     label = "Specific Endpoint Category:", 
+  #     choices = levels(aoc_new$lvl2_f_new),
+  #     selected = levels(aoc_new$lvl2_f_new),
+  #     options = list(`actions-box` = TRUE),
+  #     multiple = TRUE)})
+  #  
+  #  #Create dependent dropdown checklists: select Species by env and group
+  #  output$SpeciesSelection_exp <- renderUI({
+  #    
+  #    #Assign user inputs to variables for this reactive
+  #    env_c <- input$env_check #assign environments
+  #    org_c <- input$organism_check # assign organism input values to "org_c"
+  #    #filter based on user input
+  #    aoc_new <- aoc_setup %>% # take original dataset
+  #      filter(env_f %in% env_c) %>% #filter by environment inputs
+  #      filter(org_f %in% org_c) %>% # filter by organism inputs
+  #      mutate(species_new = factor(as.character(species_f))) # new subset of factors
+  #    
+  #    pickerInput(inputId = "species_check", 
+  #                label = "Species:", 
+  #                choices = levels(aoc_new$species_new),
+  #                selected = levels(aoc_new$species_new),
+  #                options = list(`actions-box` = TRUE),
+  #                multiple = TRUE)})
    
-   #Create dependent dropdown checklists: select Species by env and group
-   output$SpeciesSelection_exp <- renderUI({
-     
-     #Assign user inputs to variables for this reactive
-     env_c <- input$env_check #assign environments
-     org_c <- input$organism_check # assign organism input values to "org_c"
-     #filter based on user input
-     aoc_new <- aoc_setup %>% # take original dataset
-       filter(env_f %in% env_c) %>% #filter by environment inputs
-       filter(org_f %in% org_c) %>% # filter by organism inputs
-       mutate(species_new = factor(as.character(species_f))) # new subset of factors
-     
-     pickerInput(inputId = "species_check", 
-                 label = "Species:", 
-                 choices = levels(aoc_new$species_new),
-                 selected = levels(aoc_new$species_new),
-                 options = list(`actions-box` = TRUE),
-                 multiple = TRUE)})
-   
-
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
     # use the inputs to create a new dataset that will be fed into the renderPlot calls below
-    
+
     # every selection widget should be represented as a new variable below
     org_c <- input$organism_check # assign organism input values to "org_c"
     lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
