@@ -931,7 +931,9 @@ R.ave = 0.77 #average width to length ratio for microplastics in marine enviornm
 p.ave = 1.10 #average density in marine surface water
 
 # calculate ERM for each species
-aoc_ERM_default <- aoc_setup  %>% 
+aoc_ERM_default <- aoc_setup  %>%
+  #filter the data to only include particle only data
+  dplyr::filter(exp_type_f == "Particle Only") %>% 
   # define upper size WIDTH for ingestion (based on average width:length ratio)
   mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                          (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -1249,172 +1251,166 @@ tabItem(tabName = "Screening",
         
         box(title = "Data Selection", status = "primary", width = 12, collapsible = TRUE,
             
+            p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. 
+            For more information, including the scoring rubric used, see Resources."),
             
-        )#close box
-        #          h3("Study Screening Results", align = "center"),
-        #          br(),
-        #          p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
-        #          br(),
-        #          p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
-        #          br(),
-        #          p("The range of treatment groups used with each study is displayed in the hover over text box."),
-        #          br(),
-        #          
-        #          # widget headers
-        #          column(width=12,
-        #                 
-        #                 column(width = 3,
-        #                        h4("Effects")),
-        #                 
-        #                 column(width = 3,
-        #                        h4("Particle Characteristics")),
-        #                 
-        #                 column(width = 3,
-        #                        h4("Biological Factors"))),
-        #          
-        #          # widgets
-        #          
-        #          column(width = 12,
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "lvl1_quality", # endpoint checklist
-        #                                    label = "Broad Endpoint Category:", 
-        #                                    choices = levels(aoc_setup$lvl1_f),
-        #                                    selected = levels(aoc_setup$lvl1_f),
-        #                                    options = list(`actions-box` = TRUE), # option to de/select all
-        #                                    multiple = TRUE)), # allows for multiple inputs
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "poly_quality", # polymer checklist
-        #                                    label = "Polymer:", 
-        #                                    choices = levels(aoc_setup$poly_f),
-        #                                    selected = levels(aoc_setup$poly_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "organism_quality", # organismal group checklist
-        #                                    label = "Organisms:", 
-        #                                    choices = levels(aoc_setup$org_f),
-        #                                    selected = levels(aoc_setup$org_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)), 
-        #                 
-        #                 column(width = 3, 
-        #                        pickerInput(inputId = "bio_quality", # bio org checklist
-        #                                    label = "Level of Biological Organization", 
-        #                                    choices = levels(aoc_setup$bio_f),
-        #                                    selected = levels(aoc_setup$bio_f),
-        #                                    options = list(`actions-box` = TRUE),
-        #                                    multiple = TRUE))), 
-        #          
-        #          # New row of widgets
-        #          column(width = 12,
-        #                 
-        #                 column(width = 3,
-        #                        htmlOutput("secondSelection_quality")), # dependent endpoint checklist
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "shape_quality", # shape checklist
-        #                                    label = "Shape:", 
-        #                                    choices = levels(aoc_setup$shape_f),
-        #                                    selected = levels(aoc_setup$shape_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "env_quality", # Environment checklist
-        #                                    label = "Environment:", 
-        #                                    choices = levels(aoc_setup$env_f),
-        #                                    selected = levels(aoc_setup$env_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        htmlOutput("SpeciesSelection_exp_quality"))), # dependent checklist
-        #          
-        #          # New row of widgets
-        #          column(width = 12,
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "effect_quality",  # Effect Yes/No widget
-        #                                    label = "Effect:",
-        #                                    choices = levels(aoc_setup$effect_f),
-        #                                    selected = levels(aoc_setup$effect_f),
-        #                                    options = list(`actions-box` = TRUE),
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "size_quality", # Environment checklist
-        #                                    label = "Size Category:", 
-        #                                    choices = levels(aoc_setup$size_f),
-        #                                    selected = levels(aoc_setup$size_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "life_quality", # life stage checklist
-        #                                    label = "Life Stages:", 
-        #                                    choices = levels(aoc_setup$life_f),
-        #                                    selected = levels(aoc_setup$life_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "acute.chronic_quality", # chronic/acute checklist
-        #                                    label = "Exposure Duration:", 
-        #                                    choices = levels(aoc_setup$acute.chronic_f),
-        #                                    selected = levels(aoc_setup$acute.chronic_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE))),
-        #          
-        #          #Second row of widget headers
-        #          column(width=12,
-        #                 
-        #                 column(width = 3,
-        #                        h4("Quality Criteria"))),
-        # 
-        #          #New row of widgets
-        #          column(width = 12,
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "tech_tier_zero_quality", # chronic/acute checklist
-        #                                    label = "Technical Quality:", 
-        #                                    choices = levels(aoc_setup$tier_zero_tech_f),
-        #                                    selected = levels(aoc_setup$tier_zero_tech_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width = 3,
-        #                        actionButton("go_quality", "Update Filters", class = "btn-success")),
-        #                 
-        #                 column(width = 3,
-        #                        actionButton("reset_quality", "Reset Filters", class = "btn-primary"))),
-        # 
-        #          #Button Text
-        #          
-        #          column(width = 12,
-        #                 
-        #                 column(width = 3,
-        #                        pickerInput(inputId = "risk_tier_zero_quality", # chronic/acute checklist
-        #                                    label = "Risk Assessment Quality:", 
-        #                                    choices = levels(aoc_setup$tier_zero_risk_f),
-        #                                    selected = levels(aoc_setup$tier_zero_risk_f),
-        #                                    options = list(`actions-box` = TRUE), 
-        #                                    multiple = TRUE)),
-        #                 
-        #                 column(width=2,  
-        #                        strong(p("To Begin: Click the 'Update Filters' button above. This plot may take several minutes to appear."))),
-        #                 
-        #                 column(width=2, offset = 1, 
-        #                        strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")))),
-        #          
-        # # build plotly
-        # 
-        # fluidRow(
-        #   column(12,plotlyOutput("quality_plot", height = "1500px")),
-        #   
-        # ) # closes out fluidRow
+            fluidRow(
+              tabBox(width = 12, height = "200px",
+                     
+                     tabPanel("Data Type",
+                              
+                     "Only 'Particle Only' data are included in the study screening dataset."          
+                              
+                     ), #close tabpanel
+                     
+                     tabPanel("Effect", 
+                              
+                              #Broad endpoint selection
+                              column(width = 4,
+                                     pickerInput(inputId = "lvl1_quality", # endpoint checklist
+                                                 label = "Broad Endpoint Category:",
+                                                 choices = levels(aoc_setup$lvl1_f),
+                                                 selected = levels(aoc_setup$lvl1_f),
+                                                 options = list(`actions-box` = TRUE), # option to de/select all
+                                                 multiple = TRUE)), # allows for multiple inputs
+                              
+                              #Specific endpoint selection
+                              column(width = 4, htmlOutput("secondSelection_quality")), # dependent endpoint checklist
+                              
+                              #Effect y/n selection
+                              column(width = 4,
+                                     pickerInput(inputId = "effect_quality", 
+                                                 label = "Effect:",
+                                                 choices = levels(aoc_setup$effect_f),
+                                                 selected = levels(aoc_setup$effect_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                     ), #close tabpanel
+                     
+                     tabPanel("Biology", 
+                              
+                              #organism group selection
+                              column(width = 4,
+                                     pickerInput(inputId = "organism_quality",
+                                                 label = "Organisms:",
+                                                 choices = levels(aoc_setup$org_f),
+                                                 selected = levels(aoc_setup$org_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE),
+                                     
+                                     #environment selection
+                                     pickerInput(inputId = "env_quality", 
+                                                 label = "Environment:",
+                                                 choices = levels(aoc_setup$env_f),
+                                                 selected = levels(aoc_setup$env_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                              #species selection
+                              column(width = 4,
+                                     htmlOutput("SpeciesSelection_exp_quality"), 
+                                     
+                                     #biological organization selection
+                                     pickerInput(inputId = "bio_quality", 
+                                                 label = "Biological Organization:",
+                                                 choices = levels(aoc_setup$bio_f),
+                                                 selected = levels(aoc_setup$bio_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                              #life stage selection
+                              column(width = 4,
+                                     pickerInput(inputId = "life_quality", 
+                                                 label = "Life Stages:",
+                                                 choices = levels(aoc_setup$life_f),
+                                                 selected = levels(aoc_setup$life_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE),     
+                                     
+                                     #exposure duration
+                                     pickerInput(inputId = "acute.chronic_quality", 
+                                                 label = "Exposure Duration:",
+                                                 choices = levels(aoc_setup$acute.chronic_f),
+                                                 selected = levels(aoc_setup$acute.chronic_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                     ), #close tabpanel
+                     
+                     tabPanel("Particles", 
+                              
+                              #polymer selection
+                              column(width = 4,
+                                     pickerInput(inputId = "poly_quality", 
+                                                 label = "Polymer:",
+                                                 choices = levels(aoc_setup$poly_f),
+                                                 selected = levels(aoc_setup$poly_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                              #shape selection
+                              column(width = 4,
+                                     pickerInput(inputId = "shape_quality", 
+                                                 label = "Shape:",
+                                                 choices = levels(aoc_setup$shape_f),
+                                                 selected = levels(aoc_setup$shape_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                              #size category selection
+                              column(width = 4,
+                                     pickerInput(inputId = "size_quality", 
+                                                 label = "Size Category:",
+                                                 choices = levels(aoc_setup$size_f),
+                                                 selected = levels(aoc_setup$size_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                     ), #close tabpanel
+                     
+                     tabPanel("Study Screening", 
+                              
+                              #technical quality selection
+                              column(width = 4,
+                                     pickerInput(inputId = "tech_tier_zero_quality", 
+                                                 label = "Technical Criteria:",
+                                                 choices = levels(aoc_setup$tier_zero_tech_f),
+                                                 selected = levels(aoc_setup$tier_zero_tech_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                              #risk assessment quality selection
+                              column(width = 4,
+                                     pickerInput(inputId = "risk_tier_zero_quality", 
+                                                 label = "Risk Assessment Criteria:",
+                                                 choices = levels(aoc_setup$tier_zero_risk_f),
+                                                 selected = levels(aoc_setup$tier_zero_risk_f),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
+                     ) #close tabpanel
+                     
+              ), #close tab box
+            ), #close fluid row
+            
+            column(width = 3,
+                   actionButton("go_quality", "Plot Current Selection", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655")),
+            
+            column(width = 3,
+                   actionButton("reset_quality", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
+            
+        ), #close box
+
+        box(title = "Visualize Data", status = "primary", width = 12, height = "1600px",
+            
+            p("Use the cursor to zoom and hover over the plot to view additional information about each study."),
+            br(),
+            
+            plotlyOutput("quality_plot", height = "1500px")  
+            
+            
+        ), #close box
         
 ), #closes out tab
 
@@ -4270,7 +4266,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   # Cullen and Frey Graph
   output$ssd_CF_plot <- renderPlot({
-    req(aoc_filter_ssd())
+    req(aoc_filter_ssd() > 0)
     #reactive to static
     aoc_SSD <- aoc_filter_ssd()
     
@@ -4317,7 +4313,7 @@ output$downloadSsdPlot <- downloadHandler(
   #QQ plot
   output$ssd_qq_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd())
+    req(aoc_filter_ssd()>0)
     
     #reactive to static
     aocFitLNorm <- aocSSDFitLNorm()
@@ -4334,7 +4330,7 @@ output$downloadSsdPlot <- downloadHandler(
   #pp plot
   output$ssd_pp_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd())
+    req(aoc_filter_ssd()>0)
     
     #reactive to static
     aocFitLNorm <- aocSSDFitLNorm()
@@ -4352,7 +4348,7 @@ output$downloadSsdPlot <- downloadHandler(
   #Histogram
   output$ssd_dens_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd())
+    req(aoc_filter_ssd()>0)
     
     #reactive report x-axis
     particle_mass_check_ssd <- input$particle_mass_check_ssd
