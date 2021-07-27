@@ -2352,7 +2352,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
 #### Search S ####
    
    output$databaseDataTable <- renderDataTable(
-     aoc_setup[,c("doi", "exp_type_f", "env_f", "org_f", "species_f", "life_f", "acute.chronic_f", "size_f", 
+     aoc_setup[,c("doi", "authors", "year","exp_type_f", "env_f", "org_f", "species_f", "life_f", "acute.chronic_f", "size_f", 
                   "size.length.um.used.for.conversions", "shape_f", "poly_f", "weather.biofoul_f", "lvl1_f", "lvl2_f", "lvl3_f", "effect_f")],
      filter = "top",
      extensions = c('Buttons'),
@@ -2361,7 +2361,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
        scrollY = 400,
        scroller = TRUE),
-     colnames = c('DOI', 'Experiment Type', 'Environment', 'Organism Group', 'Species', 'Life Stage', 'Exposure Duration',
+     colnames = c('DOI', 'Authors', 'Year', 'Experiment Type', 'Environment', 'Organism Group', 'Species', 'Life Stage', 'Exposure Duration',
                   'Size Category', 'Mean/Median Particle Size', 'Shape', 'Polymer', 'Weathering/Biofoul', 'Broad Endpoint Category',
                   'Specific Endpoint Category', 'Endpoint', 'Effect'))
    
