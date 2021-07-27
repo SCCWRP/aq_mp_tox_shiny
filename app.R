@@ -833,6 +833,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
     environment == "Marine" ~ "Marine",
     environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(weather.biofoul_f = factor(case_when(weather.biofoul == "Y" ~ "Yes",
+                                              weather.biofoul == "N" ~ "No"))) %>% 
   mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
@@ -850,18 +852,16 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   group_by(doi) %>% 
   mutate(treatment_range = ifelse(min(treatments) == max(treatments), paste0(treatments), paste0(min(treatments),"-",max(treatments)))) %>% 
   ungroup() %>% 
-  #Remove leachate and additive/chemical transfer experiments
-  dplyr::filter(leachate.only != "Y") %>%
-  mutate(chem.exp.typ.nominal_f = factor(case_when(chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
-                                                   chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
-                                                   chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>% 
-  dplyr::filter(chem.exp.typ.nominal_f == "Particle Only") %>% 
+  #Create factors for leachate and additive/chemical transfer experiments
+  mutate(exp_type_f = factor(case_when(leachate.only == "Y" ~ "Leachate",
+                                       chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
+                                       chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
+                                       chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"), levels = c("Particle Only", "Chemical Transfer", "Chemical Co-Exposure", "Leachate"))) %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
     10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
     max.size.ingest.mm)) %>%  # if already present, just use that
   mutate(max.size.ingest.um = 1000 * max.size.ingest.mm) #makes it less confusing below
-
 
 #### Ecologically Relevant Metric calculations ####
 
@@ -1067,9 +1067,9 @@ ui <- dashboardPage(
                      menuItem("Welcome", tabName = "Welcome", icon = icon("home")),
                      menuItem("Overview", tabName = "Overview", icon = icon("globe")),
                      menuItem("Search", tabName = "Search", icon = icon("search")),
+                     menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
                      menuItem("Exploration", tabName = "Exploration", icon = icon("chart-bar")),
                      menuItem("SSD", tabName = "SSD", icon = icon("fish")),
-                     menuItem("Study Screening", tabName = "Study Screening"),
                      menuItem("Resources", tabName = "Resources"),
                      menuItem("Contact", tabName = "Contact"))
   
@@ -1079,7 +1079,7 @@ ui <- dashboardPage(
     
     tabItems(
       
-#### Introduction UI ####        
+#### Welcome UI ####        
                   tabItem(tabName = "Welcome",
                     br(), 
                     h3("What is the Microplastics Toxicity Database?", align = "center"), #Section 1
@@ -1228,7 +1228,198 @@ tabItem(tabName = "Overview",
       
 ), #close tab
 
-#### Exploration AO UI ####
+
+#### Search UI ####
+
+tabItem(tabName = "Search",
+        
+         box(title = "Search Database", status = "primary", width = 12,
+             
+             
+             dataTableOutput("databaseDataTable", height = "200px")   
+             
+             
+         ), #close box
+        
+),#close search tab
+
+#### Study Screening UI ####
+
+tabItem(tabName = "Screening",
+        
+        box(title = "Data Selection", status = "primary", width = 12, collapsible = TRUE,
+            
+            
+        )#close box
+        #          h3("Study Screening Results", align = "center"),
+        #          br(),
+        #          p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
+        #          br(),
+        #          p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
+        #          br(),
+        #          p("The range of treatment groups used with each study is displayed in the hover over text box."),
+        #          br(),
+        #          
+        #          # widget headers
+        #          column(width=12,
+        #                 
+        #                 column(width = 3,
+        #                        h4("Effects")),
+        #                 
+        #                 column(width = 3,
+        #                        h4("Particle Characteristics")),
+        #                 
+        #                 column(width = 3,
+        #                        h4("Biological Factors"))),
+        #          
+        #          # widgets
+        #          
+        #          column(width = 12,
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "lvl1_quality", # endpoint checklist
+        #                                    label = "Broad Endpoint Category:", 
+        #                                    choices = levels(aoc_setup$lvl1_f),
+        #                                    selected = levels(aoc_setup$lvl1_f),
+        #                                    options = list(`actions-box` = TRUE), # option to de/select all
+        #                                    multiple = TRUE)), # allows for multiple inputs
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "poly_quality", # polymer checklist
+        #                                    label = "Polymer:", 
+        #                                    choices = levels(aoc_setup$poly_f),
+        #                                    selected = levels(aoc_setup$poly_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "organism_quality", # organismal group checklist
+        #                                    label = "Organisms:", 
+        #                                    choices = levels(aoc_setup$org_f),
+        #                                    selected = levels(aoc_setup$org_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)), 
+        #                 
+        #                 column(width = 3, 
+        #                        pickerInput(inputId = "bio_quality", # bio org checklist
+        #                                    label = "Level of Biological Organization", 
+        #                                    choices = levels(aoc_setup$bio_f),
+        #                                    selected = levels(aoc_setup$bio_f),
+        #                                    options = list(`actions-box` = TRUE),
+        #                                    multiple = TRUE))), 
+        #          
+        #          # New row of widgets
+        #          column(width = 12,
+        #                 
+        #                 column(width = 3,
+        #                        htmlOutput("secondSelection_quality")), # dependent endpoint checklist
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "shape_quality", # shape checklist
+        #                                    label = "Shape:", 
+        #                                    choices = levels(aoc_setup$shape_f),
+        #                                    selected = levels(aoc_setup$shape_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "env_quality", # Environment checklist
+        #                                    label = "Environment:", 
+        #                                    choices = levels(aoc_setup$env_f),
+        #                                    selected = levels(aoc_setup$env_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        htmlOutput("SpeciesSelection_exp_quality"))), # dependent checklist
+        #          
+        #          # New row of widgets
+        #          column(width = 12,
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "effect_quality",  # Effect Yes/No widget
+        #                                    label = "Effect:",
+        #                                    choices = levels(aoc_setup$effect_f),
+        #                                    selected = levels(aoc_setup$effect_f),
+        #                                    options = list(`actions-box` = TRUE),
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "size_quality", # Environment checklist
+        #                                    label = "Size Category:", 
+        #                                    choices = levels(aoc_setup$size_f),
+        #                                    selected = levels(aoc_setup$size_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "life_quality", # life stage checklist
+        #                                    label = "Life Stages:", 
+        #                                    choices = levels(aoc_setup$life_f),
+        #                                    selected = levels(aoc_setup$life_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "acute.chronic_quality", # chronic/acute checklist
+        #                                    label = "Exposure Duration:", 
+        #                                    choices = levels(aoc_setup$acute.chronic_f),
+        #                                    selected = levels(aoc_setup$acute.chronic_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE))),
+        #          
+        #          #Second row of widget headers
+        #          column(width=12,
+        #                 
+        #                 column(width = 3,
+        #                        h4("Quality Criteria"))),
+        # 
+        #          #New row of widgets
+        #          column(width = 12,
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "tech_tier_zero_quality", # chronic/acute checklist
+        #                                    label = "Technical Quality:", 
+        #                                    choices = levels(aoc_setup$tier_zero_tech_f),
+        #                                    selected = levels(aoc_setup$tier_zero_tech_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width = 3,
+        #                        actionButton("go_quality", "Update Filters", class = "btn-success")),
+        #                 
+        #                 column(width = 3,
+        #                        actionButton("reset_quality", "Reset Filters", class = "btn-primary"))),
+        # 
+        #          #Button Text
+        #          
+        #          column(width = 12,
+        #                 
+        #                 column(width = 3,
+        #                        pickerInput(inputId = "risk_tier_zero_quality", # chronic/acute checklist
+        #                                    label = "Risk Assessment Quality:", 
+        #                                    choices = levels(aoc_setup$tier_zero_risk_f),
+        #                                    selected = levels(aoc_setup$tier_zero_risk_f),
+        #                                    options = list(`actions-box` = TRUE), 
+        #                                    multiple = TRUE)),
+        #                 
+        #                 column(width=2,  
+        #                        strong(p("To Begin: Click the 'Update Filters' button above. This plot may take several minutes to appear."))),
+        #                 
+        #                 column(width=2, offset = 1, 
+        #                        strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")))),
+        #          
+        # # build plotly
+        # 
+        # fluidRow(
+        #   column(12,plotlyOutput("quality_plot", height = "1500px")),
+        #   
+        # ) # closes out fluidRow
+        
+), #closes out tab
+
+
+#### Exploration UI ####
   
 tabItem(tabName = "Exploration",
             
@@ -1242,9 +1433,16 @@ tabItem(tabName = "Exploration",
              
              tabPanel("Data Type",
                       
-                      "place holder for widget for particle only, leachate, particle + chemical"
-                      
-                      ),
+                      #Data type selection
+                      column(width = 4,
+                             pickerInput(inputId = "exp_type_check", 
+                             label = "Data Type:",
+                             choices = levels(aoc_setup$exp_type_f),
+                             selected = levels(aoc_setup$exp_type_f),
+                             options = list(`actions-box` = TRUE), 
+                             multiple = TRUE)), 
+                                 
+                      ), #close tabpanel
              
              tabPanel("Effect", 
                       
@@ -1521,7 +1719,14 @@ tabItem(tabName = "SSD",
                      
                      tabPanel("Data Type",
                               
-                              "place holder for widget for particle only, leachate, particle + chemical"
+                          #Data type selection
+                          column(width = 4,
+                                 pickerInput(inputId = "exp_type_check_ssd", 
+                                 label = "Data Type:",
+                                 choices = levels(aoc_z$exp_type_f),
+                                 selected = levels(aoc_z$exp_type_f),
+                                 options = list(`actions-box` = TRUE), 
+                                 multiple = TRUE)), 
                               
                      ), #close tabpanel  
                      
@@ -1936,176 +2141,6 @@ tabItem(tabName = "SSD",
         
         ), #closes out SSD tab
   
-#### Study Screening UI ####
-
-tabItem(tabName = "Study Screening", 
-         h3("Study Screening Results", align = "center"),
-         br(),
-         p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. For more information, including the scoring rubric used, see the document 'Study Screening Rubric' under the Resources tab."),
-         br(),
-         p("Interact with the Data: Use your cursor to zoom and hover over the plot to view additional information about each study."),
-         br(),
-         p("The range of treatment groups used with each study is displayed in the hover over text box."),
-         br(),
-         
-         # widget headers
-         column(width=12,
-                
-                column(width = 3,
-                       h4("Effects")),
-                
-                column(width = 3,
-                       h4("Particle Characteristics")),
-                
-                column(width = 3,
-                       h4("Biological Factors"))),
-         
-         # widgets
-         
-         column(width = 12,
-                
-                column(width = 3,
-                       pickerInput(inputId = "lvl1_quality", # endpoint checklist
-                                   label = "Broad Endpoint Category:", 
-                                   choices = levels(aoc_setup$lvl1_f),
-                                   selected = levels(aoc_setup$lvl1_f),
-                                   options = list(`actions-box` = TRUE), # option to de/select all
-                                   multiple = TRUE)), # allows for multiple inputs
-                
-                column(width = 3,
-                       pickerInput(inputId = "poly_quality", # polymer checklist
-                                   label = "Polymer:", 
-                                   choices = levels(aoc_setup$poly_f),
-                                   selected = levels(aoc_setup$poly_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       pickerInput(inputId = "organism_quality", # organismal group checklist
-                                   label = "Organisms:", 
-                                   choices = levels(aoc_setup$org_f),
-                                   selected = levels(aoc_setup$org_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)), 
-                
-                column(width = 3, 
-                       pickerInput(inputId = "bio_quality", # bio org checklist
-                                   label = "Level of Biological Organization", 
-                                   choices = levels(aoc_setup$bio_f),
-                                   selected = levels(aoc_setup$bio_f),
-                                   options = list(`actions-box` = TRUE),
-                                   multiple = TRUE))), 
-         
-         # New row of widgets
-         column(width = 12,
-                
-                column(width = 3,
-                       htmlOutput("secondSelection_quality")), # dependent endpoint checklist
-                
-                column(width = 3,
-                       pickerInput(inputId = "shape_quality", # shape checklist
-                                   label = "Shape:", 
-                                   choices = levels(aoc_setup$shape_f),
-                                   selected = levels(aoc_setup$shape_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       pickerInput(inputId = "env_quality", # Environment checklist
-                                   label = "Environment:", 
-                                   choices = levels(aoc_setup$env_f),
-                                   selected = levels(aoc_setup$env_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       htmlOutput("SpeciesSelection_exp_quality"))), # dependent checklist
-         
-         # New row of widgets
-         column(width = 12,
-                
-                column(width = 3,
-                       pickerInput(inputId = "effect_quality",  # Effect Yes/No widget
-                                   label = "Effect:",
-                                   choices = levels(aoc_setup$effect_f),
-                                   selected = levels(aoc_setup$effect_f),
-                                   options = list(`actions-box` = TRUE),
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       pickerInput(inputId = "size_quality", # Environment checklist
-                                   label = "Size Category:", 
-                                   choices = levels(aoc_setup$size_f),
-                                   selected = levels(aoc_setup$size_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       pickerInput(inputId = "life_quality", # life stage checklist
-                                   label = "Life Stages:", 
-                                   choices = levels(aoc_setup$life_f),
-                                   selected = levels(aoc_setup$life_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       pickerInput(inputId = "acute.chronic_quality", # chronic/acute checklist
-                                   label = "Exposure Duration:", 
-                                   choices = levels(aoc_setup$acute.chronic_f),
-                                   selected = levels(aoc_setup$acute.chronic_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE))),
-         
-         #Second row of widget headers
-         column(width=12,
-                
-                column(width = 3,
-                       h4("Quality Criteria"))),
-
-         #New row of widgets
-         column(width = 12,
-                
-                column(width = 3,
-                       pickerInput(inputId = "tech_tier_zero_quality", # chronic/acute checklist
-                                   label = "Technical Quality:", 
-                                   choices = levels(aoc_setup$tier_zero_tech_f),
-                                   selected = levels(aoc_setup$tier_zero_tech_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width = 3,
-                       actionButton("go_quality", "Update Filters", class = "btn-success")),
-                
-                column(width = 3,
-                       actionButton("reset_quality", "Reset Filters", class = "btn-primary"))),
-
-         #Button Text
-         
-         column(width = 12,
-                
-                column(width = 3,
-                       pickerInput(inputId = "risk_tier_zero_quality", # chronic/acute checklist
-                                   label = "Risk Assessment Quality:", 
-                                   choices = levels(aoc_setup$tier_zero_risk_f),
-                                   selected = levels(aoc_setup$tier_zero_risk_f),
-                                   options = list(`actions-box` = TRUE), 
-                                   multiple = TRUE)),
-                
-                column(width=2,  
-                       strong(p("To Begin: Click the 'Update Filters' button above. This plot may take several minutes to appear."))),
-                
-                column(width=2, offset = 1, 
-                       strong(p("To Reset: Click the 'Reset Filters' button above, followed by the 'Update Filters' button to the left.")))),
-         
-# build plotly
-
-fluidRow(
-  column(12,plotlyOutput("quality_plot", height = "1500px")),
-  
-) # closes out fluidRow
-
-), #closes out tab
-
 #### Resources UI ####
 
 tabItem(tabName = "Resources", 
@@ -2145,11 +2180,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   #   if (isTRUE(input$dark_mode)) dark else light)
   #   })
 
-#### Introduction S ####
+#### Welcome S ####
 
-  # Introduction does not have any reactive features.
+  # Welcome does not have any reactive features.
   
-#### Overview AO S ####
+#### Overview S ####
   
   #Box #1
   
@@ -2317,7 +2352,24 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      
    }) 
    
-#### Exploration AO S ####
+
+#### Search S ####
+   
+   output$databaseDataTable <- renderDataTable(
+     aoc_setup[,c("doi", "exp_type_f", "env_f", "org_f", "species_f", "life_f", "acute.chronic_f", "size_f", 
+                  "size.length.um.used.for.conversions", "shape_f", "poly_f", "weather.biofoul_f", "lvl1_f", "lvl2_f", "lvl3_f", "effect_f")],
+     filter = "top",
+     extensions = c('Buttons'),
+     options = list(
+       dom = 'Brtip',
+       buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
+       scrollY = 400,
+       scroller = TRUE),
+     colnames = c('DOI', 'Experiment Type', 'Environment', 'Organism Group', 'Species', 'Life Stage', 'Exposure Duration',
+                  'Size Category', 'Mean/Median Particle Size', 'Shape', 'Polymer', 'Weathering/Biofoul', 'Broad Endpoint Category',
+                  'Specific Endpoint Category', 'Endpoint', 'Effect'))
+   
+#### Exploration S ####
   
   #Create dependent dropdown checklists: select lvl2 by lvl1.
   output$secondSelection <- renderUI({
@@ -2379,7 +2431,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     ERM_check <- input$ERM_check #chooses aligned dose metric by ecologically relevant metric
     Rep_Con_rad <- input$Rep_Con_rad #use nominal or calculated exposure concentrations. Options are TRUE (calculated) or FALSE (reported)
     acute.chronic.c <- input$acute.chronic_check #acute chronic checkbox
-    
+    exp_type_c <- input$exp_type_check #experiment type
+  
     ## ERM parametrization ##
     # Define params for correction #
     alpha = 2.07#input$alpha_exploration #table s4 for marine surface water. length
@@ -2585,6 +2638,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
     # new dataset based on filtering
     aoc_setup %>% # take original dataset
+      filter(exp_type_f %in% exp_type_c) %>% #filter by experiment type
       filter(org_f %in% org_c) %>% # filter by organism inputs
       filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
       filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
@@ -3131,6 +3185,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   # Need to call all widgets individually by their ids.
   # See https://stackoverflow.com/questions/44779775/reset-inputs-with-reactive-app-in-shiny for more information.
   observeEvent(input$reset_input, {
+    shinyjs::reset("exp_type_check")
     shinyjs::reset("lvl1_check")
     shinyjs::reset("lvl2_check")
     shinyjs::reset("poly_check")
@@ -3146,7 +3201,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     shinyjs::reset("risk_tier_zero_check")
   }) #If we add more widgets, make sure they get added here. 
 
-#### SSD AO S ####
+#### SSD S ####
 
   #Create dependent dropdown checklists: select Group by environment
   output$GroupSelection <- renderUI({
@@ -3207,11 +3262,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 selected = levels(aoc_new$bio_f_new),
                 options = list(`actions-box` = TRUE),
                 multiple = TRUE)})
-  
-  
+
   #Create dependent dropdown checklists: select shape by above input
   output$shapeSelection <- renderUI({
     #Assign user inputs to variables for this reactive
+    exp_type_c_ssd <- input$exp_type_check_ssd
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
@@ -3223,6 +3278,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
+      filter(exp_type_f %in% exp_type_c_ssd) %>% 
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -3245,6 +3301,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   #Create dependent dropdown checklists: select lvl1 by above input
   output$lvl1Selection <- renderUI({
     #Assign user inputs to variables for this reactive
+    exp_type_c_ssd <- input$exp_type_check_ssd
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
@@ -3255,6 +3312,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
+      filter(exp_type_f %in% exp_type_c_ssd) %>%
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -3274,6 +3332,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   #Create dependent dropdown checklists: select lvl2 by lvl1 input and Species
   output$lvl2Selection <- renderUI({
     #Assign user inputs to variables for this reactive
+    exp_type_c_ssd <- input$exp_type_check_ssd
     lvl1_c_ssd <- input$lvl1_check_ssd #assign endpoints
     Species_c_ssd <- input$Species_check_ssd #assign species input
     size_c_ssd <- input$size_check_ssd #assign sizes input
@@ -3283,6 +3342,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
+      filter(exp_type_f %in% exp_type_c_ssd) %>%
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
       filter(lvl1_f %in% lvl1_c_ssd) %>% # filter by level inputs
       filter(size_f %in% size_c_ssd) %>% #filter by size inputs
@@ -3301,6 +3361,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   #Create dependent dropdown checklists: select lvl2 by all other input
   output$polySelection <- renderUI({
     #Assign user inputs to variables for this reactive
+    exp_type_c_ssd <- input$exp_type_check_ssd
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     Species_c_ssd <- input$Species_check_ssd #assign species input
@@ -3312,6 +3373,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #filter based on user input
     aoc_new <- aoc_z %>% # take original dataset
+      filter(exp_type_f %in% exp_type_c_ssd) %>%
       filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -3334,6 +3396,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   aoc_z_L <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
+    exp_type_c_ssd <- input$exp_type_check_ssd
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     bio_c_ssd <- input$bio_check_ssd #level of biological organization
@@ -3564,6 +3627,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                                   AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / af.time,
                                   AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / af.noec,
                                   AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      dplyr::filter(exp_type_f %in% exp_type_c_ssd) %>%
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(Species %in% Species_c_ssd) %>% #filter by species inputs
@@ -3588,7 +3652,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   aoc_z_R <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
-   
+    exp_type_c_ssd <- input$exp_type_check_ssd
     env_c_ssd <- input$env_check_ssd #assign environments
     Group_c_ssd <- input$Group_check_ssd # assign organism input values to "org_c"
     bio_c_ssd <- input$bio_check_ssd #level of biological organization
@@ -3822,6 +3886,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                                   AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / (af.time),
                                   AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.noec),
                                   AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      dplyr::filter(exp_type_f %in% exp_type_c_ssd) %>%
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
       dplyr::filter(bio_f %in% bio_c_ssd) %>% #filter by species inputs
