@@ -4263,10 +4263,10 @@ output$downloadSsdPlot <- downloadHandler(
                 caption = "Predicted species sensitivity distribution concentrations with uncertanties."
                 )
   })
-  
+
   # Cullen and Frey Graph
   output$ssd_CF_plot <- renderPlot({
-    req(aoc_filter_ssd() > 0)
+    req(nrow(aoc_filter_ssd())>0)
     #reactive to static
     aoc_SSD <- aoc_filter_ssd()
     
@@ -4313,7 +4313,7 @@ output$downloadSsdPlot <- downloadHandler(
   #QQ plot
   output$ssd_qq_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd()>0)
+    req(nrow(aoc_filter_ssd())>0)
     
     #reactive to static
     aocFitLNorm <- aocSSDFitLNorm()
@@ -4330,7 +4330,7 @@ output$downloadSsdPlot <- downloadHandler(
   #pp plot
   output$ssd_pp_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd()>0)
+    req(nrow(aoc_filter_ssd())>0)
     
     #reactive to static
     aocFitLNorm <- aocSSDFitLNorm()
@@ -4348,7 +4348,7 @@ output$downloadSsdPlot <- downloadHandler(
   #Histogram
   output$ssd_dens_plot <- renderPlot({
     #req
-    req(aoc_filter_ssd()>0)
+    req(nrow(aoc_filter_ssd())>0)
     
     #reactive report x-axis
     particle_mass_check_ssd <- input$particle_mass_check_ssd
