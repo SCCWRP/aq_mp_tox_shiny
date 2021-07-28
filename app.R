@@ -1097,10 +1097,6 @@ ui <- dashboardPage(
               
               
               box(status = "primary", width = 12,
-                     
-                    #top left box 
-                    column(width = 5, 
-                    p(tags$img(src="welcome.png", width = "100%", height = "100%"))),      
                     
                     #top right box
                     column(width = 7, 
@@ -1115,9 +1111,12 @@ ui <- dashboardPage(
                     toxicity data pertaining to microplastics."),
                   
                     p("Use the side panel on the left of the page to navigate to each section. Each section provides different information or data visualization options. 
-                      More specific instructions may be found within each section."))),
+                      More specific instructions may be found within each section.")),
+                  
+                    #top left box 
+                    column(width = 5, 
+                           p(tags$img(src="welcome.png", width = "100%", height = "100%")))),
               
-              column(width = 12,
                     
                     #bottom left box  
                     box(status = "primary", width = 12, 
@@ -1158,7 +1157,7 @@ ui <- dashboardPage(
                     p(align = "center", a(href = "https://rochmanlab.com/", 'Dr. Chelsea Rochman'),", University of Toronto",
                       tags$a(href="https://twitter.com/ChelseaRochman", icon("twitter"))),
                     p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
-                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project"))), 
+                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project")), 
                   
                     #Logos with links to organizations
               box(status = "primary", width = 12, align = "center",  
@@ -2225,29 +2224,31 @@ tabItem(tabName = "SSD",
 #### Resources UI ####
 
 tabItem(tabName = "Resources", 
-         br(),     
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
-         br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EVd-oEZ-xxtJnWdOCC7KHfoBIOO3ByJz7omFoeruD0W6Sw?e=a3weoV", 'Assessment Factor Descriptions')),
-         br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EWZha9ygAihPi5sHlOpgR1UBNS9BEoLGZW6TqwCInf0bwg?e=yn8Iim", 'Study Screening Rubric')),
-         br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
-         br(),
-         h3(align = "center", a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXf0crCKDPVHo5xBEdw4PQwBxA8cnu0x4WY477CuEzZcPw?e=qs00V3", 'Dose Conversion Methods')),
          
+        
+         box(title = "Resources", width = 6, status = "primary",     
+         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYUFX1dOfSdGuHSfrUDcnewBxgttfTCOwom90hrt5nx1FA?e=jFXEyQ", 'Data Category Descriptions')),
+         br(),
+         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EVd-oEZ-xxtJnWdOCC7KHfoBIOO3ByJz7omFoeruD0W6Sw?e=a3weoV", 'Assessment Factor Descriptions')),
+         br(),
+         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EWZha9ygAihPi5sHlOpgR1UBNS9BEoLGZW6TqwCInf0bwg?e=yn8Iim", 'Study Screening Rubric')),
+         br(),
+         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETy8vDCXe_pAq88Ky0Xob1gBmCdAXYCsEwDFqCfDTL-DNA?e=e7Ic21", 'Aquatic Organisms Study List')),
+         br(),
+         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EXf0crCKDPVHo5xBEdw4PQwBxA8cnu0x4WY477CuEzZcPw?e=qs00V3", 'Dose Conversion Methods'))),
          
-         verbatimTextOutput(outputId = "Leah3")),
+        ), #close tab
 
 #### Contact UI ####
 
 tabItem(tabName = "Contact", 
-         br(),
-         h4("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-         br(),
-         h4("If you encounter technical problems with the web application, please contact Emily Darin (Emily.Darin@student.csulb.edu)."),
          
-         verbatimTextOutput(outputId = "Leah4"))
+        box(title = "Contact", width = 6, status = "primary",
+         p("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
+         br(),
+         p("If you encounter technical problems with the web application, please contact Emily Darin (emilyd@sccwrp.org).")),
+         
+         )#closes tab
 
 #following three parentheses close out UI. Do not delete. 
         )))   
