@@ -932,8 +932,7 @@ p.ave = 1.10 #average density in marine surface water
 
 # calculate ERM for each species
 aoc_ERM_default <- aoc_setup  %>%
-  #filter the data to only include particle only data
-  # dplyr::filter(exp_type_f == "Particle Only") %>% 
+   
   # define upper size WIDTH for ingestion (based on average width:length ratio)
   mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                          (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -2442,7 +2441,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        dom = 'Brtip',
        buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
        scrollY = 400,
-       scroller = TRUE),
+       scrollH = TRUE,
+       sScrollX = TRUE),
      colnames = c('DOI', 'Authors', 'Year', 'Experiment Type', 'Environment', 'Organism Group', 'Species', 'Life Stage', 'Exposure Duration',
                   'Size Category', 'Mean/Median Particle Size', 'Shape', 'Polymer', 'Weathering/Biofoul', 'Broad Endpoint Category',
                   'Specific Endpoint Category', 'Endpoint', 'Effect'))
@@ -2749,6 +2749,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     # calculate ERM for each species
     aoc_setup <- aoc_setup %>% 
+      #filter the data to only include particle only data
+      dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size length for ingestion
       mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
       # calculate effect threshold for particles
@@ -3719,7 +3721,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     p.ave = input$p.ave_ssd#1.10 #average density in marine surface water
     
     # calculate ERM for each species
-    aoc_z <- aoc_z %>% 
+    aoc_z <- aoc_z %>%
+      #filter the data to only include particle only data
+      dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size WIDTH for ingestion (based on average width:length ratio)
       mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                              (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -3977,6 +3981,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     # calculate ERM for each species
     aoc_z <- aoc_z %>% 
+      #filter the data to only include particle only data
+      dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size WIDTH for ingestion (based on average width:length ratio)
       mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                              (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -4257,7 +4263,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 dom = 'Brtip',
                 buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
                 scrollY = 400,
-                scroller = TRUE,
+                scrollH = TRUE,
+                sScrollX = TRUE,
                 columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
               colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  particle_mass_check_ssd), "Min Conc. Broad Endpoint", "Min Conc. Specfic Endpoint", "Min Environment", "DOI", "Minimum Effect Concentration", "95% Lower CI Effect Concentration", "1st Quartile Effect Concentration", "Average Effect Concentration", "Median Effect Concentration", "3rd Quartile Effect Concentration", "95% Upper CI Concentration", "Maximum Observed Effect Concentration", "Std Dev Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
