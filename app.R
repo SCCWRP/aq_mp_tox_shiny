@@ -892,7 +892,7 @@ mux.polyfnx.2 = function(x_UL,x_LL){
 ## function to calcualte min and max ingestible surface area ##
 SAfnx = function(a = a, # a = 0.5 * length
                  b = b, # b = 0.5 * width
-                 c = c # c = 0.5 * height (note that hieght is 0.67 * width)
+                 c = c # c = 0.5 * height (note that height is 0.67 * width)
 ){
   SA = 4*pi*(((a*b)^1.6 + (a*c)^1.6 + (b*c)^1.6) / 3)^(1/1.6)
   return(SA)}
