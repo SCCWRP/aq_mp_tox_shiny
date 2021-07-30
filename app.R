@@ -2,6 +2,8 @@
 #### File created: September 23, 2020
 #### Code contributors: Heili Lowman, Leah Thornton Hampton, Scott Coffin, Emily Darin
 
+
+
 #### Setup ####
 
 # Load packages
@@ -1068,9 +1070,9 @@ ui <- dashboardPage(
                      menuItem("Welcome", tabName = "Welcome", icon = icon("home")),
                      menuItem("Overview", tabName = "Overview", icon = icon("globe")),
                      menuItem("Search", tabName = "Search", icon = icon("search")),
-                     menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
                      menuItem("Exploration", tabName = "Exploration", icon = icon("chart-bar")),
                      menuItem("SSD", tabName = "SSD", icon = icon("fish")),
+                     menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
                      menuItem("Resources", tabName = "Resources", icon = icon("question-circle")),
                      menuItem("Contact", tabName = "Contact", icon = icon("envelope")),
                      br(),
@@ -1709,7 +1711,10 @@ tabItem(tabName = "Exploration",
                      tabPanel("Organism Group",
                         column(width = 12,      
                         plotOutput(outputId = "organism_plot_react", height = "600px")),
-                              
+                        
+                        column(width = 3,
+                               downloadButton("downloadexploration_org", "Download Plot", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                     
                      ),#closes tab panel
                      
                      tabPanel("Broad Endpoint Category",
@@ -2449,48 +2454,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    
    #### Screening S ####
    
-   # #Specific endpoint (lvl2) widget that is reactive to Broad endpoint (lvl1) widget selections
-   # output$secondSelection_quality <- renderUI({
-   #   
-   #   #Assign lvl1 selection values to variable
-   #   lvl1_c <- input$lvl1_quality 
-   #   
-   #   aoc_new <- aoc_setup %>% 
-   #     #Filter by lvl1 selection
-   #     filter(lvl1_f %in% lvl1_c) %>%
-   #     #Create new subset based on lvl1 selection
-   #     mutate(lvl2_f_new = factor(as.character(lvl2_f))) 
-   #   
-   #   #lvl2 widget parameters
-   #   pickerInput(inputId = "lvl2_quality", 
-   #               label = "Specific Endpoint within Broad Category:", 
-   #               choices = levels(aoc_new$lvl2_f_new),
-   #               selected = levels(aoc_new$lvl2_f_new),
-   #               options = list(`actions-box` = TRUE),
-   #               multiple = TRUE)})
-   # 
-   # #Species widget that is reactive to organism group (org) and environment (env) widget selections
-   # output$SpeciesSelection_exp_quality <- renderUI({
-   #   
-   #   #Assign env and org selection values to variables
-   #   env_c <- input$env_quality 
-   #   org_c <- input$organism_quality 
-   #   
-   #   aoc_new <- aoc_setup %>% 
-   #     #Filter by env and org selections
-   #     filter(env_f %in% env_c) %>% 
-   #     filter(org_f %in% org_c) %>%
-   #     #Create new subset based on env and org selection
-   #     mutate(species_new = factor(as.character(species_f))) 
-   #   
-   #   #Species widget parameters
-   #   pickerInput(inputId = "species_quality", 
-   #               label = "Species:", 
-   #               choices = levels(aoc_new$species_new),
-   #               selected = levels(aoc_new$species_new),
-   #               options = list(`actions-box` = TRUE),
-   #               multiple = TRUE)})
-   
    #Filter data based on widget selections
    quality_filtered <- eventReactive(list(input$go_quality),{
      
@@ -2668,42 +2631,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    }) 
    
    #### Exploration S ####
-  
-  # #Create dependent dropdown checklists: select lvl2 by lvl1.
-  # output$secondSelection <- renderUI({
-  #   
-  #   lvl1_c <- input$lvl1_check # assign level values to "lvl1_c"
-  #   
-  #   aoc_new <- aoc_setup %>% # take original dataset
-  #     filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
-  #     mutate(lvl2_f_new = factor(as.character(lvl2_f))) # new subset of factors
-  #     
-  #   pickerInput(inputId = "lvl2_check", 
-  #     label = "Specific Endpoint Category:", 
-  #     choices = levels(aoc_new$lvl2_f_new),
-  #     selected = levels(aoc_new$lvl2_f_new),
-  #     options = list(`actions-box` = TRUE),
-  #     multiple = TRUE)})
-  #  
-  #  #Create dependent dropdown checklists: select Species by env and group
-  #  output$SpeciesSelection_exp <- renderUI({
-  #    
-  #    #Assign user inputs to variables for this reactive
-  #    env_c <- input$env_check #assign environments
-  #    org_c <- input$organism_check # assign organism input values to "org_c"
-  #    #filter based on user input
-  #    aoc_new <- aoc_setup %>% # take original dataset
-  #      filter(env_f %in% env_c) %>% #filter by environment inputs
-  #      filter(org_f %in% org_c) %>% # filter by organism inputs
-  #      mutate(species_new = factor(as.character(species_f))) # new subset of factors
-  #    
-  #    pickerInput(inputId = "species_check", 
-  #                label = "Species:", 
-  #                choices = levels(aoc_new$species_new),
-  #                selected = levels(aoc_new$species_new),
-  #                options = list(`actions-box` = TRUE),
-  #                multiple = TRUE)})
-   
+
   # Create new dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
   aoc_filter <- eventReactive(list(input$go),{
     # eventReactive explicitly delays activity until you press the button
@@ -2750,7 +2678,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # calculate ERM for each species
     aoc_setup <- aoc_setup %>% 
       #filter the data to only include particle only data
-      dplyr::filter(exp_type_f == "Particle Only") %>%
+      # dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size length for ingestion
       mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
       # calculate effect threshold for particles
@@ -2969,7 +2897,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
   #Organism plot
   
-  output$organism_plot_react <- renderPlot({
+  organism_plot_react <- reactive({
     
     #plot types
     plot.type<-switch(input$plot.type,
@@ -3043,10 +2971,15 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     else {
       p
     }
-    print(p)
+      # print(p)
    
   })
   
+  output$organism_plot_react <- renderPlot({
+    
+    organism_plot_react()
+    
+  })
   
   # Size Plot
   
@@ -3447,12 +3380,15 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
  
   },
   
-  # #This is based on a slider widget input
-  # width = function() {
-  #   input$cols * 300
-  # }, height = function() {
-  #   input$rows * 400
-  # }
+  # Create downloadable png organism group plot
+  output$downloadexploration_org <- downloadHandler(
+    
+    filename = function() {
+      paste('Organism_Group', Sys.Date(), '.png', sep='')
+    },
+    content = function(file) {
+      ggsave(file, plot = organism_plot_react(), width = 12, height = 8, device = 'png')
+    })
   
   )
   
@@ -3723,7 +3659,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # calculate ERM for each species
     aoc_z <- aoc_z %>%
       #filter the data to only include particle only data
-      dplyr::filter(exp_type_f == "Particle Only") %>%
+      # dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size WIDTH for ingestion (based on average width:length ratio)
       mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                              (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -3982,7 +3918,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # calculate ERM for each species
     aoc_z <- aoc_z %>% 
       #filter the data to only include particle only data
-      dplyr::filter(exp_type_f == "Particle Only") %>%
+      # dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size WIDTH for ingestion (based on average width:length ratio)
       mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                              (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
@@ -4405,7 +4341,7 @@ output$downloadSsdPlot <- downloadHandler(
      # width <- isolate(input$user_width)
      # height <- isolate(input$user_height)
     device <- function(..., width, height) {
-      grDevices::png(..., width = 10, height = 12, res = 250, units = "in")
+      grDevices::png(..., width = 10, height = 8, res = 250, units = "in")
     }
     ggsave(file, plot = ssd_ggplot(), device = device)
   })
@@ -4458,7 +4394,7 @@ output$downloadSsdPlot <- downloadHandler(
      #color selection
      fill.type <- switch(input$color.type,
                          "viridis" = scale_fill_viridis(discrete = TRUE),
-                           "brewer" =  scale_fill_brewer(palette = "Paired"),
+                         "brewer" =  scale_fill_brewer(palette = "Paired"),
                          "tron" = scale_fill_tron(),
                          "locusZoom" = scale_fill_locuszoom(),
                          "d3" = scale_fill_d3(),
