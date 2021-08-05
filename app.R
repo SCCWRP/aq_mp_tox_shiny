@@ -6,7 +6,7 @@
 
 # Load packages
 
-#General Purpose
+# #General Purpose
 library(tidyverse)
 library(shiny)
 library(shinydashboard)
@@ -15,7 +15,7 @@ library(data.table) #Data import
 library(shinyjs) #Reset button
 
 #Plotting
-library(ggplot2) 
+library(ggplot2)
 library(reshape2) #Overview - melt bars together
 library(collapsibleTree) #Overview - endpoint categorization
 library(ggbeeswarm) #Exploration - Beeswarm plots
@@ -28,9 +28,9 @@ library(DT) #Build HTML data tables
 #Color Packages
 library(RColorBrewer)
 library(calecopal)
-library(viridis) 
-library(ggdark) 
-library(ggsci) 
+library(viridis)
+library(ggdark)
+library(ggsci)
 
 #Data Analysis
 library(ssdtools) #SSD package
@@ -406,7 +406,7 @@ aoc_ERM_default <- aoc_setup  %>%
 
 aoc_search <- aoc_setup %>%
          #general
-  select(doi, authors, year, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
+  dplyr::select(doi, authors, year, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
          #experimental parameters
          exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
          media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
@@ -720,8 +720,8 @@ tabItem(tabName = "Overview",
         box(title = "Biological Endpoint Catgorization", status = "primary", width = 12, collapsible = TRUE,
         
         br(),
-        p("This plot displays the categorization of measured endpoints in the database. Nodes correspond to the Broad Endpoint Category (blue), 
-        the Specific Endpoint Category (green), Endpoints (pink) and the level of biological organization (purple). Alternatively, the widget 
+        p("This plot displays the categorization of measured endpoints in the database. Nodes correspond to the Broad Endpoint Category, 
+        the Specific Endpoint Category, Endpoints and the level of biological organization from left to right. The widget 
         below may be used to select endpoints at various Biological Levels of Organization. Click nodes to expand and collapse the plot."),
         br(),
             
@@ -748,7 +748,7 @@ tabItem(tabName = "Overview",
           
           column(width = 12,
           #collapsible tree plot
-          collapsibleTreeOutput("plot", height = "400px"),
+          collapsibleTree::collapsibleTreeOutput("plot", height = "400px"),
           
           ), #closes out column
           
@@ -2001,28 +2001,17 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      
    })
    
-   output$plot <- renderCollapsibleTree({
+   output$plot <- collapsibleTree::renderCollapsibleTree({
      
      collapsibleTree(aoc_filter_endpoint(), root = "Aquatic Organisms Database", hierarchy = c("lvl1_f", "lvl2_f", "lvl3_f", "bio_f"),
-                     fontSize = 12, zoomable = FALSE,    
-                     fill = c(
-                       # The root
-                       "seashell",
-                       # lvl1
-                       rep("turquoise", length(unique(aoc_filter_endpoint()$lvl1_f))),
-                       # lvl2
-                       rep("palegreen", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f)))),
-                       # lvl3
-                       rep("hotpink", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f)))),
-                       # bio org
-                       rep("orchid", length(unique(paste(aoc_filter_endpoint()$lvl1_f, aoc_filter_endpoint()$lvl2_f, aoc_filter_endpoint()$lvl3_f, aoc_filter_endpoint()$bio_f))))))
-     
+                     fontSize = 12, zoomable = FALSE)    
+                     
    }) 
    
 
 #### Search S ####
    
-   output$databaseDataTable <- renderDataTable(
+   output$databaseDataTable <- DT::renderDataTable(
      aoc_search,
      filter = "top",
      rownames = FALSE,
