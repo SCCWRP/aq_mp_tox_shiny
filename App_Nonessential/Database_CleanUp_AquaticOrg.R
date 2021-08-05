@@ -633,6 +633,31 @@ aoc_setup <- aoc_v1 %>%
                                   environment == "Terrestrial" ~ "Terrestrial")) %>%
   mutate(weather.biofoul = case_when(weather.biofoul == "Y" ~ "Yes",
                                      weather.biofoul == "N" ~ "No")) %>% 
+  mutate(mix = case_when(mix == "Y" ~ "Yes",
+                         mix == "N" ~ "No")) %>% 
+  mutate(negative.control = case_when(negative.control == "Y" ~ "Yes",
+                                     negative.control == "N" ~ "No")) %>% 
+  mutate(reference.material = case_when(reference.material == "Y" ~ "Yes",
+                                     reference.material == "N" ~ "No")) %>% 
+  mutate(size.valid = case_when(size.valid == "Y" ~ "Yes",
+                                        size.valid == "N" ~ "No")) %>%
+  mutate(shape.valid = case_when(shape.valid == "Y" ~ "Yes",
+                                shape.valid == "N" ~ "No")) %>%
+  mutate(polymer.valid = case_when(polymer.valid == "Y" ~ "Yes",
+                                        polymer.valid == "N" ~ "No")) %>%
+  mutate(sodium.azide = case_when(sodium.azide == "Y" ~ "Yes",
+                                  sodium.azide == "N" ~ "No",
+                                  sodium.azide == "unknown" ~ "unknown")) %>%
+  mutate(contaminant.screen = case_when(contaminant.screen == "Y" ~ "Yes",
+                                        contaminant.screen == "N" ~ "No")) %>%
+  mutate(concentration.valid = case_when(concentration.valid == "Y" ~ "Yes",
+                                        concentration.valid == "N" ~ "No")) %>%
+  mutate(uptake.valid = case_when(uptake.valid == "Y" ~ "Yes",
+                                         uptake.valid == "N" ~ "No")) %>%
+  mutate(fed = case_when(fed == "Y" ~ "Yes",
+                                         fed == "N" ~ "No")) %>%
+  mutate(background.plastics = case_when(background.plastics == "Y" ~ "Yes",
+                                         background.plastics == "N" ~ "No")) %>%
   # mutate(species_f = as.factor(paste(genus,species))) %>% 
   # mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   # mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
@@ -654,7 +679,23 @@ aoc_setup <- aoc_v1 %>%
                                       chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
                                       chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
                                       chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer")) %>%
-  select(-c(leachate.only, chem.exp.typ.nominal))  
+  select(-c(leachate.only, chem.exp.typ.nominal)) %>% 
+  mutate(authors = gsub(".", " & ", as.character(authors), fixed = TRUE)) %>% 
+  mutate(exposure.media = gsub(".", " ", as.character(exposure.media), fixed = TRUE)) %>%
+  mutate(detergent = gsub(".", " ", as.character(detergent), fixed = TRUE)) %>%
+  mutate(chem.add.nominal = gsub(".", " ", as.character(chem.add.nominal), fixed = TRUE)) %>%
+  mutate(exposure.route = gsub(".", " ", as.character(exposure.route), fixed = TRUE)) %>% 
+  mutate(sol.rinse = gsub(".", " ", as.character(sol.rinse), fixed = TRUE)) %>%
+  mutate(sol.rinse = if_else(sol.rinse == "N", "No", sol.rinse)) %>% 
+  mutate(uptake.valid.method = gsub(".", " ", as.character(uptake.valid.method), fixed = TRUE)) %>% 
+  mutate(clean.method = gsub(".", " ", as.character(clean.method), fixed = TRUE)) %>% 
+  mutate(clean.method = if_else(clean.method == "N", "Not Cleaned", clean.method)) %>% 
+  mutate(particle.behavior = gsub(".", " ", as.character(particle.behavior), fixed = TRUE)) %>% 
+  mutate(particle.behavior = if_else(particle.behavior == "N", "Not Evaluated", particle.behavior)) %>%
+  mutate(tissue.distribution = gsub(".", " ", as.character(tissue.distribution), fixed = TRUE))
+  
+  write.csv(aoc_setup, file = "AquaticOrganisms_Clean_test2.csv")
+  
   #calculate maximum ingestible size (if not already in database)
   # mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
   #                                    10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
