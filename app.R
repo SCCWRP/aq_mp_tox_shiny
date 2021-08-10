@@ -29,6 +29,7 @@ library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
 library(collapsibleTree) #plot type for endpoint category tree
 library(hrbrthemes) #theme for screening plot
+library(ggrepel)
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) 
@@ -2932,9 +2933,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # calculate ERM for each species
     aoc_setup <- aoc_setup %>% 
       #filter the data to only include particle only data
-      # dplyr::filter(exp_type_f == "Particle Only") %>%
-      # define upper size length for ingestion
-      mutate(x2M = max.size.ingest.mm * 1000) %>% #max size ingest in um
+      dplyr::filter(exp_type_f == "Particle Only") %>%
+      # define upper size WIDTH for ingestion (based on average width:length ratio)
+      mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
+                             (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
+                             (max.size.ingest.um * (1/R.ave)) > x2D_set ~ (x2D_set * (1/R.ave)))) %>% #set to 10um for upper limit or max size ingest, whichever is smaller
       # calculate effect threshold for particles
       mutate(EC_mono_p.particles.mL = dose.particles.mL.master) %>% 
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
@@ -2945,8 +2948,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  
       ## Calculate environmentally relevant effect threshold for particles
       mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
-      #### Surface area ERM ####
-    mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
+      # Surface area ERM ##
+      mutate(mu.sa.mono = as.numeric(particle.surface.area.um2)) %>% #define mu_x_mono for alignment to ERM
       #calculate lower ingestible surface area
       mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, b = 0.5 * R.ave * x1D_set, c = 0.5 * R.ave * 0.67 * x1D_set)) %>%  
       #calculate upper ingestible surface area
@@ -2957,9 +2960,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(EC_poly_sa.particles.mL = (EC_mono_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  
       #calculate environmentally realistic effect threshold
       mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
-      #### volume ERM ####
-    #define mu_x_mono for alignment to ERM
-    mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
+      # volume ERM ##
+      #define mu_x_mono for alignment to ERM
+      mutate(mu.v.mono = as.numeric(particle.volume.um3)) %>% 
       #calculate lower ingestible volume 
       mutate(x_LL_v = volumefnx(R = R.ave, L = x1D_set)) %>%
       #calculate maximum ingestible volume 
@@ -2983,8 +2986,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%
       #calculate environmentally realistic effect threshold
       mutate(EC_env_m.particles.mL = EC_poly_m.particles.mL * CF_bio) %>% 
-      ##### specific surface area ERM ####
-    mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to ERM (um^2/ug)
+      ## specific surface area ERM ##
+      mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to ERM (um^2/ug)
       #calculate lower ingestible SSA
       mutate(x_LL_ssa = SSAfnx(sa = x_LL_sa,m = x_LL_m)) %>% 
       #calculate upper ingestible SSA  (um^2/ug)
@@ -2993,10 +2996,57 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(mu.ssa.poly = if(a.ssa == 2){mux.polyfnx.2(x_UL_ssa, x_LL_ssa)} else if (a.ssa != 2){mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)}) %>% 
       #calculate polydisperse effect concentration for specific surface area (particles/mL)
       mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly) %>% 
-      #calculate environmentally realistic effect threshold in particles/mL
-      mutate(EC_env_ssa.particles.mL = EC_poly_ssa.particles.mL * CF_bio)
+      #calculate environmentally realistic effect threshold
+      mutate(EC_env_ssa.particles.mL = EC_poly_ssa.particles.mL * CF_bio) %>% 
+      ### Convert to Metrics other than particles/mL ###
       
+      ## convert all environmentally realistic thresholds to surface area ##
+      # particle count to surface area #
+      mutate(EC_env_p.um2.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to surface area #
+      mutate(EC_env_sa.um2.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to surface area #
+      mutate(EC_env_v.um2.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to surface area #
+      mutate(EC_env_m.um2.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to surface area #
+      mutate(EC_env_ssa.um2.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
       
+      ## convert all environmentally realistic thresholds to volume ##
+      # particle count to volume #
+      mutate(EC_env_p.um3.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to volume #
+      mutate(EC_env_sa.um3.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to volume #
+      mutate(EC_env_v.um3.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to volume #
+      mutate(EC_env_m.um3.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to volume #
+      mutate(EC_env_ssa.um3.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      ## convert all environmentally realistic thresholds to mass ##
+      # particle count to mass #
+      mutate(EC_env_p.ug.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to mass #
+      mutate(EC_env_sa.ug.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to mass #
+      mutate(EC_env_v.ug.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to mass #
+      mutate(EC_env_m.ug.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to mass #
+      mutate(EC_env_ssa.ug.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      ## convert all environmentally realistic thresholds to specific surface area ##
+      # particle count to specific surface area #
+      mutate(EC_env_p.um2.ug.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to specific surface area #
+      mutate(EC_env_sa.um2.ug.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to specific surface area #
+      mutate(EC_env_v.um2.ug.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to specific surface area #
+      mutate(EC_env_m.um2.ug.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to specific surface area #
+      mutate(EC_env_ssa.um2.ug.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set))
     
     #filter out reported, calcualted, or all based on checkbox and make new variable based on µg/mL or particles/mL
     if(Rep_Con_rad == "reported" & dose_check == "µg/mL" & ERM_check == "Unaligned"){
@@ -3554,17 +3604,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         req(nrow(aoc_filter()) > 0)
     
     print(p)
-    
-    # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin"))
-    #   {
-    #   p<-p+geom_point(alpha = 0.8, aes(color = effect_f), position = "jitter")
-    #   
-    #   print(p)
-    # }
-    # else {
-    #   print(p)
-    # }
- 
+
   })
   
   output$organism_plot_react <- renderPlot({
@@ -3645,13 +3685,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     print(p)
 
-    # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-    #   p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
-    # }
-    # 
-    # else {
-    #   p
-    # }
   })
   
   output$size_plot_react <- renderPlot({
@@ -3730,13 +3763,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     print(p)
     
-    # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-    #   p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
-    # }
-    # 
-    # else {
-    #   p
-    # }
   })
   
   output$shape_plot_react <- renderPlot({
@@ -3816,13 +3842,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     print(p)
     
-    # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-    #   p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
-    # }
-    # 
-    # else {
-    #   p
-    # }
   })
   
   output$poly_plot_react <- renderPlot({
@@ -3902,13 +3921,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     print(p)
     
-    # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-    #   p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
-    # }
-    # 
-    # else {
-    #   p
-    # }
   })
   
   output$lvl_plot_react <- renderPlot({
@@ -3986,14 +3998,6 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
   print(p)
   
-  # if(input$show.points==TRUE & (input$plot.type == "boxplot" || input$plot.type == "violin")){
-  #   p<-p+geom_point(aes(color = effect_f), alpha=0.8, position = 'jitter')
-  # }
-  # 
-  # else {
-  #   p
-  # }
- 
   })
   
   output$lvl2_plot_react <- renderPlot(
@@ -4211,7 +4215,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     # calculate ERM for each species
     aoc_z <- aoc_z %>%
       #filter the data to only include particle only data
-      # dplyr::filter(exp_type_f == "Particle Only") %>%
+      dplyr::filter(exp_type_f == "Particle Only") %>%
       # define upper size WIDTH for ingestion (based on average width:length ratio)
       mutate(x2M = case_when(is.na(max.size.ingest.um) ~ (1/R.ave) * x2D_set, #all calculations below occur for length. Width is R.ave * length, so correcting here makes width the max size ingest below
                              (max.size.ingest.um * (1/R.ave)) < x2D_set ~ ((1/R.ave) * max.size.ingest.um),
