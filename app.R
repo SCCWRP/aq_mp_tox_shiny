@@ -24,7 +24,7 @@ library(viridis) #Colors
 library(shinyjs) #Exploration tab - reset button
 library(tigerstats) #turns things into percents
 library(ggbeeswarm) #plot all points
-# library(fitdistrplus) #alt SSD 
+library(plotly)
 library(ggdark) #dark mode ggplot
 library(ggsci) #color palettes
 library(collapsibleTree) #plot type for endpoint category tree
@@ -885,7 +885,22 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(dose.um2.mL.master = as.numeric(particle.surface.area.um2) * dose.particles.mL.master) %>% 
   
   #Specific Surface Area
-  mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) #correct mg to ug
+  mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
+  
+  #Additional tidying for nicer values
+  mutate(authors = gsub(".", " & ", as.character(authors), fixed = TRUE)) %>% 
+  mutate(exposure.media = gsub(".", " ", as.character(exposure.media), fixed = TRUE)) %>%
+  mutate(detergent = gsub(".", " ", as.character(detergent), fixed = TRUE)) %>%
+  mutate(chem.add.nominal = gsub(".", " ", as.character(chem.add.nominal), fixed = TRUE)) %>%
+  mutate(exposure.route = gsub(".", " ", as.character(exposure.route), fixed = TRUE)) %>% 
+  mutate(sol.rinse = gsub(".", " ", as.character(sol.rinse), fixed = TRUE)) %>%
+  mutate(sol.rinse = if_else(sol.rinse == "N", "No", sol.rinse)) %>% 
+  mutate(uptake.valid.method = gsub(".", " ", as.character(uptake.valid.method), fixed = TRUE)) %>% 
+  mutate(clean.method = gsub(".", " ", as.character(clean.method), fixed = TRUE)) %>% 
+  mutate(clean.method = if_else(clean.method == "N", "Not Cleaned", clean.method)) %>% 
+  mutate(particle.behavior = gsub(".", " ", as.character(particle.behavior), fixed = TRUE)) %>% 
+  mutate(particle.behavior = if_else(particle.behavior == "N", "Not Evaluated", particle.behavior)) %>%
+  mutate(tissue.distribution = gsub(".", " ", as.character(tissue.distribution), fixed = TRUE))
 
 #### Overview Setup Continued ####
 
@@ -1053,7 +1068,7 @@ aoc_ERM_default <- aoc_setup  %>%
 
 aoc_search <- aoc_setup %>%
          #general
-  dplyr::select(doi, authors, year, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
+  dplyr::select(doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
          #experimental parameters
          exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
          media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
@@ -1120,14 +1135,15 @@ aoc_z <- aoc_setup %>%
 #### Screening Setup ####
 
   aoc_quality <- aoc_setup %>%
-    filter(tier_zero_tech_f != "Scoring Not Applicable") %>%
-    filter(tier_zero_risk_f != "Scoring Not Applicable") %>%
+    filter(tier_zero_tech_f != "Scoring Not Applicable") %>% 
+    filter(tier_zero_risk_f != "Scoring Not Applicable") %>% 
     mutate(Study = paste0(authors, " (", year,")")) %>%
-    distinct(Study, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+    mutate(Study_plus = as.factor(paste0(authors, " (", year,")", " (",doi,")"))) %>%
+    distinct(Study, Study_plus, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
              tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
              lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f) %>%   
      
-    pivot_longer(!c(Study, doi, treatment_range, lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f),
+    pivot_longer(!c(Study, Study_plus, doi, treatment_range, lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f),
                  names_to ="Criteria", 
                  values_to ="Score") %>% 
     #Assign descriptions to numerical scores
@@ -1135,24 +1151,24 @@ aoc_z <- aoc_setup %>%
                                       Score == 1 ~ "Adequate with Restrictions",
                                       Score == 2 ~ "Adequate"))) %>%
     #Assign each criteria to appropriate category
-    mutate(Category = case_when(Criteria == "tech.a1" ~ "Technical Criteria",
-                                Criteria == "tech.a2" ~ "Technical Criteria",
-                                Criteria == "tech.a3" ~ "Technical Criteria",
-                                Criteria == "tech.a4" ~ "Technical Criteria",
-                                Criteria == "tech.a5" ~ "Technical Criteria",
-                                Criteria == "tech.a6" ~ "Technical Criteria",
-                                Criteria == "tech.1" ~ "Technical Criteria",
-                                Criteria == "tech.2" ~ "Technical Criteria",
-                                Criteria == "tech.3" ~ "Technical Criteria",
-                                Criteria == "tech.4" ~ "Technical Criteria",
-                                Criteria == "tech.5" ~ "Technical Criteria",
-                                Criteria == "tech.6" ~ "Technical Criteria",
-                                Criteria == "tech.7" ~ "Technical Criteria",
-                                Criteria == "tech.8" ~ "Technical Criteria",
-                                Criteria == "tech.9" ~ "Technical Criteria",
-                                Criteria == "tech.10" ~ "Technical Criteria",
-                                Criteria == "tech.11" ~ "Technical Criteria",
-                                Criteria == "tech.12" ~ "Technical Criteria",
+    mutate(Category = case_when(Criteria == "tech.a1" ~ "Technical",
+                                Criteria == "tech.a2" ~ "Technical",
+                                Criteria == "tech.a3" ~ "Technical",
+                                Criteria == "tech.a4" ~ "Technical",
+                                Criteria == "tech.a5" ~ "Technical",
+                                Criteria == "tech.a6" ~ "Technical",
+                                Criteria == "tech.1" ~ "Technical",
+                                Criteria == "tech.2" ~ "Technical",
+                                Criteria == "tech.3" ~ "Technical",
+                                Criteria == "tech.4" ~ "Technical",
+                                Criteria == "tech.5" ~ "Technical",
+                                Criteria == "tech.6" ~ "Technical",
+                                Criteria == "tech.7" ~ "Technical",
+                                Criteria == "tech.8" ~ "Technical",
+                                Criteria == "tech.9" ~ "Technical",
+                                Criteria == "tech.10" ~ "Technical",
+                                Criteria == "tech.11" ~ "Technical",
+                                Criteria == "tech.12" ~ "Technical",
                                 Criteria == "risk.13" ~ "Risk Assessment",
                                 Criteria == "risk.13" ~ "Risk Assessment",
                                 Criteria == "risk.14" ~ "Risk Assessment",
@@ -1163,14 +1179,14 @@ aoc_z <- aoc_setup %>%
                                 Criteria == "risk.19" ~ "Risk Assessment",
                                 Criteria == "risk.20" ~ "Risk Assessment")) %>%
     #Set order of categories so they plot in correct order
-    mutate(Category_f = factor(Category, levels = c("Technical Criteria", "Risk Assessment"))) %>% 
+    mutate(Category_f = factor(Category, levels = c("Technical", "Risk Assessment"))) %>% 
     #Assign descriptions to each criteria
-    mutate(Criteria = case_when(Criteria == "tech.a1" ~ "Test Medium Reported*",
-                                Criteria == "tech.a2" ~ "Administration Route Reported*",
-                                Criteria == "tech.a3" ~ "Test Species Reported*",
-                                Criteria == "tech.a4" ~ "Sample Size Reported*",
-                                Criteria == "tech.a5" ~ "Control Group Reported*",
-                                Criteria == "tech.a6" ~ "Exposure Duration Reported*",
+    mutate(Criteria = case_when(Criteria == "tech.a1" ~ "Test Medium*",
+                                Criteria == "tech.a2" ~ "Administration Route*",
+                                Criteria == "tech.a3" ~ "Test Species*",
+                                Criteria == "tech.a4" ~ "Sample Size*",
+                                Criteria == "tech.a5" ~ "Control Group*",
+                                Criteria == "tech.a6" ~ "Exposure Duration*",
                                 Criteria == "tech.1" ~ "Particle Size*",
                                 Criteria == "tech.2" ~ "Particle Shape*",
                                 Criteria == "tech.3" ~ "Polymer Type*",
@@ -1196,8 +1212,8 @@ aoc_z <- aoc_setup %>%
     mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Risk Assessment", "Aging and Biofouling", "Concentration Range", "Dose Response",
                                                     "Effect Thresholds", "Food Availability", "Endpoints", "Replication", "Exposure Assessment", "Exposure Homogeneity",
                                                     "Exposure Verification", "Background Contamination", "Laboratory Preparation","Chemical Purity","Data Reporting*",
-                                                    "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration Reported*","Control Group Reported*",
-                                                    "Sample Size Reported*", "Test Species Reported*", "Administration Route Reported*","Test Medium Reported*"))) 
+                                                    "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration*","Control Group*",
+                                                    "Sample Size*", "Test Species*", "Administration Route*","Test Medium*"))) 
 
 #### User Interface ####
 
@@ -1578,6 +1594,15 @@ tabItem(tabName = "Screening",
                                                  options = list(`actions-box` = TRUE),
                                                  multiple = TRUE)),
                               
+                              #specfic study
+                              column(width = 4,
+                                     pickerInput(inputId = "study_plus_quality", 
+                                                 label = "Study:",
+                                                 choices = levels(aoc_quality$Study_plus),
+                                                 selected = levels(aoc_quality$Study_plus),
+                                                 options = list(`actions-box` = TRUE),
+                                                 multiple = TRUE)),
+                              
                      ) #close tabpanel
                      
               ), #close tab box
@@ -1591,14 +1616,18 @@ tabItem(tabName = "Screening",
             
         ), #close box
 
-        box(title = "Visualize Data", status = "primary", width = 12, height = "1600px",
+        box(title = "Visualize Data", status = "primary", width = 12,
             
-            p("Use the cursor to zoom and hover over the plot to view additional information about each study. Plot make take several minutes to appear."),
+            p("Use the cursor to zoom and hover over the plot to view additional information about each study. Some studies are not visible until zoomed in. 
+              Alternatively, specific studies may be selected using the filter in the 'Study Screening' tab above."),
+            br(),
+            p("'Red Criteria' are indicated by (*). Scores of 0, 1, and 2 are respresented by red, grey, and blue tiles respectively."),
             br(),
             
-            plotlyOutput("quality_plot", height = "1500px")  
+            plotlyOutput("tech_plotly", height = "600px"), 
             
-            
+            plotlyOutput("risk_plotly", height = "600px")
+               
         ), #close box
         
 ), #closes out tab
@@ -2664,12 +2693,14 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      rownames = FALSE,
      extensions = c('Buttons'),
      options = list(
+       pageLength = 25,
        dom = 'Brtip',
        buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
-       scrollY = 800,
-       scrollH = TRUE,
-       sScrollX = TRUE),
-     colnames = c('DOI', 'Authors', 'Year', 'Species', 'Organism Group', 'Environment', 'Life Stage', 'In vitro/in vivo',
+       scrollY = 600,
+       scrollX = TRUE,
+       paging = TRUE,
+       columnDefs = list(list(width = '100px', targets = "_all"))),
+     colnames = c('DOI', 'Authors', 'Year', 'Technical "Red Criteria"', 'Risk Assessment "Red Criteria"','Species', 'Organism Group', 'Environment', 'Life Stage', 'In vitro/in vivo',
                   'Sex', 'Estimated Body Length (cm)', 'Estimated Maximum Ingestible Size (mm)', 'Experiment Type',
                   'Exposure Route', 'Particle Mix?', 'Negative Control', 'Reference Particle', 'Exposure Media',
                   'Solvent', 'Detergent', 'pH', 'Salinity (ppt)', 'Temperature (Avg)', 'Temperature (Min)',
@@ -2707,6 +2738,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      acute_chronic_c<-input$acute.chronic_quality
      tech_c<-input$tech_tier_zero_quality
      risk_c<-input$risk_tier_zero_quality
+     study_plus_c<-input$study_plus_quality
      
      #Create summary data set based on widget filters
      aoc_quality %>%
@@ -2723,53 +2755,111 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        filter(org_f %in% org_c) %>%
        filter(acute.chronic_f %in% acute_chronic_c) %>%
        filter(tier_zero_tech_f %in% tech_c) %>% 
-       filter(tier_zero_risk_f %in% risk_c) 
+       filter(tier_zero_risk_f %in% risk_c) %>% 
+       filter(Study_plus %in% study_plus_c)
        
      
    })
    
    #Create plot for quality screening scores from quality_filtered data
-   quality_plotly <- eventReactive(list(input$go_quality),{
+   tech_plotly <- eventReactive(list(input$go_quality),{
      
+     #Technical
+     tech <- quality_filtered() %>%
+       filter(Category_f == "Technical") %>%  
+       #summarize data for plotly
+       group_by(Study_plus, Criteria_f, Score) %>%  
+       summarise() %>%
+       ungroup() %>%
+       pivot_wider(names_from = Study_plus, 
+                   values_from = Score) %>%   
+       column_to_rownames(var="Criteria_f")  
+       
+     colnames(tech)<- gsub(" \\(10.*", "",colnames(tech))
+     colnames(tech)<- gsub(" \\(doi.*", "",colnames(tech))
      
-     quality_filtered() %>%
-       ggplot(aes(Study, Criteria_f)) +
-       geom_tile(aes(fill = Score_f,
-                     #Define information for hover over
-                     text = paste("Study:", Study, "\n",
-                                  "Criteria:", Criteria_f, "\n",
-                                  "Category:", Category_f, "\n",
-                                  "Score:", Score_f, "\n",
-                                  "Number of Treatments", treatment_range, "\n",
-                                  "DOI:", paste0(doi), "\n")
-                     ),
-                 color = "white", size = 0.25) +
-       theme_ipsum() +
-       scale_fill_manual(name = "Score",
-                         values = c("dodgerblue4","deepskyblue1","#ebcccd")) +
-       labs(title = "Screening & Prioritization Scores (Chemical Effect Data Excluded, Red Criteria Indicated with (*))",
-            subtitle = "Red Criteria are indicated with an askterisk") +
-       coord_cartesian(clip = "off") + #Keeps labels from disappearing
-       theme_minimal(base_size = 14) +
-       scale_y_discrete(labels = label_wrap(30)) +
-       facet_grid(Category_f ~ ., scales = "free", space = "free") + #Adds criteria category labels
-       theme(axis.title.x = element_blank(),
-             axis.title.y = element_blank(),
-             panel.grid.minor=element_blank(),
-             panel.grid.major=element_blank(),
-             axis.text.x = element_text(size = 7, angle = 90, vjust = 0.5, hjust = .5),
-             plot.title = element_text(hjust = 0.5)) %>%
-       req(nrow(quality_filtered()) > 0) #Suppresses warning message text before submit button is clicked
+     tech <- tech %>% 
+       as.matrix()
+     
+     #make plotly
+     tech_p <- plot_ly(x=colnames(tech), y=rownames(tech), z = tech, type = "heatmap",
+                       ygap = .4, xgap = .4,
+                       colors = c("tomato", "ivory3", "dodgerblue"),
+                       hoverinfo = 'text',
+                       showscale = FALSE,
+                       hovertemplate = paste(" Study:  %{x}<br>",
+                                             "Criteria:  %{y}<br>",
+                                             "Score:  %{z}<extra></extra>")) 
+     
+     tech_p <- tech_p %>% layout(
+       title = 'Technical Criteria',
+       xaxis = list(
+         type = 'category',
+         list(fixedrange = TRUE),
+         tickfont = list(size = 10)),
+       yaxis = list(tickfont = list(size = 10)))
+
+       #print plot
+       print(tech_p)
+       
+       
+   })
+   
+   #Render plotly
+   output$tech_plotly <- renderPlotly({
+     
+     tech_plotly()
+
+   })
+   
+   #Create plot for quality screening scores from quality_filtered data
+   risk_plotly <- eventReactive(list(input$go_quality),{
+
+     #Risk Assessment
+     risk <- quality_filtered() %>%
+       filter(Category_f == "Risk Assessment") %>%  
+       #summarize data for plotly
+       group_by(Study_plus, Criteria_f, Score) %>%  
+       summarise() %>%
+       ungroup() %>%  
+       pivot_wider(names_from = Study_plus, 
+                   values_from = Score) %>%   
+       column_to_rownames(var="Criteria_f") 
+     
+     colnames(risk)<- gsub(" \\(10.*", "",colnames(risk))
+     colnames(risk)<- gsub(" \\(doi.*", "",colnames(risk))
+     
+     risk <- risk %>% 
+       as.matrix()
+     
+     #make plotly
+     risk_p <- plot_ly(x=colnames(risk), y=rownames(risk), z = risk, type = "heatmap",
+                       ygap = .4, xgap = .4,
+                       colors = c("tomato", "ivory3", "dodgerblue"),
+                       hoverinfo = 'text',
+                       showscale = FALSE,
+                       hovertemplate = paste(" Study:  %{x}<br>",
+                                             "Criteria:  %{y}<br>",
+                                             "Score:  %{z}<extra></extra>")) 
+     
+     risk_p <- risk_p %>% layout(
+       title = 'Risk Assessment Criteria',
+       xaxis = list(
+         type = 'category',
+         list(fixedrange = TRUE),
+         tickfont = list(size = 10)),
+       yaxis = list(tickfont = list(size = 10)))
+     
+     #print plots
+     print(risk_p)
      
    })
    
    #Render plotly
-   output$quality_plot <- renderPlotly({
-     ggplotly(quality_plotly(), tooltip = c("text")) %>%
-            layout(legend = list(orientation = "h", #Displays legend horizontally
-                            xanchor = "center", #Use the center of the legend as an anchor
-                            x = 0.5, #Center the legend on the x axis
-                            y = 1.025)) #Places the legend at the top of the plot
+   output$risk_plotly <- renderPlotly({
+     
+     risk_plotly()
+     
    })
    
    # Create "reset" button to revert all filters back to what they began as
@@ -2790,6 +2880,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      shinyjs::reset("acute.chronic_quality")
      shinyjs::reset("tech_tier_zero_quality")
      shinyjs::reset("risk_tier_zero_quality")
+     shinyjs::reset("study_plus_quality")
 
    }) 
    
