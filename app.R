@@ -2063,7 +2063,7 @@ tabItem(tabName = "SSD",
                            column(width = 4,
                                   #Specific endpoint category selection
                                   pickerInput(inputId = "lvl2_check_ssd", 
-                                  label = "Broad Endpoint Category:",
+                                  label = "Specific Endpoint Category:",
                                   choices = levels(aoc_z$lvl2_f),
                                   selected = levels(aoc_z$lvl2_f),
                                   options = list(`actions-box` = TRUE), 
@@ -5770,10 +5770,12 @@ output$downloadSsdPlot <- downloadHandler(
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 15),
                          labels = trans_format("log10", scales::math_format(10^.x))) + #comma_signif)+
-      geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = 1) + #hazard conc line vertical
-      geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = 1) + #hazard conc line horizontal
-      geom_text(data = aochc, aes(x = est, y = 0.15, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
-      geom_text(data = aochc, aes(x = est, y = 0.10, label = paste0(est_format, " ", dose_check_ssd)), color = "red", size = 5) + #label for hazard conc
+      # geom_segment(data = aochc,aes(x = est, y = percent/100, xend = est, yend = est), linetype = 'dashed', color = "red", size = .5) + #hazard conc line vertical
+      # geom_segment(data = aochc,aes(x = lcl, y = percent/100, xend = est, yend = percent/100), linetype = 'dashed', color = "red", size = .5) + #hazard conc line horizontal
+      # geom_text(data = aochc, aes(x = est, y = 0.15, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
+      # geom_text(data = aochc, aes(x = est, y = 0.10, label = paste0(est_format, " ", dose_check_ssd)), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = Inf, y = 0.15, hjust = 1.2, vjust = 0, label = paste0(percent, "% Hazard Confidence Level")), color = "red", size = 5) + #label for hazard conc
+      geom_text(data = aochc, aes(x = Inf, y = 0.10, hjust = 1.4, vjust = 0, label = paste0(est_format, " ", dose_check_ssd)), color = "red", size = 5) + #label for hazard conc
       geom_label(data = aoc_pred(), aes(x = 100000, y = -0.05, label = paste0("distribution:", dist)), color = "darkcyan", size = 5) + #label for distribution
       fill.type + #user-selected
       color.type + #user-selected
