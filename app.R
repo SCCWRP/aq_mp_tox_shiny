@@ -1302,30 +1302,53 @@ ui <- dashboardPage(
                    
                     #bottom right box  
                     box(status = "primary", width = 12, 
-                    h3("Contributors", align = "center"), 
-                 
-                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
-                      tags$a(href="https://twitter.com/DrLeahTH", icon("twitter")), tags$a(href="https://github.com/leahth", icon("github"))),
-                    p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
-                      tags$a(href="https://twitter.com/DrSCoffin", icon("twitter")), tags$a(href="https://github.com/ScottCoffin", icon("github"))),
-                    p(align = "center", "Heili Lowman, Southern California Coastal Water Research Project ",
-                      tags$a(href="https://twitter.com/heili_lowman", icon("twitter")), tags$a(href="https://github.com/hlowman", icon("github"))), 
-                    p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
-                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
-                      tags$a(href="https://twitter.com/HermabessiereL", icon("twitter"))),
-                    p(align = "center", a(href = "https://rochmanlab.com/people/", 'Hannah De Frond'),", University of Toronto", 
-                        tags$a(href="https://twitter.com/HanDefrond", icon("twitter"))),
-                    p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
-                      tags$a(href="https://github.com/EmilyDarin", icon("github"))),
-                    p(align = "center", "Syd Kotar, Southern California Coastal Water Research Project"),
-                    p(align = "center", "Sarah Khan, Southern California Coastal Water Research Project"),
-                    p(align = "center", a(href = "https://www.wur.nl/en/Persons/Bart-prof.dr.-AA-Bart-Koelmans.htm", 'Dr. Bart Koelmans'),", Wageningen University",
-                     tags$a(href="https://twitter.com/MicroplasticLab", icon("twitter"))),
-                    p(align = "center", a(href = "https://rochmanlab.com/", 'Dr. Chelsea Rochman'),", University of Toronto",
-                      tags$a(href="https://twitter.com/ChelseaRochman", icon("twitter"))),
-                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvina Mehinto'),", Southern California Coastal Water Research Project"), 
-                    p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project")), 
-                  
+                        h3("Contributors", align = "center"), 
+                        
+                        p(align = "center", a(href = "https://www.sccwrp.org/about/staff/leah-thornton-hampton/", 'Dr. Leah Thornton Hampton'),", Southern California Coastal Water Research Project ", 
+                          tags$a(href="https://twitter.com/DrLeahTH", icon("twitter")), tags$a(href="https://github.com/leahth", icon("github"))),
+                        
+                        p(align = "center", "Heili Lowman, Southern California Coastal Water Research Project ",
+                          tags$a(href="https://twitter.com/heili_lowman", icon("twitter")), tags$a(href="https://github.com/hlowman", icon("github"))), 
+                        
+                        p(align = "center", a(href = "https://agency.calepa.ca.gov/staffdirectory/detail.asp?UID=69294&BDO=7&VW=DET&SL=S", 'Dr. Scott Coffin'),", California State Water Resources Control Board", 
+                          tags$a(href="https://twitter.com/DrSCoffin", icon("twitter")), tags$a(href="https://github.com/ScottCoffin", icon("github"))),
+                        
+                        p(align = "center", "Emily Darin, Southern California Coastal Water Research Project",
+                          tags$a(href="https://github.com/EmilyDarin", icon("github"))),
+                        
+                        p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
+                        
+                        p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
+                          tags$a(href="https://twitter.com/HermabessiereL", icon("twitter"))),
+                        
+                        p(align = "center", a(href = "https://rochmanlab.com/people/", 'Hannah De Frond'),", University of Toronto", 
+                          tags$a(href="https://twitter.com/HanDefrond", icon("twitter"))),
+                        
+                        p(align = "center", "Vera de Ruitjer, Wageningen University"),
+                        
+                        p(align = "center", "Samreen Siddiqui, Oregon State University"),
+                        
+                        p(align = "center", "Andrea Faltynkova, Norwegian University of Science and Technology"),
+                        
+                        p(align = "center", "Johannes Völker, Norwegian University of Science and Technology"),
+                        
+                        p(align = "center", "Laura Monclús Anglada, Norwegian University of Science and Technology"),
+                        
+                        p(align = "center", a(href = "https://www.sccwrp.org/about/staff/syd-kotar/", "Sydney Kotar"),", Southern California Coastal Water Research Project"),
+                        
+                        p(align = "center", a(href = "https://www.ntnu.edu/employees/martin.wagner", 'Dr. Martin Wagner'),", Norwegian University of Science and Technology",
+                          tags$a(href="https://twitter.com/martiwag", icon("twitter"))),
+                        
+                        p(align = "center", a(href = "https://www.wur.nl/en/Persons/Bart-prof.dr.-AA-Bart-Koelmans.htm", 'Dr. Bart Koelmans'),", Wageningen University",
+                          tags$a(href="https://twitter.com/MicroplasticLab", icon("twitter"))),
+                        
+                        p(align = "center", a(href = "https://rochmanlab.com/", 'Dr. Chelsea Rochman'),", University of Toronto",
+                          tags$a(href="https://twitter.com/ChelseaRochman", icon("twitter"))),
+                        
+                        p(align = "center", a(href = "https://www.sccwrp.org/about/staff/alvina-mehinto/", 'Dr. Alvine Mehinto'),", Southern California Coastal Water Research Project"),
+                        
+                        p(align = "center", a(href = "https://www.sccwrp.org/about/staff/steve-weisberg/", 'Dr. Steve Weisberg'),", Southern California Coastal Water Research Project")), 
+              
                     #Logos with links to organizations
               box(status = "primary", width = 12, align = "center",  
                   splitLayout(align = "center", 
