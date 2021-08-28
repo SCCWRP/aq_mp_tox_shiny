@@ -5860,7 +5860,7 @@ output$downloadSsdPlot <- downloadHandler(
     logConc <- log10(subset(aoc_SSD)$Conc) 
     
     #print plot
-    descdist(logConc,boot=1000)
+    fitdistrplus::descdist(logConc,boot=1000)
   })
   
   #alt fits with fitdistrplus package
@@ -5871,7 +5871,7 @@ output$downloadSsdPlot <- downloadHandler(
     Conc <- aocSSD$Conc
     
     #fit log-normal distribution
-    fitdist(Conc, "lnorm")
+    fitdistrplus::fitdist(Conc, "lnorm")
   })
   
   #alt fits with fitdistrplus package
@@ -5882,7 +5882,7 @@ output$downloadSsdPlot <- downloadHandler(
     Conc <- aocSSD$Conc
     
     #fit logistic distribution
-    fitdist(Conc, "logis")
+    fitdistrplus::fitdist(Conc, "logis")
   })
   
   #alt fits with fitdistrplus package
@@ -5893,7 +5893,7 @@ output$downloadSsdPlot <- downloadHandler(
     Conc <- aocSSD$Conc
     
     #fit logistic distribution
-    fitdist(Conc, "weibull")
+    fitdistrplus::fitdist(Conc, "weibull")
   })
   
   #QQ plot
@@ -5907,7 +5907,7 @@ output$downloadSsdPlot <- downloadHandler(
     aocFitWeibull <- aocSSDFitWeibull()
     
     #plot
-    qqcomp(list(aocFitLNorm,
+    fitdistrplus::qqcomp(list(aocFitLNorm,
       #aocFitLogis,
       aocFitWeibull),
            legendtext=c("log-normal", "Weibull"))
@@ -5923,7 +5923,7 @@ output$downloadSsdPlot <- downloadHandler(
     # aocFitLogis <- aocSSDFitLogis()
     aocFitWeibull <- aocSSDFitWeibull()
     #plot
-  ppcomp(list(aocFitLNorm, 
+    fitdistrplus::ppcomp(list(aocFitLNorm, 
               #aocFitLogis, 
               aocFitWeibull),
          legendtext=c("log-normal",
@@ -5945,12 +5945,12 @@ output$downloadSsdPlot <- downloadHandler(
     logConc <- log10(aocSSD$Conc)
     
     #fit  distributions to log10 data
-    aocFitNorm <- fitdist(logConc, "norm")
+    aocFitNorm <- fitdistrplus::fitdist(logConc, "norm")
     #aocFitlogis <- fitdist(logConc, "logis")
     
     
     #plot densities
-  denscomp(list(aocFitNorm),#, aocFitLogis),
+    fitdistrplus::denscomp(list(aocFitNorm),#, aocFitLogis),
            legendtext=c("log-normal"),#,"log-logistic"),
            xlab = paste0("log10 ",dose_check_ssd))
   })
