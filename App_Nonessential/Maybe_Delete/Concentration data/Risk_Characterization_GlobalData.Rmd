@@ -1,0 +1,318 @@
+---
+title: "Global Microplastics Risk Characterization"
+author: "Scott Coffin"
+date: "3/10/2021"
+output:   
+  html_document:
+    code_folding: hide
+    theme: journal
+    toc: yes
+    toc_float: yes
+    toc_depth: 6
+    number_sections: true
+    includes:
+     # after_body: footer.html
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      warning=FALSE, message=FALSE,time_it = TRUE) #report
+```
+
+```{r}
+library(tidyverse)
+library(calecopal)
+library(ssdtools)
+library(DT)
+library(plotly)
+library(gridExtra)
+library(grid)
+library(wesanderson)
+library(ggdark)
+library(broom)
+library(knitr)
+```
+
+# Hazard Concentration and Alignment Parameters
+```{r}
+# Choose hazard concentration and confidence intervals
+HC5LCL = 11 #95% lower CLHC5
+HC5 = 75.6 #HC5
+HC5UCL = 521 #95% upper CL for HC5
+
+kable(data.frame(
+  Category = c("Hazard Concentrations (particles/L)"),
+  "HC5_95_Lower_CL" = HC5LCL,
+  HazardConcentration5 = HC5,
+  "HC5_95_Upper_CL" = HC5UCL))
+```
+
+```{r}
+# Choose concentration alignment parameters
+alpha = 2.5 #(use 1.6 or 2.5)
+x2D = 5000 #upper size range (microns)
+x1D = 1 #lower size range (microns)
+
+kable(data.frame(
+  Category = c("Concentration Alignment Parameters"),
+  alpha = alpha,
+  "lower_size_range_microns" = x1D,
+  "upper_size_range_microns" = x2D))
+```
+
+```{r}
+#data import
+# Adam et al (2019) data needs correcting
+adam <- read.csv("Concentration data/adam2019.csv", na.strings = "N.A.") %>% 
+  mutate(x1M = Min.particle.size.um,
+         x2M = Max.particle.size.um) %>% 
+  mutate(Sample.Type = "sample")
+```
+
+
+```{r}
+# Align Data
+
+#function to derive correction factor (CF) from Koelmans et al (equation 2)
+CFfnx = function(a = alpha, #default alpha from Koelmans et al (2020)
+                 x2D = 5000, #set detault values to convert ranges to (1-5,000 um) #5mm is upper defuault 
+                 x1D = 1, #1 um is lower default size
+                 x2M, x1M){
+  
+  CF = (x2D^(1-a)-x1D^(1-a))/(x2M^(1-a)-x1M^(1-a))
+  
+  return(CF)
+}
+#verify it works (expected answer is 40.37)
+#CFfnx(x1M = 333, x2M = 5000)
+
+adam <- adam %>% 
+  mutate(CF = CFfnx(x1M = x1M, x2M = x2M)) %>%  #create new column with correction factor 
+  mutate(particles.m3.corrected = CF * Single.Measurement.conc....m3.) %>% #convert single concenetrations
+  mutate(particles.m3.corrected_mean = CF * Mean.conc....m3.) %>%  #convert mean concentrations from distributions
+  mutate(particles.m3.corrected_median = CF * Median.conc....m3.) %>%   #convert mean concentrations from distributions
+  mutate(particles.single.median.m3 = ifelse(is.na(particles.m3.corrected), particles.m3.corrected_median, particles.m3.corrected)) %>% 
+  mutate(particles.m3.master = ifelse(is.na(particles.single.median.m3), particles.m3.corrected_mean, particles.single.median.m3)) %>% 
+  mutate(particle.L.master = particles.m3.master/1000) %>% 
+  filter(particle.L.master > 0) %>% 
+  mutate(System = factor(System))
+```
+#Plot
+
+```{r}
+# read in concentration data
+samplesADAM <- adam %>% 
+  mutate(Conc = particle.L.master)
+
+#make new dataframe to plot both histograms together
+sampleSimpleADAM <- samplesADAM %>%
+  dplyr::select(Conc, Sample.Type) %>% 
+  droplevels()
+
+#make new dataframe to plot both histograms together
+dfADAM <- rbind(sampleSimpleADAM)#,food.dilution.simple)
+```
+
+
+```{r}
+#calculate exceedance
+dfADAM_exceedance <- dfADAM %>% 
+  mutate(aboveHC5 = factor(case_when(
+    Conc >= HC5 ~ "above HC5",
+    Conc < HC5 ~ "below HC5",
+  )))
+
+#give summary stat for exceedance
+exceedance <- dfADAM_exceedance  %>%
+  filter(Sample.Type == "sample") %>% 
+  dplyr::select(c(Conc, aboveHC5)) %>%
+  group_by(aboveHC5) %>%
+  dplyr::summarize(n = n()) %>% 
+  mutate(rel.freq = paste0(round(100 * n/sum(n), 0), "%"))
+
+kable(exceedance)
+```
+
+```{r}
+#generate plot
+dfADAM_exceedance %>% 
+  filter(Sample.Type == "sample") %>% 
+  ggplot(aes(x = Conc, fill = aboveHC5))+
+  geom_histogram(aes(y = ..count../sum(..count..)),bins = 50, alpha = 0.9, position = "identity") +
+  #geom_smooth(stat = 'density') +
+  geom_vline(xintercept = HC5, linetype = "dashed", color = "red") +
+  geom_text(aes(x = HC5- 0.5*HC5, y = 0.055), label = paste(HC5,"particles/L"),  color = "red") +
+  geom_text(aes(x = HC5- 0.5*HC5, y = 0.06), label = ("HC5"),  color = "red") +
+  geom_text(aes(x = HC5+ HC5, y = 0.050), label = paste(exceedance$rel.freq[1], "Above HC5"), color = "red") +
+  scale_x_log10() +
+  #coord_cartesian(xlim = c(0,100000000)) +
+  # scale_x_continuous(labels = scales::scientific) +
+  xlab("Concentration (particles/L)")+
+  scale_y_continuous(name = "Relative Density", labels = scales::percent)+
+  #scale_fill_discrete(labels = c("Environmental Concentration", "LOEC")) +
+  #scale_color_discrete(labels = c("Environmental Concentration", "LOEC")) +
+  labs(title = "Histograms of Concentrations in Adam et al 2019 Dataset",
+       caption = "Adam et al. 2019 data; all data corrected to 1-5,000 um; nominal particle/L",
+       fill = "Env. Conc. or Tox. Conc.",
+       color = "Env. Conc. or Tox. Conc.") +
+  theme_minimal() +
+  theme(legend.position = "none",
+    plot.title = element_text(hjust = 0.5, size = 20),
+        axis.title = element_text(size = 16),
+        axis.text =  element_text(size = 16),
+        legend.text = element_text(size =14),
+        legend.title = element_blank())
+```
+
+
+```{r}
+#ECDF by System
+adam %>% 
+filter(System != "") %>% 
+  ggplot(aes(x = particle.L.master, color = System))+
+  stat_ecdf(geom = "point", size = 2) +
+  stat_ecdf(geom = "step", linetype = 'solid', alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = wes_palette("Darjeeling1"))+
+  geom_vline(xintercept = HC5, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5LCL, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5UCL, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = log10(13), y = 0.15)+
+  geom_text(label = paste("HC5:",HC5, "particles/L"), color = 'red', x = log10(105), y = 0.07)+
+  geom_text(label = "95% UCL", color = 'red', x = log10(440), y = 0.15)+
+  ylab("Cumulative Density") +
+  xlab("Particles/L (1-5,000 um)")+
+  scale_y_continuous(labels = scales::percent)+
+  scale_x_continuous(trans = "log10") +
+  annotation_logticks(sides = "b")+ #log scale rick marks on bottom
+  theme_minimal() +
+  labs(title = "Global Concentrations ECDF by System",
+       subtitle = "Particles/L corrected to 1-5,000 um",
+       caption = "Concentration data from Adams et al (2019); corrected for size via Koelmans. Hazard Concentration from Koelmans et al (2020)")+
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        plot.subtitle = element_text(hjust = 0.5, size = 14))
+```
+
+
+# Modelling
+
+```{r}
+sample_dists_ADAM <- ssd_fit_dists(samplesADAM, #data frame
+                              left = "Conc", #string of the column in data with the concentrations
+                              # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
+                              dists = c("weibull", "llogis", "lnorm", "gamma", "lgumbel"), #char vector of distribution anmes
+                              computable = FALSE, #flag specifying whether to only return fits with numerically computable standard errors
+                              silent = FALSE) #flag indicating whether fits should fail silently
+
+autoplotADAM<- autoplot(sample_dists_ADAM) #plots the distribution in ggplot2
+autoplotADAM
+ssd_gof(sample_dists_ADAM) #check the goodness of fit
+#there are multiple fitting distributions, so check which fits best
+sample_gof_ADAM <- ssd_gof(sample_dists_ADAM)
+sample_gof_ADAM[order(sample_gof_ADAM$delta), ] #orders by delta. Use the aicc (Akaike's Information Criterion corrected for sample size) for model selection 
+write.csv(sample_gof_ADAM,"Concentration data/sample_gof_ADAM.csv")
+#choose the distribution that you want to plot
+sample_dists_ADAM_choice <- ssd_fit_dists(samplesADAM, #data frame
+                                   left = "Conc", #string of the column in data with the concentrations
+                                   # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
+                                   dists = c("lgumbel"), #char vector of distribution anmes
+                                   computable = FALSE, #flag specifying whether to only return fits with numerically computable standard errors
+                                   silent = FALSE) #flag indicating whether fits should fail silently
+set.seed(99)
+sample_pred_ADAM <- predict(sample_dists_ADAM_choice,
+                       average = FALSE,
+                       ic = "aicc",
+                       nboot = 10,
+                       ci= TRUE) #estimates model-averaged estimates based on aicc
+
+sample_pred_ADAM # The resultant object is a data frame of the estimated concentration (est) with standard error (se) and lower (lcl) and upper (ucl) 95% confidence limits by percent of species affected (percent). The confidence limits are estimated using parametric bootstrapping.
+
+```
+
+```{r}
+sample_pred_ADAM %>% mutate_if(is.numeric, ~ signif(., 3)) %>% 
+  datatable(rownames = FALSE,
+            extensions = c('Buttons', 'Scroller'),
+            options = list(
+              dom = 'Brftp',
+              scrollY = 400,
+              scroller = TRUE,
+              buttons = c('copy', 'csv', 'excel')), 
+            class = "compact",
+            colnames = c("Percent", "Estimated Mean Concentration", "Standard Error", "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
+            caption = "Predicted Concentration distribution with uncertanties."
+  )
+
+#order data
+samplesADAM <- samplesADAM %>% 
+  filter(System != "") #take out blanks
+
+sampleSSDADAM <- samplesADAM[order(samplesADAM$Conc), ]
+sampleSSDADAM$frac <- ppoints(samplesADAM$Conc, 0.5)
+```
+
+
+```{r}
+ECDF_model_occurrence_ADAM <- ggplot(sample_pred_ADAM,aes_string(x = "est")) +
+  geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "#81a88d", fill = "#81a88d") +
+  geom_line(aes_string(y = "percent/100"), linetype = 'dashed', alpha = 0.8) +
+  geom_point(data = sampleSSDADAM,aes(x = Conc, y =frac, color = System), size =1) + 
+  #geom_text(data = sampleSSD, aes(x = Conc, y = frac, label = Location), hjust = 1.1, size = 4) + #season labels
+  scale_y_continuous("Cumulative Distribution (%)", labels = scales::percent) +
+  #expand_limits(y = c(0, 1)) +
+  xlab("Concentration (particles/L)")+
+  labs(title = "Adam et al 2019 Microplastics Concentration Cumulative Distribution Function",
+       subtitle = "Smoothing/95% CI ribbon based on average of log-logical and log-normal Distributions Fit",
+       caption = "Adam et al 2019 data; sampling corrected to 1-5,000 um") +
+  coord_trans(x = "log10") +
+  scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x),labels = comma_signif)+
+  scale_color_manual(values = wes_palette("Darjeeling2"))
+
+#white mode
+ECDF_model_occurrence_ADAM_white <- ECDF_model_occurrence_ADAM +
+  geom_vline(xintercept = HC5, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5LCL, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5UCL, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "5% HC: 95% LCL", color = 'red', x = HC5LCL, y = 0)+
+  geom_text(label = "5% hazard concentration", color = 'red', x = 110, y = 0.03)+
+  geom_text(label = "5% HC: 95% UCL", color = 'red', x = HC5UCL, y = 0)+
+  geom_text(x = 110, y = 0, label = paste(HC5,"particles/L"), color = 'red') +  #label for hazard conc
+  #geom_hline(yintercept = 0.925, linetype = 'twodash', color = "#A2A475") +
+  #geom_text(label = "92.5% samples below 5% HC Mean", x = 4.5, y = 0.94, color = "#A2A475") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+ECDF_model_occurrence_ADAM_white
+
+```
+
+```{r}
+#dark mode
+ECDF_model_occurrence_ADAM_dark <- ECDF_model_occurrence_ADAM +
+  geom_vline(xintercept = HC5, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5LCL, linetype = 'dashed', color = 'red') +
+  geom_vline(xintercept = HC5UCL, linetype = 'dashed', color = 	'red') +
+  geom_text(label = "95% LCL", color = 'red', x = HC5LCL, y = 0, size = 5)+
+  geom_text(label = "5% HC", color = 'red', x = HC5, y = 0, size = 5)+
+  geom_text(label = "95% UCL", color = 'red', x = HC5UCL, y = 0, size = 5)+
+  geom_text(x = HC5, y = 0.1, label = paste(HC5,"particles/L"), color = 'red', size =5) +  #label for hazard conc
+  #geom_hline(yintercept = 0.925, linetype = 'twodash', color = "yellow") +
+  #geom_text(label = "92.5%", x = 3.0, y = 0.96, color = "yellow", size = 6) +
+  dark_theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+ECDF_model_occurrence_ADAM_dark
+```
+
+
+
+
