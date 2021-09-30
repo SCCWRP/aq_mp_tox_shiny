@@ -1,6 +1,6 @@
 ***Toxicity of Microplastics Explorer: Aquatic Organisms***
 
-The Toxicity of Microplastics Explorer (ToMEx) is a database as well as a data visualization and analysis tool for microplastics ecotoxicity data. This tool was created to faciliate the activies of the California Microplastics Health Effects Workshop. 
+The Toxicity of Microplastics Explorer (ToMEx) is a database as well as a data visualization and analysis tool for microplastics ecotoxicity data. This tool was created to facilitate the activities of the California Microplastics Health Effects Workshop. 
 
 The web application is built using a variety of R packages including shiny, shinydashboard, tidyverse, ggplot, plotly, and ssdtools. 
 
