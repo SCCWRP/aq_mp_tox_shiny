@@ -8,25 +8,25 @@ Application deployed at: https://sccwrp.shinyapps.io/aq_mp_tox_shiny/
 
 **Contributors**
 
-Leah Thornton Hampton, Southern California Coastal Water Research Project
-Heili Lowman, University of Nevada, Reno
-Scott Coffin, State Water Resources Control Board of California
-Emily Darin, Southern California Coastal Water Research Project
-Ezra Miller, San Francisco Estuary Institute
-Ludovic Hermabessiere, University of Toronto
-Hannah de Frond, University of Toronto
-Vera de Ruitjer, Wageningen University
-Samreen Siddiqui, Oregon State University
-Andrea Faltynkova, Norwegian University of Science and Technology
-Johannes Völker, Norwegian University of Science and Technology
-Laura Monclús Anglada, Norwegian University of Science and Technology
-Sydney Kotar, Southern California Coastal Water Research Project
-Susanne Brander, Oregon State University
-Martin Wagner, Norwegian University of Science and Technology
-Bart Koelmans, Wageningen University
-Chelsea Rochman, University of Toronto
-Alvine Mehinto, Southern California Coastal Water Research Project
-Steve Weisberg, Southern California Coastal Water Research Project
+Leah Thornton Hampton, Southern California Coastal Water Research Project<br />
+Heili Lowman, University of Nevada, Reno<br />
+Scott Coffin, State Water Resources Control Board of California<br />
+Emily Darin, Southern California Coastal Water Research Project<br />
+Ezra Miller, San Francisco Estuary Institute<br />
+Ludovic Hermabessiere, University of Toronto<br />
+Hannah de Frond, University of Toronto<br />
+Vera de Ruitjer, Wageningen University<br />
+Samreen Siddiqui, Oregon State University<br />
+Andrea Faltynkova, Norwegian University of Science and Technology<br />
+Johannes Völker, Norwegian University of Science and Technology<br />
+Laura Monclús Anglada, Norwegian University of Science and Technology<br />
+Sydney Kotar, Southern California Coastal Water Research Project<br />
+Susanne Brander, Oregon State University<br />
+Martin Wagner, Norwegian University of Science and Technology<br />
+Bart Koelmans, Wageningen University<br />
+Chelsea Rochman, University of Toronto<br />
+Alvine Mehinto, Southern California Coastal Water Research Project<br />
+Steve Weisberg, Southern California Coastal Water Research Project<br />
 
 **Primary Contact**
 
