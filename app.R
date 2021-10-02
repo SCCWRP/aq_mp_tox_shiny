@@ -1316,7 +1316,7 @@ ui <- dashboardPage(
                         p(align = "center", a(href = "https://www.sccwrp.org/about/staff/emily-darin/", 'Emily Darin'),", Southern California Coastal Water Research Project",
                           tags$a(href="https://github.com/EmilyDarin", icon("github"))),
                         
-                        p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", Aquatic Science Center"),
+                        p(align = "center", a(href = "https://www.sfei.org/users/liz-miller", 'Dr. Ezra Miller'),", San Francisco Estuary Institute"),
                         
                         p(align = "center", a(href = "https://rochmanlab.com/people/", 'Dr. Ludovic Hermabessiere'),", University of Toronto", 
                           tags$a(href="https://twitter.com/HermabessiereL", icon("twitter"))),
