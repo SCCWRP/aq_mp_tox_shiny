@@ -30,6 +30,8 @@ library(ggsci) #color palettes
 library(collapsibleTree) #plot type for endpoint category tree
 library(hrbrthemes) #theme for screening plot
 library(ggrepel)
+library(msm) ## rtnorm - get upper and lower limit of shape distribution
+library(GeneralizedHyperbolic) ## normal-inverse Gaussian
 
 # Load finalized dataset.
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
@@ -259,6 +261,33 @@ SSA.inversefnx = function(sa, #surface area, calcaulted elsewhere
   SSA.inverse = m / sa
   return(SSA.inverse)}
 
+### Data builer equations ###
+
+X.func <- function (X){
+  success <- FALSE
+  while (!success){
+    U = runif(1, 0, 1)
+    X = xmin*(1-U)^(1/(1-alpha))
+    success <- X < 5000} ##should be smaller than 5000 um 
+  return(X)}
+
+D.func <- function (D){
+  success <- FALSE
+  while (!success){
+    D = rnig(1, mu = d.mu, alpha = d.alpha, beta = d.beta, delta = d.delta)
+    success <- D < 2.63} ## include upper limit of 2.63, the max. 
+  return(D)
+}
+
+## Create environmentally realistic data
+synthetic_data_builder <- function(count){
+  #Preset parameters for pdfs
+  ## Generate values for the three distributions
+  set.seed(123)
+  simulated.data <- data.frame(Size = numeric(0))
+  for(i in 1:count){
+    X <- X.func()
+    simulated.data <- rbind(simulated.data, X)}}
 
 # Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
@@ -1191,6 +1220,7 @@ ui <- dashboardPage(
                      menuItem("Exploration", tabName = "Exploration", icon = icon("chart-bar")),
                      menuItem("SSD", tabName = "SSD", icon = icon("fish")),
                      menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
+                     menuItem("Calculators", tabName = "Calculators", icon = icon("check-circle")),
                      menuItem("Resources", tabName = "Resources", icon = icon("question-circle")),
                      menuItem("Contact", tabName = "Contact", icon = icon("envelope")),
                      br(),
@@ -2490,6 +2520,48 @@ tabItem(tabName = "SSD",
         ), #closes out box #5
         
         ), #closes out SSD tab
+
+##### Calculators UI ####
+tabItem(tabName = "Calculators",
+
+        box(title = "Probability Distribution Parameters", status = "primary", width = 12, collapsible = TRUE,
+
+            p("Kooi & Koelmans (2019) provide probability distributions for microplastics in various matrices. This tab allows one to simulate data using user-defined parameters and examine summary statistics."),
+            br(),
+
+            fluidRow(
+              tabBox(width = 12,
+
+                     tabPanel("Probability Distribution Parameters",
+
+                              shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
+                              id = "Calculators", # adds ID for resetting filters
+
+                              fluidRow(
+                                #Data type selection
+                                column(width = 4,
+                                       numericInput(inputId = "size_alpha_calculator",
+                                                   label = "Power law for size",
+                                                   value = 2.64,
+                                                   min = 0.5,
+                                                   max = 3.0)),
+                                #action button to simulate data
+                                column(width = 4,
+                                       actionButton("go_simulate", "Simulate data", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))
+                     )
+              ), #closes tabPanel
+              fluidRow(
+                
+                column(width = 12,
+                       
+                       plotOutput(outputId = "simulated.data.histogram", height = "500px"),
+                )
+              )
+              
+            ) #closes tabox
+        ) # closes fluidrow
+        ) #closes box
+                     ), #close tabItem
   
 #### Resources UI ####
 
@@ -6113,6 +6185,103 @@ output$downloadSsdPlot <- downloadHandler(
            legendtext=c("log-normal"),#,"log-logistic"),
            xlab = paste0("log10 ",dose_check_ssd))
   })
+  
+  ##### Calculators #####
+  simulated_distribution <- eventReactive(list(input$go_simulate),{
+
+    #variables to set for funcions
+  xmin = 1 #UM
+  alpha = 2.07 #for marine surface water Kooi et al 2021
+
+  mu1 <- 0.08
+  mu2 <- 0.44
+  sd1 <- 0.03
+  sd2 <- 0.19
+  lambda1 <- 0.06
+  lambda2 <- 0.94
+
+  d.alpha = 73.8 #tail heaviness
+  d.beta = 69.9  #asymmetry
+  d.mu = 0.840   #location
+  d.delta = 0.0972 #scale
+  
+  synthetic_data_builder <- function(count){
+    #Preset parameters for pdfs
+    ## Generate values for the three distributions
+    set.seed(123)
+    
+    simulated.data <- data.frame(Size = numeric(0))
+    
+    for(i in 1:count){
+      X <- X.func()
+      simulated.data <- rbind(simulated.data, X)
+    }
+    
+     ##++++++++++++++++++++++++++++++++++++++++
+    ## SIZE DISTRIBUTION
+    ##++++++++++++++++++++++++++++++++++++++++
+
+    colnames(simulated.data) <- c("Size")
+
+    ##++++++++++++++++++++++++++++++++++++++++
+    ## SHAPE DISTRIBUTION
+    ##++++++++++++++++++++++++++++++++++++++++
+
+    #Sample N random uniforms U
+    U =runif(count)
+
+    #Sampling from the mixture
+    for(i in 1:count){
+      if(U[i]<lambda1){
+        simulated.data$Shape[i] = rtnorm(1,mu1,sd1, lower = 0, upper = 1)
+      }else{
+        simulated.data$Shape[i] = rtnorm(1,mu2,sd2, lower = 0, upper = 1)
+      }
+    }
+
+    ##++++++++++++++++++++++++++++++++++++++++
+    ## DENSITY DISTRIBUTION
+    ##++++++++++++++++++++++++++++++++++++++++
+
+    Dens <- data.frame(Density = numeric(0));
+
+    for(i in 1:count){
+      X <- D.func()
+      Dens <- rbind(Dens, X)}
+
+    colnames(Dens) <- c("Density")
+    simulated.data <- cbind(simulated.data, Dens)
+
+    #add info
+    simulated.distribution <- simulated.data %>%
+      mutate(size.category = factor(case_when(
+        Size < 10 & Size >= 1 ~ "1µm < 10µm",
+        Size < 100 & Size >= 10 ~ "10µm < 100µm",
+        Size < 1000 & Size >= 100 ~ "100µm < 1mm",
+        Size < 5000 & Size >= 1000 ~ "1mm < 5mm"))) %>%
+      mutate(mass.mg = Density * Size^3 * 1E-9) %>%
+      mutate(um3 = (Size^3)) %>%
+      mutate(particles.total = factor(as.character(count)))
+  } # end of builder function
+  
+    #build
+    simulated.distribution <- synthetic_data_builder(count = 1000)
+    
+    #save
+    simulated.distribution
+
+  })
+  
+  # histrogram of simulate data
+  output$simulated.data.histogram <- renderPlot({
+    
+    simulated_distribution() %>% 
+      ggplot(aes(x = Size, fill = size.category)) +
+      scale_x_log10(name = "Size (um)") +
+      geom_histogram() +
+      theme_minimal()
+                         
+    })                     
 
   # Create "reset" button to revert all filters back to what they began as.
   # Need to call all widgets individually by their ids.
