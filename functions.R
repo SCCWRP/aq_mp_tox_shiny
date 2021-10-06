@@ -1,0 +1,54 @@
+##### FUNCTIONS #####
+
+#### Particle Characteristics Equations ####
+#surface area equation for elongated spheres (fragments)
+SAfnx = function(a, # length
+                 b, # width
+                 c){ # height
+  SA = 4*pi*(((a*b)^1.6 + (a*c)^1.6 + (b*c)^1.6) / 3)^(1/1.6)
+  return(SA)}
+
+# equation for volume
+volumefnx_poly = function(width, length){
+  height = width
+  volume = (4/3) * pi * (length/2) * (width/2) * (height/2) 
+  return(volume)}
+
+massfnx_poly = function(width, length, p){
+  height = width
+  volume = (4/3) * pi * (length/2) * (width/2) * (height/2)  
+  mass = p * #density (g/cm^3)
+    volume * # volume (um^3): assumes height = 0.67 * Width, and Width:Length ratio is 'R' (compartment-specific)
+    1/1e12 * 1e6 #correction factor
+  return(mass)}
+
+#### Ecologically Relevant Metric Functions (used in reactives with user-input params) ####
+
+###function to derive correction factor (CF) from Koelmans et al (equation 2)
+CFfnx = function(a, #default alpha from Koelmans et al (2020)
+                 x2D, #set detault values to convert ranges to (1-5,000 um) #5mm is upper defuault 
+                 x1D, #1 um is lower default size
+                 x2M, x1M){
+  CF = (x2D^(1-a)-x1D^(1-a))/(x2M^(1-a)-x1M^(1-a)) 
+  return(CF)}
+
+#### equations for mu_x_poly (note that there are three depending on certain alphas for limits of equation)
+##### if alpha does not equal 2 #####
+mux.polyfnx = function(a.x, 
+                       x_UL, 
+                       x_LL){
+  mux.poly = ((1-a.x)/(2-a.x)) * ((x_UL^(2-a.x) - x_LL^(2-a.x))/(x_UL^(1-a.x) - x_LL^(1-a.x)))
+  return(mux.poly)}
+
+##### If alpha does equal 2 #####
+mux.polyfnx.2 = function(x_UL,x_LL){
+  mux.poly = (log(x_UL/x_LL))/(x_LL^(-1) - x_UL^-1)
+  return(mux.poly)}
+
+#max ingestible specific surface area
+SSA.inversefnx = function(sa, #surface area, calcaulted elsewhere
+                          m){ #mass, calculated elsewhere
+  SSA.inverse = m / sa
+  return(SSA.inverse)}
+
+
