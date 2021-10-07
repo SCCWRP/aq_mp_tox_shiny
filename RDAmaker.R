@@ -653,6 +653,18 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
+  #a few of the mortality LC50's are misclassified as EC50. fixing here
+  mutate(effect.metric = case_when(
+    effect.metric == "NOEC" ~ "NOEC",
+    effect.metric == "LOEC" ~ "LOEC",
+    effect.metric == "EC50" & effect.score == "6" ~ "LC50", #reclassify
+    effect.metric == "EC50" ~ "EC50",
+    effect.metric == "EC10" ~ "EC10",
+    effect.metric == "IC10" ~ "IC10",
+    effect.metric == "HONEC" ~ "HONEC",
+    effect.metric == "IC50" ~ "IC50",
+    effect.metric == "LC50" ~ "LC50"
+  )) %>% 
   mutate(effect.metric = factor(effect.metric)) %>% #factorize
   mutate(af.time_noNA = replace_na(af.time, "Unavailable")) %>% 
   mutate(acute.chronic_f = factor(case_when(af.time_noNA == 10 ~ "Acute",
