@@ -42,6 +42,7 @@ aoc_setup <- readRDS("aoc_setup.RDS")
 aoc_v1 <- readRDS("aoc_v1.RDS")
 aoc_z <- readRDS("aoc_z.RDS")
 
+
 ##### Load functions #####
 source("functions.R")
 

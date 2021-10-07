@@ -10,12 +10,17 @@ SAfnx = function(a, # length
 
 # equation for volume
 volumefnx_poly = function(width, length){
-  height = width
+  height = 0.67 * width
   volume = (4/3) * pi * (length/2) * (width/2) * (height/2) 
   return(volume)}
 
+#Volume equation for elongated sphere (fragments)
+volumefnx = function(R, L){
+  volume = 0.111667 * pi * R^2 * L^3 #assumes height = 0.67 * Width, and Width:Length ratio is 'R' (0.77 average in marine surface water)
+  return(volume)}
+
 massfnx_poly = function(width, length, p){
-  height = width
+  height = 0.67 * width
   volume = (4/3) * pi * (length/2) * (width/2) * (height/2)  
   mass = p * #density (g/cm^3)
     volume * # volume (um^3): assumes height = 0.67 * Width, and Width:Length ratio is 'R' (compartment-specific)
