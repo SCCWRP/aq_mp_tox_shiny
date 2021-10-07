@@ -3,9 +3,10 @@
 
 library(tidyverse) #General everything
 
+source("functions.R") # necessary for surface area, volume calculations
 
 ##### Read in Data ####
-aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000)
+aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% rowid_to_column()
 
 # Master dataset for scatterplots - for Heili's tab.
 aoc_v1 <- aoc %>% # start with original dataset
@@ -679,6 +680,20 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                        chem.exp.typ.nominal == "Particle Only" ~ "Particle Only",
                                        chem.exp.typ.nominal == "co.exp" ~ "Chemical Co-Exposure",
                                        chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>%
+  
+  #### Recalculation of surface area and volume based on shape ####
+  #calculate surface area based on shape
+  mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surface.area.um2,
+                                               shape == "fiber" ~ particle.surface.area.um2,
+                                               shape == "fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
+                                                                           b = 0.77 * size.length.um.used.for.conversions,
+                                                                           c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>% 
+  mutate(particle.volume.um3 = case_when(shape == "sphere" ~ particle.volume.um3,
+                                         shape == "fiber" ~ particle.volume.um3,
+                                         shape == "fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
+  mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
+  mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
+  
   # create label for polydispersity
   mutate(polydispersity = case_when(
     is.na(size.length.min.mm.nominal) ~ "monodisperse",
