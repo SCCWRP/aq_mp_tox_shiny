@@ -4059,8 +4059,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set))) %>%  #if ingestion-limited, don't use data outside upper default size range
       group_by(Species) %>% 
       drop_na(dose_new) %>% 
-            summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n()) %>%   #summary data for whole database
-      mutate_if(is.numeric, ~ signif(., 4))
+            summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n())# %>%   #summary data for whole database
+     # mutate_if(is.numeric, ~ signif(., 6))
         })
   
   # Create new effect dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
@@ -4764,8 +4764,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set))) %>%  #if ingestion-limited, don't use data outside upper default size range
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       group_by(Species, Group) %>%
-      summarise(minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)]) %>%  #set concentration to minimum observed effect
-      mutate_if(is.numeric, ~ signif(., 3))
+      summarise(minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)])# %>%  #set concentration to minimum observed effect
+      #mutate_if(is.numeric, ~ signif(., 6))
    
     #dynamically change concentrations used based on user input
     ###concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")###
@@ -4828,7 +4828,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     dose_check_ssd <- input$dose_check_ssd
     req(input$SSDgo)
     
-    datatable(aoc_filter_ssd(),
+    datatable(aoc_filter_ssd() %>%  mutate_if(is.numeric, ~ signif(., 3)),
               extensions = c('Buttons'),
               options = list(
                 dom = 'Brtip',
@@ -4851,6 +4851,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     req(input$SSDgo) #won't run unless submit button is pressed
     aoc_ssd <- aoc_filter_ssd() #static
     
+    set.seed(99) #reproducibility
+    
     ssd_fit_dists(aoc_filter_ssd(), #data frame
                   left = "Conc", #string of the column in data with the concentrations
                   # right = left, #string of the column with the right concentration values. If different from left, then the data are considerd to be censored
@@ -4871,7 +4873,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     req(input$SSDgo) #won't run unless submit button is pressed
     
     ssd_gof(fit_dists()) %>%
-      mutate_if(is.numeric, ~ signif(., 3)) %>%
+     # mutate_if(is.numeric, ~ signif(., 7)) %>%
       arrange(delta) #orders by delta of fit
   }) 
   
@@ -4879,7 +4881,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   output$table_gof_react <- DT::renderDataTable(server= FALSE,{  #prints ALL data, not just what's shown 
     req(gof())
     gof <- gof() %>% 
-      mutate_if(is.numeric, ~ signif(., 3))
+      mutate_if(is.numeric, ~ signif(., 4))
     
      datatable(gof,
               extensions = 'Buttons',

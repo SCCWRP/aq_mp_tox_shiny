@@ -10,7 +10,7 @@ SAfnx = function(a, # length
 
 # equation for volume
 volumefnx_poly = function(width, length){
-  height = 0.67 * width
+  height = width #0.67 * width
   volume = (4/3) * pi * (length/2) * (width/2) * (height/2) 
   return(volume)}
 
@@ -20,7 +20,7 @@ volumefnx = function(R, L){
   return(volume)}
 
 massfnx_poly = function(width, length, p){
-  height = 0.67 * width
+  height = width #0.67 * width
   volume = (4/3) * pi * (length/2) * (width/2) * (height/2)  
   mass = p * #density (g/cm^3)
     volume * # volume (um^3): assumes height = 0.67 * Width, and Width:Length ratio is 'R' (compartment-specific)
