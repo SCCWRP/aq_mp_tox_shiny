@@ -8,6 +8,13 @@ SAfnx = function(a, # length
   SA = 4*pi*(((a*b)^1.6 + (a*c)^1.6 + (b*c)^1.6) / 3)^(1/1.6)
   return(SA)}
 
+#cylinder equation for SA. S = 2pi*r*h + 2pi*r^2, where r = width/2 and h = length 
+SAfnx_fiber = function(width, length){
+  radius = width / 2
+  SA = 2*pi*radius*length + 2*pi*radius^2
+  return(SA)
+}
+
 # equation for volume
 volumefnx_poly = function(width, length){
   height = width #0.67 * width
@@ -18,6 +25,13 @@ volumefnx_poly = function(width, length){
 volumefnx = function(R, L){
   volume = 0.111667 * pi * R^2 * L^3 #assumes height = 0.67 * Width, and Width:Length ratio is 'R' (0.77 average in marine surface water)
   return(volume)}
+
+#equation for fibers (cylinder) V = pi*r^2*h (where r = particle width/2 and h = particle length). Assume 15 um if width not reported (kooi et al 2021)
+volumefnx_fiber = function(width, length){
+  radius = width/2
+  volume = pi * (radius) ^ 2 * length
+  return(volume)
+}
 
 massfnx_poly = function(width, length, p){
   height = width #0.67 * width
