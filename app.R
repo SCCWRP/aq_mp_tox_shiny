@@ -695,7 +695,7 @@ tabItem(tabName = "Exploration",
                              pickerInput(inputId = "exp_type_check", 
                              label = "Data Type:",
                              choices = levels(aoc_setup$exp_type_f),
-                             selected = levels(aoc_setup$exp_type_f),
+                             selected = "Particle Only",
                              options = list(`actions-box` = TRUE), 
                              multiple = TRUE))), 
                                  
@@ -844,7 +844,7 @@ tabItem(tabName = "Exploration",
                             selected = levels(aoc_setup$tier_zero_risk_f),
                             options = list(`actions-box` = TRUE),
                             multiple = TRUE))),
-                      
+                  
                       ), #close tabpanel
              
              tabPanel("Dose Metric",
