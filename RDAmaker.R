@@ -95,7 +95,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                    lvl2 == "immune.cells"~"Immune Cells",
                                    lvl2 == "immune.other"~"Immune Other ",
                                    lvl2 == "intestinal.permeability"~"Intestinal Permeability",
-                                   lvl2 == "kidney.histo"~"Kidney Histological abnormalities",
+                                   lvl2 == "kidney.histo"~"Kidney Histological Abnormalities",
                                    lvl2 == "lipid.metabolism"~"Lipid Metabolism",
                                    lvl2 == "liver.histo"~"Liver Histological Abnormalities",
                                    lvl2 == "liver.kidney.products" ~ "Liver and Kidney Products",
@@ -825,7 +825,10 @@ aoc_search <- aoc_setup %>%
                 mass.per.particle.mg, weather.biofoul_f,
                 #quality
                 size.valid, polymer.valid, shape.valid, particle.source, sodium.azide, contaminant.screen, clean.method, sol.rinse, background.plastics,
-                concentration.valid, particle.behavior, uptake.valid, uptake.valid.method, tissue.distribution, fed) %>%
+                concentration.valid, particle.behavior, uptake.valid, uptake.valid.method, tissue.distribution, fed,
+                #scores
+                tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20) %>%
   #rename 'master' dose columns so they don't get pivoted
   rename("particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
          "μg/mL (master)" = dose.mg.L.master, "μ/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
@@ -852,6 +855,50 @@ aoc_search <- aoc_setup %>%
                                            grepl("mg.m2", `Original Dose Units`) ~ "mg/m^2")) 
 #Turn all character strings into factors if they aren't already so they are searchable via dropdown
 aoc_search[sapply(aoc_search, is.character)] <- lapply(aoc_search[sapply(aoc_search, is.character)], as.factor)
+
+#Rename table columns
+
+aoc_search <- aoc_search %>% 
+  dplyr::rename('DOI' = doi,'Authors' = authors, 'Year' = year, 'Technical "Red Criteria"' = tier_zero_tech_f, 
+                'Risk Assessment "Red Criteria"' = tier_zero_risk_f,'Species' = species_f, 
+                'Organism Group' = org_f, 'Environment' = env_f, 'Life Stage' = life_f, 'In vitro/in vivo' = vivo_f,
+                'Sex' = sex, 'Estimated Body Length (cm)' = body.length.cm, 
+                'Estimated Maximum Ingestible Size (mm)' = max.size.ingest.mm, 'Experiment Type' = exp_type_f,
+                'Exposure Route' = exposure.route, 'Particle Mix?' = mix, 'Negative Control' = negative.control, 
+                'Reference Particle' = reference.material, 'Exposure Media' = exposure.media,
+                'Solvent' = solvent, 'Detergent' = detergent, 'pH' = media.ph, 'Salinity (ppt)' = media.sal.ppt, 
+                'Temperature (Avg)' = media.temp, 'Temperature (Min)' = media.temp.min,
+                'Temperature (Max)' = media.temp.max, 'Exposure Duration (days)' = exposure.duration.d, 
+                'Acute/Chronic' = acute.chronic_f, 'Number of Doses' = treatments, 'Replicates' = replicates,
+                 'Sample Size' = sample.size, 'Dosing Frequency' = dosing.frequency, 'Chemicals Added' = chem.add.nominal, 
+                'Added Chemical Dose (nominal)' = chem.add.dose.mg.L.nominal,
+                'Added Chemical Dose (measured)' = chem.add.dose.mg.L.measured, 
+                 'Effect' = effect_f, 'Direction' = direction, 'Broad Endpoint Category' = lvl1_f, 
+                'Specific Endpoint Category' = lvl2_f,'Endpoint' = lvl3_f, 
+                'Level of Biological Organization' = bio_f, 'Target Cell or Tissue' = target.cell.tissue, 
+                'Effect Metric' = effect.metric, 'AF Time' = af.time,
+                'AF NOEC' = af.noec, 'Polymer' = poly_f, 'Shape' = shape_f, 'Density (g/cm^3)' = density.g.cm3, 
+                'Density, reported or estimated' = density.reported.estimated, 'Charge' = charge,
+                 'Zeta Potential (mV)' = zetapotential.mV, 'Size Category' = size_f,'Zeta Potential Media' = zetapotential.media, 
+                'Functional Group' = functional.group, 'Particle Length (μm)' = size.length.um.used.for.conversions,
+                 'Particle Width (μm)' = size.width.um.used.for.conversions, 'Particle Surface Area (μm^2)' = particle.surface.area.um2, 
+                'Particle Volume (μm^3)' = particle.volume.um3, 'Particle Mass (mg)'= mass.per.particle.mg,
+                 'Weathered or Biofouled?' = weather.biofoul_f, 'Size Validated?' = size.valid, 
+                'Polymer Validated?' = polymer.valid, 'Shape Validated' = shape.valid, 'Particle Source' = particle.source,
+                'Sodium Azide Present?' = sodium.azide,
+                 'Screened for Chemical Contamination?' = contaminant.screen, 'Particle Cleaning?' = clean.method, 
+                'Solvent Rinse'= sol.rinse, 'Background Contamination Monitored?' = background.plastics,
+                 'Concentration Validated?' = concentration.valid, 
+                'Particle Behavior' = particle.behavior, 'Uptake Validated?' = uptake.valid, 'Uptake Validation Method' = uptake.valid.method,
+                 'Tissue Distribution' = tissue.distribution, 'Organisms Fed?' = fed, 
+                 'Test Medium Score' = tech.a1, 'Administration Route Score' = tech.a2, 'Test Species Score'= tech.a3, 'Sample Size Score'= tech.a4, 
+                'Control Group Score'= tech.a5, 'Exposure Duration Score'= tech.a6, 'Particle Size Score'= tech.1,
+                 'Particle Shape Score'= tech.2, 'Polymer Type Score'= tech.3, 'Source of Microplastics Score'= tech.4, 'Data Reporting Score'= tech.5, 
+                'Chemical Purity Score'= tech.6, 'Laboratory Preparation Score'= tech.7, 'Background Contamination Score'= tech.8,
+                 'Exposure Verification Score'= tech.9, 'Exposure Homogeneity Score'= tech.10, 'Exposure Assessment Score'= tech.11, 
+                'Replication Score'= tech.12, 'Number of Treatments Score'= risk.b1, 'Endpoints Score'= risk.13, 'Food Availability Score'= risk.14,
+                 'Effect Thresholds Score'= risk.15, 'Dose Response Score'= risk.16, 'Concentration Range Score'= risk.17, 'Aging and Biofouling Score'= risk.18, 
+                'Microplastic Diversity Score' = risk.19, 'Exposure Time Score' = risk.20)
 
 #### SSD Setup ####
 
@@ -939,11 +986,10 @@ aoc_quality <- aoc_setup %>%
                               Criteria == "risk.16" ~ "Dose Response",
                               Criteria == "risk.17" ~ "Concentration Range",
                               Criteria == "risk.18" ~ "Aging and Biofouling",
-                              Criteria == "risk.18" ~ "Risk Assessment",
                               Criteria == "risk.19" ~ "Microplastic Diversity",
                               Criteria == "risk.20" ~ "Exposure Time")) %>% 
   #Create factor for criteria and set order - need to be in reverse order here to plot correctly
-  mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Risk Assessment", "Aging and Biofouling", "Concentration Range", "Dose Response",
+  mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Aging and Biofouling", "Concentration Range", "Dose Response",
                                                   "Effect Thresholds", "Food Availability", "Endpoints", "Replication", "Exposure Assessment", "Exposure Homogeneity",
                                                   "Exposure Verification", "Background Contamination", "Laboratory Preparation","Chemical Purity","Data Reporting*",
                                                   "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration*","Control Group*",
