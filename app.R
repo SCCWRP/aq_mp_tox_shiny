@@ -695,7 +695,7 @@ tabItem(tabName = "Exploration",
                              pickerInput(inputId = "exp_type_check", 
                              label = "Data Type:",
                              choices = levels(aoc_setup$exp_type_f),
-                             selected = levels(aoc_setup$exp_type_f),
+                             selected = "Particle Only",
                              options = list(`actions-box` = TRUE), 
                              multiple = TRUE))), 
                                  
@@ -843,8 +843,8 @@ tabItem(tabName = "Exploration",
                             choices = levels(aoc_setup$tier_zero_risk_f),
                             selected = levels(aoc_setup$tier_zero_risk_f),
                             options = list(`actions-box` = TRUE),
-                            multiple = TRUE))),
-                      
+                                         multiple = TRUE))),
+                  
                       ), #close tabpanel
              
              tabPanel("Dose Metric",
@@ -1392,6 +1392,8 @@ tabItem(tabName = "SSD",
             column(width = 3,
                    actionButton("reset_ssd", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
             
+            column(width = 3,
+                   downloadButton("downloadData_ssd", "Download Raw Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
             
         ), #closes out box #1
 
@@ -1829,24 +1831,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        scrollY = 600,
        scrollX = TRUE,
        paging = TRUE,
-       columnDefs = list(list(width = '100px', targets = "_all"))),
-     colnames = c('DOI', 'Authors', 'Year', 'Technical "Red Criteria"', 'Risk Assessment "Red Criteria"','Species', 'Organism Group', 'Environment', 'Life Stage', 'In vitro/in vivo',
-                  'Sex', 'Estimated Body Length (cm)', 'Estimated Maximum Ingestible Size (mm)', 'Experiment Type',
-                  'Exposure Route', 'Particle Mix?', 'Negative Control', 'Reference Particle', 'Exposure Media',
-                  'Solvent', 'Detergent', 'pH', 'Salinity (ppt)', 'Temperature (Avg)', 'Temperature (Min)',
-                  'Temperature (Max)', 'Exposure Duration (days)', 'Acute/Chronic', 'Number of Doses', 'Replicates',
-                  'Sample Size', 'Dosing Frequency', 'Chemicals Added', 'Added Chemical Dose (nominal)',
-                  'Added Chemical Dose (measured)', 'particles/mL (master)', 'particles/mL (master), reported or converted',
-                  'μg/mL (master)', 'μg/mL (master), reported or converted', 'μm^3/mL (master)', 'μm^2/mL (master)',
-                  'μm^2/ug/mL (master)', 'Effect', 'Direction', 'Broad Endpoint Category', 'Specific Endpoint Category',
-                  'Endpoint', 'Level of Biological Organization', 'Target Cell or Tissue', 'Effect Metric', 'AF Time',
-                  'AF NOEC', 'Polymer', 'Shape', 'Density (g/cm^3)', 'Density, reported or estimated', 'Charge',
-                  'Zeta Potential (mV)', 'Size Category','Zeta Potential Media', 'Functional Group', 'Particle Length (μm)',
-                  'Particle Width (μm)', 'Particle Surface Area (μm^2)', 'Particle Volume (μm^3)', 'Particle Mass (mg)',
-                  'Weathered or Biofouled?', 'Size Validated?', 'Polymer Validated?', 'Shape Validated', 'Particle Source','Sodium Azide Present?',
-                  'Screened for Chemical Contamination?', 'Particle Cleaning?', 'Solvent Rinse', 'Background Contamination Monitored?',
-                  'Concentration Validated?', 'Particle Behavior', 'Uptake Validated?', 'Uptake Validation Method',
-                  'Tissue Distribution', 'Organisms Fed?', 'Original Dose Units', 'Original Concentration', 'Original Dose Units Nominal or Measured'))
+       columnDefs = list(list(width = '100px', targets = "_all"))))
 
    #### Screening S ####
    
@@ -3362,7 +3347,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
 #### SSD S ####
 
   # Create new all tested dataset based on widget filtering and adjusted to reflect the presence of the "update" button.
-  aoc_z_L <- eventReactive(list(input$SSDgo),{
+  aoc_ssd_filtered <- eventReactive(list(input$SSDgo),{
     # eventReactive explicitly delays activity until you press the button
     # here we'll use the inputs to create a new dataset that will be fed into the renderPlot calls below
     exp_type_c_ssd <- input$exp_type_check_ssd
@@ -3374,6 +3359,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     lvl2_c_ssd <- input$lvl2_check_ssd #assign specific endpoints
     poly_c_ssd <- input$poly_check_ssd #assign polymers
     shape_c_ssd <- input$shape_check_ssd #assign shapes
+    effect_metric_rad <- input$effect.metric_rad_ssd #effect metric filtering
     bio_c_ssd <- input$bio_check_ssd #assign bio org input
     acute.chronic.c_ssd <- input$acute.chronic_check_ssd #acute chronic checkbox
     AF.time_r_ssd <- input$AF.time_rad_ssd #yes/no apply assessment factor for acute -> chronic
@@ -3429,6 +3415,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  
       ## Calculate environmentally relevant effect threshold for particles
       mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      
       
       #### Surface area ERM ####
     ##--- environmental calculations ---###
@@ -4035,10 +4022,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #left-hand table of all data considered
     aoc_z %>% # take original dataset
-      mutate(dose_new = case_when(AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.time * af.noec), #composite assessment factors
-                                  AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / af.time,
-                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / af.noec,
-                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      mutate(dose_new = case_when((AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes") ~ (dose_new / (af.time * af.noec)), #composite assessment factors
+                                  (AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No") ~ (dose_new / af.time),
+                                  (AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes") ~ (dose_new / af.noec),
+                                  (AF.time_r_ssd == "No" & AF.noec_r_ssd == "No") ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(exp_type_f %in% exp_type_c_ssd) %>%
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
@@ -4053,12 +4040,16 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dplyr::filter(tier_zero_tech_f %in% tech_tier_zero_c_ssd) %>% #technical quality
       dplyr::filter(tier_zero_risk_f %in% risk_tier_zero_c_ssd) %>%  #risk assessment quality
       dplyr::filter(dose_new > 0) %>% #clean out no dose data
+      dplyr::filter(effect.metric %in% effect_metric_rad) %>%  #filter for effect metric
       dplyr::filter(acute.chronic_f %in% acute.chronic.c_ssd) %>%  #acute chronic filter
       dplyr::filter(risk.13 != 0) %>%  #Drop studies that received a score of 0 for endpoints criteria (this also drops studies that have not yet been scored) - KEEP THIS AFTER THE RED CRITERIA FILTERS  
       dplyr::filter(case_when(ingestion.translocation.switch == "translocation" ~  between(size.length.um.used.for.conversions, x1D_set, upper.tissue.trans.size.um), #if tissue-trans limited, don't use data with non-translocatable particles
                        ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set))) %>%  #if ingestion-limited, don't use data outside upper default size range
       group_by(Species) %>% 
-      drop_na(dose_new) %>% 
+      drop_na(dose_new) 
+  })
+    
+    aoc_z_L <- eventReactive(list(input$SSDgo),{aoc_ssd_filtered() %>% 
             summarise(MinConcTested = min(dose_new), MaxConcTested = max(dose_new), CountTotal = n())# %>%   #summary data for whole database
      # mutate_if(is.numeric, ~ signif(., 6))
         })
@@ -4740,10 +4731,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     #right-hand table of just effect data
     aoc_ssd <- aoc_z %>% 
-      mutate(dose_new = case_when(AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.time * af.noec),
-                                  AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No" ~ dose_new / (af.time),
-                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes" ~ dose_new / (af.noec),
-                                  AF.time_r_ssd == "No" & AF.noec_r_ssd == "No" ~ dose_new)) %>% # adjust for assessment factors based on user input
+      mutate(dose_new = case_when((AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "Yes") ~ (dose_new / (af.time * af.noec)), #composite assessment factors
+                                  (AF.time_r_ssd == "Yes" & AF.noec_r_ssd == "No") ~ (dose_new / af.time),
+                                  (AF.time_r_ssd == "No" & AF.noec_r_ssd == "Yes") ~ (dose_new / af.noec),
+                                  (AF.time_r_ssd == "No" & AF.noec_r_ssd == "No") ~ dose_new)) %>% # adjust for assessment factors based on user input
       dplyr::filter(exp_type_f %in% exp_type_c_ssd) %>%
       dplyr::filter(env_f %in% env_c_ssd) %>% #filter by environment inputs
       dplyr::filter(Group %in% Group_c_ssd) %>% # filter by organism inputs
@@ -5237,6 +5228,72 @@ output$downloadSsdPlot <- downloadHandler(
     fitdistrplus::denscomp(list(aocFitNorm),#, aocFitLogis),
            legendtext=c("log-normal"),#,"log-logistic"),
            xlab = paste0("log10 ",dose_check_ssd))
+  })
+  
+  output$downloadData_ssd <- downloadHandler(
+    filename = function() {
+      paste('data-', Sys.Date(), '.csv', sep='')
+    },
+    content = function(file) {
+      
+      write.csv(aoc_ssd_filtered() %>%
+                  ungroup() %>% 
+                  dplyr::select(doi, authors, org_f, species_f, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
+                         size.length.um.used.for.conversions, dose.particles.mL.master, dose.particles.mL.master.converted.reported, 
+                         dose.mg.L.master, dose.mg.L.master.converted.reported, EC_env_v.particles.mL, dose_new,
+                         tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6,
+                         tech.1, tech.2, tech.3, tech.4, tech.5, tech.6,
+                         tech.7, tech.8, tech.9, tech.10, tech.11, tech.12,
+                         risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17,
+                         risk.18, risk.19, risk.20) %>% 
+                  dplyr::rename("DOI" = doi,
+                         "First Author" = authors,
+                         "Particle Morphology" = shape_f,
+                         "Effect Metric" = effect.metric,
+                         "Exposure Duration" = acute.chronic_f,
+                         "Polymer" = poly_f,
+                         "Mixture or Single Size" = polydispersity,
+                         "Minimum Length (polydisperse only)" = size.length.min.um.used.for.conversions,
+                         "Maximum Length (polydisperse only)" = size.length.max.um.used.for.conversions,
+                         "Original Dose (Particles/mL)" = dose.particles.mL.master, 
+                         "Original Dose (Particles/mL), Reported or Converted" = dose.particles.mL.master.converted.reported,
+                         "Original Dose (mg/L)" = dose.mg.L.master,
+                         "Original Dose (mg/L), Reported or Converted" = dose.mg.L.master.converted.reported,
+                         "Organism Group" = org_f,
+                         "Species" = species_f,
+                         "Endpoint Category" = lvl1_f,
+                         "Measured Endpoint" = lvl3_f,
+                         "Biological Level of Organization" = bio_f,
+                         "Particle Size (µm)" = size.length.um.used.for.conversions, 
+                         "Aligned Dose, Volume (Particles/mL)" = EC_env_v.particles.mL, 
+                         "Aligned Dose, Volume, Assessment Factors Applied (Particles/mL)" = dose_new,
+                         "Test Medium Vehice Reported" = tech.a1, 
+                         "Administration Route Reported" = tech.a2, 
+                         "Test Species Reported" = tech.a3, 
+                         "Sample Size Reported" = tech.a4, 
+                         "Control Group Reported" = tech.a5, 
+                         "Exposure Duration Reported" = tech.a6,
+                         "Particle Size" = tech.1, 
+                         "Particle Shape" = tech.2, 
+                         "Polymer Type" = tech.3, 
+                         "Source of MP" = tech.4, 
+                         "Concentration Reporting" = tech.5, 
+                         "Chemical Purity" = tech.6,
+                         "Contamination Prevention" = tech.7, 
+                         "Verification of Background Contamination" = tech.8, 
+                         "Verification of Exposure" = tech.9, 
+                         "Homogeneity of Exposure" = tech.10, 
+                         "Exposure Validation" = tech.11, 
+                         "Replication" = tech.12,
+                         "Number of MP Treament Groups" = risk.b1, 
+                         "Endpoints" = risk.13, 
+                         "Presence of Natural (food) Particles" = risk.14, 
+                         "Reporting Effect Thresholds" = risk.15, 
+                         "Quality of Dose Response Relationship" = risk.16, 
+                         "Concentration Range Tested" = risk.17,
+                         "Aging and Biofouling" = risk.18, 
+                         "Diversity of MP Tested" = risk.19, 
+                         "Exposure Time" = risk.20),file, row.names = FALSE)
   })
   
   ##### Calculators #####
