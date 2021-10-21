@@ -843,7 +843,7 @@ tabItem(tabName = "Exploration",
                             choices = levels(aoc_setup$tier_zero_risk_f),
                             selected = levels(aoc_setup$tier_zero_risk_f),
                             options = list(`actions-box` = TRUE),
-                            multiple = TRUE))),
+                                         multiple = TRUE))),
                   
                       ), #close tabpanel
              
@@ -1829,24 +1829,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        scrollY = 600,
        scrollX = TRUE,
        paging = TRUE,
-       columnDefs = list(list(width = '100px', targets = "_all"))),
-     colnames = c('DOI', 'Authors', 'Year', 'Technical "Red Criteria"', 'Risk Assessment "Red Criteria"','Species', 'Organism Group', 'Environment', 'Life Stage', 'In vitro/in vivo',
-                  'Sex', 'Estimated Body Length (cm)', 'Estimated Maximum Ingestible Size (mm)', 'Experiment Type',
-                  'Exposure Route', 'Particle Mix?', 'Negative Control', 'Reference Particle', 'Exposure Media',
-                  'Solvent', 'Detergent', 'pH', 'Salinity (ppt)', 'Temperature (Avg)', 'Temperature (Min)',
-                  'Temperature (Max)', 'Exposure Duration (days)', 'Acute/Chronic', 'Number of Doses', 'Replicates',
-                  'Sample Size', 'Dosing Frequency', 'Chemicals Added', 'Added Chemical Dose (nominal)',
-                  'Added Chemical Dose (measured)', 'particles/mL (master)', 'particles/mL (master), reported or converted',
-                  'μg/mL (master)', 'μg/mL (master), reported or converted', 'μm^3/mL (master)', 'μm^2/mL (master)',
-                  'μm^2/ug/mL (master)', 'Effect', 'Direction', 'Broad Endpoint Category', 'Specific Endpoint Category',
-                  'Endpoint', 'Level of Biological Organization', 'Target Cell or Tissue', 'Effect Metric', 'AF Time',
-                  'AF NOEC', 'Polymer', 'Shape', 'Density (g/cm^3)', 'Density, reported or estimated', 'Charge',
-                  'Zeta Potential (mV)', 'Size Category','Zeta Potential Media', 'Functional Group', 'Particle Length (μm)',
-                  'Particle Width (μm)', 'Particle Surface Area (μm^2)', 'Particle Volume (μm^3)', 'Particle Mass (mg)',
-                  'Weathered or Biofouled?', 'Size Validated?', 'Polymer Validated?', 'Shape Validated', 'Particle Source','Sodium Azide Present?',
-                  'Screened for Chemical Contamination?', 'Particle Cleaning?', 'Solvent Rinse', 'Background Contamination Monitored?',
-                  'Concentration Validated?', 'Particle Behavior', 'Uptake Validated?', 'Uptake Validation Method',
-                  'Tissue Distribution', 'Organisms Fed?', 'Original Dose Units', 'Original Concentration', 'Original Dose Units Nominal or Measured'))
+       columnDefs = list(list(width = '100px', targets = "_all"))))
 
    #### Screening S ####
    
