@@ -697,8 +697,8 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   #calculate surface area based on shape
 #calculate surface area based on shape
 mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surface.area.um2,
-                                             shape == "fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
-                                             shape == "fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
+                                             shape == "fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
+                                             shape == "fiber" & !is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
                                              shape == "fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
                                                                          b = 0.77 * size.length.um.used.for.conversions,
                                                                          c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>% 
