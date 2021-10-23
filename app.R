@@ -43,8 +43,9 @@ aoc_v1 <- readRDS("aoc_v1.RDS")
 aoc_z <- readRDS("aoc_z.RDS")
 
 #prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
-predictionModel_ox.stress <- readRDS("prediction/randomForest_oxStress.rds")
-test_data_ox.stress <- read.csv("prediction/test_data_ox_stress.csv")
+predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
+predictionModel_food.dilution <- readRDS("prediction/randomForest_foodDilution.rds")
+test_data_prediction <- read.csv("prediction/test_data_prediction.csv", stringsAsFactors = TRUE)
 
 
 ##### Load functions #####
@@ -1630,14 +1631,18 @@ tabItem(tabName = "Predictions",
             fluidRow(
               tabBox(width = 12,
                      
-                     tabPanel("Upload Data",
+                     tabPanel("Start",
                               
                               fluidRow(
                                 
-                                p("This model predicts the ERM-aligned concentration that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Test data may be used as a guide for preparing user data."),
+                                p("This model predicts the ERM-aligned (1- 5,000 um) concentrations that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Test data may be used as a guide for preparing user data."),
                                 
                                 column(width = 4,
                                        downloadButton("testData_prediction", "Download Test Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                              )
+                     ), #end start tabPanel
+                     
+                     tabPanel("Upload Data",
                                 
                                 # Input: Select a file ---
                                 fileInput("file1", "upload csv file here",
@@ -1645,11 +1650,25 @@ tabItem(tabName = "Predictions",
                                           accept = c("text/csv",
                                                      "text/comma-separated-values,text/plain",
                                                      ".csv")), 
+                              column(width = 12,
+                                     plotOutput(outputId = "predictionDataSkim"))
+                                     
+                              
+                     ), # end upload tabPanel
+                     
+                     tabPanel("Model Selection",
+                              
+                              #model select
+                              p("Two models are currently available for predicting effect concentrations based on the `food dilution` and `tissue translocation` ERMs. Choose the ERM for model predictionsl"),
+                              column(width = 4,
+                                     radioButtons(inputId = "ERM_radio", 
+                                                  label = "ERM:",
+                                                  choices = c("food dilution", "tissue translocation"),
+                                                  selected = "tissue translocation")),
                                 #action buttons 
                                 column(width = 4,
                                        actionButton("go_predict", "Predict Effect Concentrations", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))
-                              )
-                     ), #closes tabPanel
+                              ), #closes model selection tabPanel
                      
                      tabPanel("Predictions Table",
                               
@@ -1674,6 +1693,14 @@ tabItem(tabName = "Predictions",
                               fluidRow(
                                 p("If known concentrations were uploaded, predicted effect concentrations can be compared here."),
                                 
+                                column(width = 3,
+                                       pickerInput(inputId = "prediction_var",
+                                                   label = "Variable to highlight:",
+                                                   choices = c("organism.group", "life.stage", "species_f","bio.org","exposure.route","environment","acute.chronic_f",
+                                                               "translocatable", "effect.score", "effect.metric","lvl1_f","lvl2_f"),
+                                                   selected = "organism.group",
+                                                   options = list(`actions-box` = FALSE), # option to de/select all
+                                                   multiple = FALSE)),
                                 column(width = 12,
                                        plotOutput(outputId = "predictionsScatter")),
                                 column(width = 12,
@@ -5485,23 +5512,47 @@ output$downloadSsdPlot <- downloadHandler(
       paste('test_data-', '.csv', sep='')
     },
     content = function(file) {
-      write.csv(test_data_ox.stress, file, row.names = FALSE)
+      write.csv(test_data_prediction, file, row.names = FALSE)
     }
   )
+  
+  #skim user-input dataset
+  output$predictionDataSkim <- renderPlot({
+    df <- read.csv(input$file1$datapath, stringsAsFactors = TRUE)
+    skim <- df %>% 
+      keep(is.numeric) %>%                     # Keep only numeric columns
+      gather() %>%                             # Convert to key-value pairs
+      ggplot(aes(value)) +                     # Plot the values
+      facet_wrap(~ key, scales = "free") +   # In separate panels
+      geom_histogram()   +                       # as density
+      theme_minimal()
+    
+    print(skim)
+  })
   
   # make predictions based on user-uploaded dataste
   prediction_reactiveDF<-eventReactive(list(input$go_predict),{
     req(input$file1)
+    
+    #choose model based on user-selected ERM
+    if(input$ERM_radio == "tissue translocation"){
+      model = predictionModel_tissue.translocation
+    }
+    
+    if(input$ERM_radio == "food dilution"){
+    model = predictionModel_food.dilution}
+    
+    #define dataframe based on user upload
     df <- read.csv(input$file1$datapath, stringsAsFactors = TRUE)
     
-    df$predictions<-predict(predictionModel_ox.stress, newdata = df, type ="raw")
+    df$predictions<-predict(model, newdata = df, type ="raw")
     
     df <- df %>%
       dplyr::select(-X) %>% 
       mutate(predictions.linear = 10 ^ predictions) %>% 
       dplyr::relocate(predictions, predictions.linear) %>% 
-      rename("Predicted Concentration (Particles/mL) for Oxidative Stress (aligned to 1-5,000 um)" = predictions.linear,
-             "Predicted Concentration (log10 particles/mL) for Oxidative Stress (aligned to 1-5,000 um)" = predictions)
+      rename("Predicted Concentration (Particles/mL; aligned to 1-5,000 um)" = predictions.linear,
+             "Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)" = predictions)
     
     return(df)
   })
@@ -5526,19 +5577,35 @@ output$downloadSsdPlot <- downloadHandler(
   #render scatterplot comparing predicted and known concentrations
   
   output$predictionsScatter <- renderPlot({
-  
+    
+        #choose known concentrations based on ERM
+    if(input$ERM_radio == "tissue translocation"){
    scatterPlot <- prediction_reactiveDF() %>% 
       ggplot(aes(x = particles.mL.ox.stress,
-                 y = `Predicted Concentration (log10 particles/mL) for Oxidative Stress (aligned to 1-5,000 um)`)) +
+                 y = `Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)`,
+                 color = input$prediction_var))
+    }
+    
+    if(input$ERM_radio == "food dilution"){
+      scatterPlot <- prediction_reactiveDF() %>% 
+        ggplot(aes(x = particles.mL.food.dilution,
+                   y = `Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)`,
+                   color = input$prediction_var
+                   ))
+    }
+   
+    #add layers to plot
+    scatterPlot <- scatterPlot +
       geom_point() +
       geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
-     #display r2 and equation
+      #scale_color_manual(values = variable) +
+      #display r2 and equation
       ggpubr::stat_regline_equation(label.y = 7, aes(label = ..eq.label..)) +
-     ggpubr::stat_regline_equation(label.y = 7.5, aes(label = ..rr.label..)) +
+      ggpubr::stat_regline_equation(label.y = 7.5, aes(label = ..rr.label..)) +
       xlab("Known Effect Concentrations (Particles/mL)") +
-        ylab("Predicted Effect Concentrations (Particles/mL)") +
-     theme_minimal()
-   
+      ylab("Predicted Effect Concentrations (Particles/mL)") +
+      theme_minimal()
+    
    print(scatterPlot) 
    
   })
