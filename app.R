@@ -40,7 +40,11 @@ aoc_quality <- readRDS("aoc_quality.RDS")
 aoc_search <- readRDS("aoc_search.RDS")
 aoc_setup <- readRDS("aoc_setup.RDS")
 aoc_v1 <- readRDS("aoc_v1.RDS")
-aoc_z <- readRDS("aoc_z.RDS") 
+aoc_z <- readRDS("aoc_z.RDS")
+
+#prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
+predictionModel_ox.stress <- readRDS("prediction/randomForest_oxStress.rds")
+test_data_ox.stress <- read.csv("prediction/test_data_ox_stress.csv")
 
 
 ##### Load functions #####
@@ -251,7 +255,8 @@ ui <- dashboardPage(
                      menuItem("Exploration", tabName = "Exploration", icon = icon("chart-bar")),
                      menuItem("SSD", tabName = "SSD", icon = icon("fish")),
                      menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
-                     menuItem("Calculators", tabName = "Calculators", icon = icon("check-circle")),
+                     menuItem("Calculators", tabName = "Calculators", icon = icon("calculator")),
+                     menuItem("Predictions", tabName = "Predictions", icon = icon("brain")),
                      menuItem("Resources", tabName = "Resources", icon = icon("question-circle")),
                      menuItem("Contact", tabName = "Contact", icon = icon("envelope")),
                      br(),
@@ -1554,7 +1559,7 @@ tabItem(tabName = "SSD",
         
         ), #closes out SSD tab
 
-##### Calculators UI ####
+#### Calculators UI ####
 tabItem(tabName = "Calculators",
 
         box(title = "Probability Distributions", status = "primary", width = 12, collapsible = TRUE,
@@ -1613,6 +1618,74 @@ tabItem(tabName = "Calculators",
         ) # closes fluidrow
         ) #closes box
                      ), #close tabItem
+
+#### Predictions #####
+tabItem(tabName = "Predictions",
+        
+        box(title = "Model Predictions of Microplastics Effect Thresholds", status = "primary", width = 12, collapsible = TRUE,
+            
+            p("Coffin et al (in prep) provide a machine learning model to predict concentrations of microplastics expected to result in a given effect for a given species for given particle characteristics."),
+            br(),
+            
+            fluidRow(
+              tabBox(width = 12,
+                     
+                     tabPanel("Upload Data",
+                              
+                              fluidRow(
+                                
+                                p("This model predicts the ERM-aligned concentration that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Test data may be used as a guide for preparing user data."),
+                                
+                                column(width = 4,
+                                       downloadButton("testData_prediction", "Download Test Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                                
+                                # Input: Select a file ---
+                                fileInput("file1", "upload csv file here",
+                                          multiple = FALSE,
+                                          accept = c("text/csv",
+                                                     "text/comma-separated-values,text/plain",
+                                                     ".csv")), 
+                                #action buttons 
+                                column(width = 4,
+                                       actionButton("go_predict", "Predict Effect Concentrations", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))
+                              )
+                     ), #closes tabPanel
+                     
+                     tabPanel("Predictions Table",
+                              
+                              fluidRow(
+                                
+                                p("Predicted effect concentrations for the uploaded data can be viewed and downloaded here."),
+                                
+                                column(width = 12,
+                                       downloadButton("downloadData_prediction", "Download Prediction Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                                
+                                ), # end of fluidrow
+                              
+                              fluidRow(
+                                
+                                column(width = 12,
+                                       # Show the table with the predictions
+                                       DT::dataTableOutput("predictionsTable")))         
+                              ), # closes predictions table tabPanel
+                     
+                     tabPanel("Prediction Accuracy",
+                              
+                              fluidRow(
+                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here."),
+                                
+                                column(width = 12,
+                                       plotOutput(outputId = "predictionsScatter")),
+                                column(width = 12,
+                                       column(width = 3,
+                                              downloadButton("downloadScatter_predictions", "Download Plot", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")))
+                              )) #closes accuracy tabPanel
+                     
+                     
+              ) #closes tabox
+            ) # closes fluidrow
+        ) #closes box
+), #close tabItem
   
 #### Resources UI ####
 
@@ -5400,10 +5473,85 @@ output$downloadSsdPlot <- downloadHandler(
       paste('simulated_data-', Sys.Date(), '.csv', sep='')
     },
     content = function(file) {
-      write.csv(simulated_distribution() %>% dplyr::rename(c("Size (um)" = Size, "Shape (CSF, unitless)" = Shape, "Density (g cm^-3)" = Density, "Mass (mg)" = mass.mg, "Volume (um^-3)" = um3)), file, row.names = FALSE)
+      write.csv(simulated_distribution() %>% dplyr::rename(c("Size (um)" = Size, "Shape (CSF, unitless)" = Shape, "Density (g cm^3)" = Density, "Mass (mg)" = mass.mg, "Volume (um^3)" = um3)), file, row.names = FALSE)
     }
   )
-
+  
+  ##### Predictions #####
+  
+  # test data based on 25% of training dataset
+  output$testData_prediction <- downloadHandler(
+    filename = function() {
+      paste('test_data-', '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(test_data_ox.stress, file, row.names = FALSE)
+    }
+  )
+  
+  # make predictions based on user-uploaded dataste
+  prediction_reactiveDF<-eventReactive(list(input$go_predict),{
+    req(input$file1)
+    df <- read.csv(input$file1$datapath, stringsAsFactors = TRUE)
+    
+    df$predictions<-predict(predictionModel_ox.stress, newdata = df, type ="raw")
+    
+    df <- df %>%
+      dplyr::select(-X) %>% 
+      mutate(predictions.linear = 10 ^ predictions) %>% 
+      dplyr::relocate(predictions, predictions.linear) %>% 
+      rename("Predicted Concentration (Particles/mL) for Oxidative Stress (aligned to 1-5,000 um)" = predictions.linear,
+             "Predicted Concentration (log10 particles/mL) for Oxidative Stress (aligned to 1-5,000 um)" = predictions)
+    
+    return(df)
+  })
+  
+  #render predictions in datatable
+  output$predictionsTable = DT::renderDataTable({
+    req(input$file1)
+    
+    return(DT::datatable(prediction_reactiveDF(),  options = list(pageLength = 100), filter = c("top")))
+  })
+  
+  # Downloadable csv of selected dataset ----
+  output$downloadData_prediction <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(prediction_reactiveDF(), file, row.names = FALSE)
+    }
+  )
+  
+  #render scatterplot comparing predicted and known concentrations
+  
+  output$predictionsScatter <- renderPlot({
+  
+   scatterPlot <- prediction_reactiveDF() %>% 
+      ggplot(aes(x = particles.mL.ox.stress,
+                 y = `Predicted Concentration (log10 particles/mL) for Oxidative Stress (aligned to 1-5,000 um)`)) +
+      geom_point() +
+      geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
+     #display r2 and equation
+      ggpubr::stat_regline_equation(label.y = 7, aes(label = ..eq.label..)) +
+     ggpubr::stat_regline_equation(label.y = 7.5, aes(label = ..rr.label..)) +
+      xlab("Known Effect Concentrations (Particles/mL)") +
+        ylab("Predicted Effect Concentrations (Particles/mL)") +
+     theme_minimal()
+   
+   print(scatterPlot) 
+   
+  })
+  
+  # Create downloadable png for scatterplot
+  output$downloadScatter_predictions <- downloadHandler(
+        filename = function() {
+      paste('Predicted vs. Observed Scatter', Sys.Date(), '.png', sep='')
+    },
+    content = function(file) {
+      ggsave(file, plot = predictionsScatter(), width = 16, height = 8, device = 'png')
+    })
+  
   # Create "reset" button to revert all filters back to what they began as.
   # Need to call all widgets individually by their ids.
   # See https://stackoverflow.com/questions/44779775/reset-inputs-with-reactive-app-in-shiny for more information.
