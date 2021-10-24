@@ -46,6 +46,7 @@ aoc_z <- readRDS("aoc_z.RDS")
 predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
 predictionModel_food.dilution <- readRDS("prediction/randomForest_foodDilution.rds")
 test_data_prediction <- read.csv("prediction/test_data_prediction.csv", stringsAsFactors = TRUE)
+test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE)
 
 
 ##### Load functions #####
@@ -1605,16 +1606,151 @@ tabItem(tabName = "Calculators",
                                        actionButton("reset_input", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
                                 column(width = 3,
                                        downloadButton("downloadData_simulate", "Download Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                     )
-              ), #closes tabPanel
+                     ),
+             
               fluidRow(
                 
                 column(width = 12,
                        
                        plotOutput(outputId = "simulated.data.histogram", height = "500px"),
                 )
-              )
+              ),
+                     ), #closes tabPanel
               
+              tabPanel("Alignments",
+                       
+                       shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
+                       id = "Alignments", # adds ID for resetting filters
+                       
+                       fluidRow(
+                       
+                         p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021)."), "First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
+                         br(),
+                         
+                         strong("Use this example dataset as a guide to format data for upload"),
+                         
+                         br(),
+                         
+                         column(width = 4,
+                                downloadButton("testData_calculator", "Download Example Data", icon("download"), style="font-size:180%;color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                       
+                         br(),
+                         br(),
+                         strong("Once your data is properly formatted, upload below."),
+                         br(),
+                         
+                         # Input: Select a file ---
+                         fileInput("alignment_file", "upload csv file here",
+                                   multiple = FALSE,
+                                   accept = c("text/csv",
+                                              "text/comma-separated-values,text/plain",
+                                              ".csv")), 
+                         br(),
+                         p("Choose the bioaccessibility parameters, and site-specific polydisperse microplastics distributions parameters."),
+                        
+                         #ERM Checkbox
+                         column(width = 12,
+                                
+                                # Switch to choose what determines bioaccessibility
+                                column(width = 5,
+                                       radioButtons(inputId = "ingestion.translocation.switch_calculator",
+                                                    label = "Bioaccessibility limited by tissue translocation (fixed) or mouth size opening (species-dependent)?",
+                                                    choices = c("ingestion", "translocation"),
+                                                    selected = "ingestion")),
+                                
+                                # Tissue translocation size limit (if applicable)
+                                column(width = 4,
+                                       numericInput(inputId = "upper.tissue.trans.size.um_calculator",
+                                                    label = "Upper Length (µm) for Translocatable Particles (only works if bioaccessibility determined by translocation; also excludes data from experiments using particles longer than defined value)",
+                                                    value = 83))
+                                ),
+                         
+                         column(width = 12,
+                                strong("Starting alpha values are for marine surface water reported in ", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021)")),
+                                br(),
+                                br()),
+                         
+                         #Alpha checkbox
+                         column(width = 4,
+                                numericInput(inputId = "alpha_calculator",
+                                             label = "Length Alpha Value",
+                                             value = 2.07,
+                                             step = 0.01)),
+                         
+                         #Alpha surface area input
+                         column(width = 4,
+                                numericInput(inputId = "a.sa_calculator",
+                                             label = "Surface Area Alpha Value",
+                                             value = 1.50,
+                                             step = 0.01)),
+                         
+                         #Alpha volume input
+                         column(width = 4,
+                                numericInput(inputId = "a.v_calculator",
+                                             label = "Volume Alpha Value",
+                                             value = 1.48,
+                                             step = 0.01)),
+                         
+                         #Alpha mass input
+                         column(width = 4,
+                                numericInput(inputId = "a.m_calculator",
+                                             label = "Mass Alpha Value",
+                                             value = 1.32,
+                                             step = 0.01)),
+                         
+                         #Alpha ssa input
+                         column(width = 4,
+                                numericInput(inputId = "a.ssa_calculator",
+                                             label = "Specific Surface Area Alpha Value",
+                                             value = 1.98,
+                                             step = 0.01)),
+                         
+                         #average width to length ratio
+                         column(width = 4,
+                                numericInput(inputId = "R.ave_calculator",
+                                             label = "Average Particle Width to Length Ratio",
+                                             value = 0.77,
+                                             step = 0.01)),
+                         
+                         #average density
+                         column(width = 4,
+                                numericInput(inputId = "p.ave_calculator",
+                                             label = "Average Particle Density (g/cm^3)",
+                                             value = 1.10,
+                                             step = 0.01)),
+                         
+                         # lower length input
+                         column(width = 4,
+                                numericInput(inputId = "lower_length_calculator",
+                                             label = "Lower Length for Default Size Range (µm)",
+                                             value = 1)),
+                         # upper length input
+                         column(width = 4,
+                                numericInput(inputId = "upper_length_calculator",
+                                             label = "Upper Length for Default Size Range (µm)",
+                                             value = 5000)),
+                         br(),
+                         
+                         #Action Buttons
+                         column(width = 12,
+                         column(width = 4,
+                                actionButton("go_calculator", "Align data", icon("rocket"), style="padding:15px; font-size:180%; color: #fff; background-color:  #117a65; border-color:  #0e6655")),
+                                              ),
+                         br(),
+                         fluidRow(
+                           
+                           column(width = 12,
+                                  # Show the table with the predictions
+                                  DT::dataTableOutput("alignmentTable")),
+                           
+                           column(width = 4,
+                                  downloadButton("downloadData_calculator", "Download Aligned Data", icon("download"), style="padding:15px; font-size:180%;color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                           ) #end fluidrow for datatable 
+                         
+                         
+                       ) # closes fluidrow
+              )# closes tabpanel
+                         
             ) #closes tabox
         ) # closes fluidrow
         ) #closes box
@@ -1645,7 +1781,7 @@ tabItem(tabName = "Predictions",
                      tabPanel("Upload Data",
                                 
                                 # Input: Select a file ---
-                                fileInput("file1", "upload csv file here",
+                                fileInput("prediction_file", "upload csv file here",
                                           multiple = FALSE,
                                           accept = c("text/csv",
                                                      "text/comma-separated-values,text/plain",
@@ -5504,6 +5640,274 @@ output$downloadSsdPlot <- downloadHandler(
     }
   )
   
+  ###### --Alignment Calculator ####
+  
+  # example dataset with minimum columns needed for making alignments
+  output$testData_calculator <- downloadHandler(
+    filename = function() {
+      paste('example_data-', '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(test_data_calculator, file, row.names = FALSE)
+    }
+  )
+  
+  #align data
+  alignedData_calculator <- eventReactive(list(input$go_calculator),{
+    #read in user dataset
+    raw <- read.csv(input$alignment_file$datapath, stringsAsFactors = TRUE)
+    
+    ## ERM parametrization ##
+    # Define params for alignments #
+    alpha = input$alpha_calculator #length power law exponent
+    x2D_set = as.numeric(input$upper_length_calculator) #upper size range (default)
+    x1D_set = input$lower_length_calculator #lower size range (default)
+    x1M_set = input$lower_length_calculator #lower size range for ingestible plastic (user defined)
+    upper.tissue.trans.size.um <- as.numeric(input$upper.tissue.trans.size.um_calculator) #user-defined upper value for tissue trans (numeric)
+    ingestion.translocation.switch <- input$ingestion.translocation.switch_calculator #user-defined: inputs are "ingestion" or "translocation"
+    ERM.switch <- input$ERM_check_calculator
+    
+    # define parameters for power law coefficients
+    a.sa = input$a.sa_calculator #1.5 #marine surface area power law
+    a.v = input$a.v_calculator#1.48 #a_V for marine surface water volume
+    a.m = input$a.m_calculator#1.32 # upper limit fora_m for mass for marine surface water in table S4 
+    a.ssa = input$a.ssa_calculator #1.98 # A_SSA for marine surface water
+    
+    #define additional parameters for calculations based on averages in the environment
+    R.ave = input$R.ave_calculator #0.77 #average width to length ratio for microplastics in marine enviornment
+    p.ave = input$p.ave_calculator#1.10 #average density in marine surface water
+    
+    # calculate ERM for each species
+    aligned <- raw %>%
+      #print values used to align
+      mutate(alpha = alpha,
+             x2D_set = x2D_set,
+             x1D_set = x1D_set,
+             x1M_set = x1M_set,
+             upper.tissue.trans.size.um = upper.tissue.trans.size.um,
+             ingestion.translocation.switch = ingestion.translocation.switch,
+             a.sa = a.sa,
+             a.v = a.v,
+             a.m = a.m,
+             a.ssa = a.ssa,
+             p.ave = p.ave,
+             R.ave = R.ave) %>% 
+      ### BIOACCESSIBILITY ###
+      # define upper size length for bioaccessibility (user-defined) for ingestion (only used if user defines as such
+      mutate(x2M_ingest = case_when(is.na(max.size.ingest.um) ~ x2D_set, 
+                                    max.size.ingest.um < x2D_set ~ max.size.ingest.um,
+                                    max.size.ingest.um > x2D_set ~ x2D_set)) %>%  #set to default as upper limit or max size ingest, whichever is smaller
+      # define upper size length for Translocation 
+      mutate(x2M_trans = case_when(is.na(max.size.ingest.um) ~ upper.tissue.trans.size.um, 
+                                   max.size.ingest.um  < upper.tissue.trans.size.um ~  max.size.ingest.um,
+                                   max.size.ingest.um  > upper.tissue.trans.size.um ~ upper.tissue.trans.size.um)) %>% 
+      #define which bioaccessibility limit to use for calculations based on user input
+      mutate(ingestion.translocation = ingestion.translocation.switch) %>%  #user-defined bioaccessibility switch. Note that a
+      mutate(x2M = case_when(ingestion.translocation == "ingestion" ~ x2M_ingest,
+                             ingestion.translocation == "translocation" ~ x2M_trans)) %>% 
+      ### Particle ERM ###
+      # calculate effect threshold for particles
+      mutate(EC_mono_p.particles.mL = dose.particles.mL.master) %>% 
+      mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
+      mutate(mu.p.poly = mux.polyfnx(a.x = alpha, x_UL= x2M, x_LL = x1M_set)) %>% 
+      # polydisperse effect threshold for particles
+      mutate(EC_poly_p.particles.mL = (EC_mono_p.particles.mL * mu.p.mono)/mu.p.poly) %>% 
+      #calculate CF_bio for all conversions
+      mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  
+      ## Calculate environmentally relevant effect threshold for particles
+      mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      
+      
+      #### Surface area ERM ####
+    ##--- environmental calculations ---###
+    #calculate lower ingestible surface area
+    mutate(x_LL_sa = SAfnx(a = 0.5 * x1D_set, #length-limited
+                           b = 0.5 * x1D_set, #length-limited
+                           c = 0.5 * x1D_set)) %>% #length-limited
+      #calculate upper ingestible surface area
+      mutate(x_UL_sa = SAfnx( 
+        a = 0.5 * x2M, #LENGTH-limited (less conservative assumption)
+        b = 0.5 * x2M, #length-limited
+        c = 0.5 * x2M)) %>%   #length-limited
+      #calculate mu_x_poly (env) for surface area
+      mutate(mu.sa.poly = mux.polyfnx(a.sa, x_UL_sa, x_LL_sa)) %>% 
+      
+      ##--- laboratory calculations ---###
+      ## define mu_x_mono OR mu_x_poly (lab) for alignment to ERM  #
+      #(note that if mixed particles were used, a different equation must be used)
+      mutate(mu.sa.mono = case_when(
+        polydispersity == "monodisperse" ~ particle.surface.area.um2, # use reported surface area in monodisperse
+        polydispersity == "polydisperse" ~  mux.polyfnx(a.x = a.sa, 
+                                                        x_LL = particle.surface.area.um2.min,
+                                                        x_UL = particle.surface.area.um2.max))) %>% 
+      #calculate polydisperse effect concentration for surface area (particles/mL)
+      mutate(EC_poly_sa.particles.mL = (EC_mono_p.particles.mL * mu.sa.mono)/mu.sa.poly) %>%  
+      #calculate environmentally realistic effect threshold
+      mutate(EC_env_sa.particles.mL = EC_poly_sa.particles.mL * CF_bio) %>% 
+      
+      #### volume ERM ####
+    ##--- environmental calculations ---###
+    #calculate lower ingestible volume 
+    mutate(x_LL_v = volumefnx_poly(length = x1D_set,
+                                   width = x1D_set)) %>% 
+      #calculate maximum ingestible volume 
+      mutate(x_UL_v = volumefnx_poly(length = x2M, #length-limited
+                                     width = x2M)) %>% #length-limited
+      # calculate mu.v.poly
+      mutate(mu.v.poly = mux.polyfnx(a.v, x_UL_v, x_LL_v)) %>% 
+      ##--- laboratory calculations ---###
+      ## define mu_x_mono OR mu_x_poly (lab) for alignment to ERM  #
+      #(note that if mixed particles were used, a different equation must be used)
+      mutate(mu.v.mono = case_when(
+        polydispersity == "monodisperse" ~ particle.volume.um3, # use reported volume in monodisperse
+        polydispersity == "polydisperse" ~ mux.polyfnx(a.x = a.v, 
+                                                       x_LL = particle.volume.um3.min,
+                                                       x_UL = particle.volume.um3.max))) %>% 
+      
+      #calculate polydisperse effect concentration for volume (particles/mL)
+      mutate(EC_poly_v.particles.mL = (EC_mono_p.particles.mL * mu.v.mono)/mu.v.poly) %>%  
+      #calculate environmentally realistic effect threshold
+      mutate(EC_env_v.particles.mL = EC_poly_v.particles.mL * CF_bio) %>% 
+      
+      #### mass ERM ###
+      ##--- environmental calculations ---###
+      #calculate lower ingestible mass
+      mutate(x_LL_m = massfnx_poly(width = x1D_set,
+                                   length = x1D_set,
+                                   p = p.ave)) %>% 
+      #calculate upper ingestible mass
+      mutate(x_UL_m = massfnx_poly(width = x2M, #length-limited
+                                   length = x2M, #length-limited
+                                   p = p.ave)) %>% #average density
+      # calculate mu.m.poly
+      mutate(mu.m.poly = mux.polyfnx(a.m, x_UL_m, x_LL_m)) %>% 
+      ##--- laboratory calculations ---###
+      ## define mu_x_mono OR mu_x_poly (lab) for alignment to ERM  #
+      #(note that if mixed particles were used, a different equation must be used)
+      mutate(mu.m.mono = case_when(
+        polydispersity == "monodisperse" ~  mass.per.particle.mg * 1000, # use reported volume in monodisperse
+        polydispersity == "polydisperse" ~ mux.polyfnx(a.x = a.m, 
+                                                       x_UL = mass.per.particle.mg.max * 1000,
+                                                       x_LL = mass.per.particle.mg.min * 1000))) %>% 
+      #calculate polydisperse effect concentration for volume (particles/mL)
+      mutate(EC_poly_m.particles.mL = (EC_env_p.particles.mL * mu.m.mono)/mu.m.poly) %>%
+      #calculate environmentally realistic effect threshold
+      mutate(EC_env_m.particles.mL = EC_poly_m.particles.mL * CF_bio) %>% 
+      
+      ##### specific surface area ERM ####
+    mutate(mu.ssa.mono = mu.sa.mono/mu.m.mono) %>% #define mu_x_mono for alignment to ERM (um^2/ug)
+      #calculate lower ingestible 1/SSA
+      mutate(x_LL_ssa = SSA.inversefnx(sa = x_LL_sa, #surface area
+                                       m = x_LL_m) #mass
+      ) %>% 
+      #calculate upper ingestible SSA  (um^2/ug)
+      mutate(x_UL_ssa = SSA.inversefnx(sa = x_UL_sa, #surface area
+                                       m = x_UL_m) #mass
+      ) %>% 
+      #calculate mu_x_poly for specific surface area
+      #note that mu were calcaulted for polydisperse particles before, so not special case needed here
+      mutate(mu.ssa.inverse.poly = mux.polyfnx(a.ssa, x_UL_ssa, x_LL_ssa)) %>% 
+      #calculate polydisperse effect concentration for specific surface area (particles/mL)
+      mutate(mu.ssa.poly = 1 / mu.ssa.inverse.poly) %>%  #calculate mu_SSA from inverse
+      mutate(EC_poly_ssa.particles.mL = (EC_env_p.particles.mL * mu.ssa.mono)/mu.ssa.poly) %>% 
+      #calculate environmentally realistic effect threshold
+      mutate(EC_env_ssa.particles.mL = EC_poly_ssa.particles.mL * CF_bio) %>% 
+      
+      ### Convert to Metrics other than particles/mL ###
+      ## convert all environmentally realistic thresholds to surface area ##
+      # particle count to surface area #
+      mutate(EC_env_p.um2.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to surface area #
+      mutate(EC_env_sa.um2.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to surface area #
+      mutate(EC_env_v.um2.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to surface area #
+      mutate(EC_env_m.um2.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to surface area #
+      mutate(EC_env_ssa.um2.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.sa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      ## convert all environmentally realistic thresholds to volume ##
+      # particle count to volume #
+      mutate(EC_env_p.um3.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to volume #
+      mutate(EC_env_sa.um3.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to volume #
+      mutate(EC_env_v.um3.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to volume #
+      mutate(EC_env_m.um3.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to volume #
+      mutate(EC_env_ssa.um3.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.v, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      ## convert all environmentally realistic thresholds to mass ##
+      # particle count to mass #
+      mutate(EC_env_p.ug.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to mass #
+      mutate(EC_env_sa.ug.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to mass #
+      mutate(EC_env_v.ug.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to mass #
+      mutate(EC_env_m.ug.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to mass #
+      mutate(EC_env_ssa.ug.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.m, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      ## convert all environmentally realistic thresholds to specific surface area ##
+      # particle count to specific surface area #
+      mutate(EC_env_p.um2.ug.mL =  EC_env_p.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # surface area to specific surface area #
+      mutate(EC_env_sa.um2.ug.mL =  EC_env_sa.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # volume to specific surface area #
+      mutate(EC_env_v.um2.ug.mL =  EC_env_v.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>%
+      # mass to specific surface area #
+      mutate(EC_env_m.um2.ug.mL =  EC_env_m.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      # specific surface area to specific surface area #
+      mutate(EC_env_ssa.um2.ug.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set)) %>% 
+      
+      #annotate aligned ERM of interest for user interpretability
+      mutate("Surface-Area Aligned Exposure Concentration (particles/mL)" = EC_env_sa.particles.mL,
+             "Volume Aligned Exposure Concentration (particles/mL)" = EC_env_v.particles.mL,
+             "Mass Aligned Exposure Concentration (particles/mL)" = EC_env_m.particles.mL,
+             "Specific Surface Area Aligned Exposure Concentration (particles/mL)" = EC_env_ssa.particles.mL) %>% 
+      #nudge to front
+      dplyr::relocate("Surface-Area Aligned Exposure Concentration (particles/mL)",
+                      "Volume Aligned Exposure Concentration (particles/mL)",
+                      "Mass Aligned Exposure Concentration (particles/mL)",
+                      "Specific Surface Area Aligned Exposure Concentration (particles/mL)") 
+  
+    #print
+  aligned
+    
+  })
+  
+  #render calculated values in datatable
+  output$alignmentTable = DT::renderDataTable({
+    req(input$alignment_file)
+    
+    datatable(alignedData_calculator() %>%  mutate_if(is.numeric, ~ signif(., 3)),
+    extensions = c('Buttons'),
+    options = list(
+      dom = 'Brtip',
+      buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
+      scrollY = 400,
+      scrollH = TRUE,
+      sScrollX = TRUE,
+      columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
+    caption = "Filtered Data") %>% 
+    formatStyle(
+      c("Surface-Area Aligned Exposure Concentration (particles/mL)", "Volume Aligned Exposure Concentration (particles/mL)", "Mass Aligned Exposure Concentration (particles/mL)", "Specific Surface Area Aligned Exposure Concentration (particles/mL)"),
+      backgroundColor = '#a9d6d6')
+    
+  })
+  
+  # test data based on 25% of training dataset
+  output$downloadData_calculator <- downloadHandler(
+    filename = function() {
+      paste('aligned_data-', '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(alignedData_calculator(), file, row.names = FALSE)
+    }
+  )
+  
   ##### Predictions #####
   
   # test data based on 25% of training dataset
@@ -5518,7 +5922,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   #skim user-input dataset
   output$predictionDataSkim <- renderPlot({
-    df <- read.csv(input$file1$datapath, stringsAsFactors = TRUE)
+    df <- read.csv(input$prediction_file$datapath, stringsAsFactors = TRUE)
     skim <- df %>% 
       keep(is.numeric) %>%                     # Keep only numeric columns
       gather() %>%                             # Convert to key-value pairs
@@ -5532,7 +5936,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   # make predictions based on user-uploaded dataste
   prediction_reactiveDF<-eventReactive(list(input$go_predict),{
-    req(input$file1)
+    req(input$prediction_file)
     
     #choose model based on user-selected ERM
     if(input$ERM_radio == "tissue translocation"){
@@ -5543,7 +5947,7 @@ output$downloadSsdPlot <- downloadHandler(
     model = predictionModel_food.dilution}
     
     #define dataframe based on user upload
-    df <- read.csv(input$file1$datapath, stringsAsFactors = TRUE)
+    df <- read.csv(input$prediction_file$datapath, stringsAsFactors = TRUE)
     
     df$predictions<-predict(model, newdata = df, type ="raw")
     
@@ -5559,7 +5963,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   #render predictions in datatable
   output$predictionsTable = DT::renderDataTable({
-    req(input$file1)
+    req(input$prediction_file)
     
     return(DT::datatable(prediction_reactiveDF(),  options = list(pageLength = 100), filter = c("top")))
   })
