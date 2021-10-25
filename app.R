@@ -5955,7 +5955,9 @@ output$downloadSsdPlot <- downloadHandler(
       mutate(predictions.linear = 10 ^ predictions) %>% 
       dplyr::relocate(predictions, predictions.linear) %>% 
       rename("Predicted Conc. (particles/mL; 1-5,000 um)" = predictions.linear,
-             "Predicted Conc. (log10 particles/mL; 1-5,000 um)" = predictions)
+             "Predicted Conc. (log10 particles/mL; 1-5,000 um)" = predictions,
+             "Empirical Tissue Translocation ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.ox.stress.known,
+             "Empirical Food Dilution ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.food.dilution.known)
     
     return(df)
   })
@@ -5994,25 +5996,25 @@ output$downloadSsdPlot <- downloadHandler(
   
   output$predictionsScatter <- renderPlot({
     
+    prediction_var <- input$prediction_var
+    
         #choose known concentrations based on ERM
     if(input$ERM_radio == "tissue translocation"){
    scatterPlot <- prediction_reactiveDF() %>% 
-      ggplot(aes(x = `Empirical Tissue Translocation ERM Conc. (particles/mL; 1-5,000 um)`,
-                 y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`,
-                 color = input$prediction_var))
+      ggplot(aes(x = `Empirical Tissue Translocation ERM Conc. (log 10 particles/mL; 1-5,000 um)`,
+                 y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`))
     }
     
     if(input$ERM_radio == "food dilution"){
       scatterPlot <- prediction_reactiveDF() %>% 
-        ggplot(aes(x = `Empirical Food Dilution ERM Conc. (particles/mL; 1-5,000 um)`,
-                   y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`,
-                   color = input$prediction_var
+        ggplot(aes(x = `Empirical Food Dilution ERM Conc. (log 10 particles/mL; 1-5,000 um)`,
+                   y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`
                    ))
     }
    
     #add layers to plot
     scatterPlot <- scatterPlot +
-      geom_point() +
+      geom_point(aes_string(color = prediction_var)) +
       geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
       #scale_color_manual(values = variable) +
       #display r2 and equation
