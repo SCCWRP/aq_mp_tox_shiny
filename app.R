@@ -45,7 +45,7 @@ aoc_z <- readRDS("aoc_z.RDS")
 #prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
 predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
 predictionModel_food.dilution <- readRDS("prediction/randomForest_foodDilution.rds")
-test_data_prediction <- read.csv("prediction/test_data_prediction.csv", stringsAsFactors = TRUE)
+test_data_prediction <- readr::read_csv("prediction/test_data_prediction.csv") %>% mutate_if(is.character, factor)
 test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE)
 
 
@@ -1636,7 +1636,6 @@ tabItem(tabName = "Calculators",
                        
                          br(),
                          br(),
-                         strong("Once your data is properly formatted, upload below."),
                          br(),
                          
                          # Input: Select a file ---
@@ -5952,11 +5951,11 @@ output$downloadSsdPlot <- downloadHandler(
     df$predictions<-predict(model, newdata = df, type ="raw")
     
     df <- df %>%
-      dplyr::select(-X) %>% 
+     # dplyr::select(-X) %>% 
       mutate(predictions.linear = 10 ^ predictions) %>% 
       dplyr::relocate(predictions, predictions.linear) %>% 
-      rename("Predicted Concentration (Particles/mL; aligned to 1-5,000 um)" = predictions.linear,
-             "Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)" = predictions)
+      rename("Predicted Conc. (particles/mL; 1-5,000 um)" = predictions.linear,
+             "Predicted Conc. (log10 particles/mL; 1-5,000 um)" = predictions)
     
     return(df)
   })
@@ -5965,8 +5964,21 @@ output$downloadSsdPlot <- downloadHandler(
   output$predictionsTable = DT::renderDataTable({
     req(input$prediction_file)
     
-    return(DT::datatable(prediction_reactiveDF(),  options = list(pageLength = 100), filter = c("top")))
-  })
+    datatable(prediction_reactiveDF() %>%  mutate_if(is.numeric, ~ signif(., 3)),
+              extensions = c('Buttons'),
+              options = list(
+                dom = 'Brtip',
+                buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
+                scrollY = 400,
+                scrollH = TRUE,
+                sScrollX = TRUE,
+                columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
+              caption = "Filtered Data") %>% 
+      formatStyle(
+        c("Predicted Conc. (particles/mL; 1-5,000 um)", "Predicted Conc. (log10 particles/mL; 1-5,000 um)"),
+        backgroundColor = '#a9d6d6')
+    
+    })
   
   # Downloadable csv of selected dataset ----
   output$downloadData_prediction <- downloadHandler(
@@ -5985,15 +5997,15 @@ output$downloadSsdPlot <- downloadHandler(
         #choose known concentrations based on ERM
     if(input$ERM_radio == "tissue translocation"){
    scatterPlot <- prediction_reactiveDF() %>% 
-      ggplot(aes(x = particles.mL.ox.stress,
-                 y = `Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)`,
+      ggplot(aes(x = `Empirical Tissue Translocation ERM Conc. (particles/mL; 1-5,000 um)`,
+                 y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`,
                  color = input$prediction_var))
     }
     
     if(input$ERM_radio == "food dilution"){
       scatterPlot <- prediction_reactiveDF() %>% 
-        ggplot(aes(x = particles.mL.food.dilution,
-                   y = `Predicted Concentration (log10 particles/mL; aligned to 1-5,000 um)`,
+        ggplot(aes(x = `Empirical Food Dilution ERM Conc. (particles/mL; 1-5,000 um)`,
+                   y = `Predicted Conc. (log10 particles/mL; 1-5,000 um)`,
                    color = input$prediction_var
                    ))
     }
