@@ -501,7 +501,7 @@ tabItem(tabName = "Screening",
               tabBox(width = 12, height = "200px",
                      
                      tabPanel("Data Type",
-                              
+                     
                      "Only 'Particle Only' data are included in the study screening dataset."          
                               
                      ), #close tabpanel
@@ -625,6 +625,12 @@ tabItem(tabName = "Screening",
                      ), #close tabpanel
                      
                      tabPanel("Study Screening", 
+                              
+                              column(width = 12,
+                                     strong("Warning:"),"'Red criteria' do not represent full scoring criteria.",
+                                     br(),
+                                     br(),
+                              ), 
                               
                               #technical quality selection
                               column(width = 4,
@@ -833,7 +839,12 @@ tabItem(tabName = "Exploration",
                       
                   fluidRow(    
                       column(width = 12,
-                      p("Only 'Particle Only' data are included in the study screening dataset.")), 
+                         strong("Warning:"),"Only 'Particle Only' data are included in the study screening dataset.", 
+                         br(),
+                         "'Red criteria' do not represent full scoring criteria. Additional scoring criteria may be downloaded via the Search tab or visualized via the Study Screening tab.",
+                         br(),
+                         br(),
+                         ),          
                       
                       #technical quality selection
                       column(width = 4,
@@ -1219,8 +1230,13 @@ tabItem(tabName = "SSD",
                      tabPanel("Study Screening",
                           
                         fluidRow(      
-                          column(width = 12,        
-                          p("Only 'Particle Only' data are included in the study screening dataset.")), 
+                          column(width = 12,
+                                 strong("Warning:"),"Only 'Particle Only' data are included in the study screening dataset.", 
+                                 br(),
+                                 "'Red criteria' do not represent full scoring criteria. Additional scoring criteria may be downloaded via the Search tab or visualized via the Study Screening tab.",
+                                 br(),
+                                 br(),
+                          ),  
                               
                           column(width = 4,    
                                   #technical criteria selection
@@ -1589,7 +1605,7 @@ tabItem(tabName = "Calculators",
                                 #xmin
                                 column(width = 3,
                                        numericInput(inputId = "xmin_calculator",
-                                                    label = "Minimum particle length (um)",
+                                                    label = "Minimum particle length (μm)",
                                                     value = 1,
                                                     min = 0.001,
                                                     max = 4999)),
@@ -1625,6 +1641,7 @@ tabItem(tabName = "Calculators",
                        
                        fluidRow(
                        
+                         column(width = 12,
                          p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021)."), "First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
                          br(),
                          
@@ -1633,20 +1650,21 @@ tabItem(tabName = "Calculators",
                          br(),
                          
                          column(width = 4,
-                                downloadButton("testData_calculator", "Download Example Data", icon("download"), style="font-size:180%;color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                                downloadButton("testData_calculator", "Download Example Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
                        
                          br(),
                          br(),
                          br(),
                          
                          # Input: Select a file ---
-                         fileInput("alignment_file", "upload csv file here",
+                         column(width = 6,
+                         fileInput("alignment_file", "Upload csv File",
                                    multiple = FALSE,
                                    accept = c("text/csv",
                                               "text/comma-separated-values,text/plain",
-                                              ".csv")), 
+                                              ".csv"))), 
                          br(),
-                         p("Choose the bioaccessibility parameters, and site-specific polydisperse microplastics distributions parameters."),
+                         p("Choose the bioaccessibility parameters, and site-specific polydisperse microplastics distributions parameters.")),
                         
                          #ERM Checkbox
                          column(width = 12,
@@ -1732,23 +1750,18 @@ tabItem(tabName = "Calculators",
                          br(),
                          
                          #Action Buttons
-                         column(width = 12,
                          column(width = 4,
-                                actionButton("go_calculator", "Align data", icon("rocket"), style="padding:15px; font-size:180%; color: #fff; background-color:  #117a65; border-color:  #0e6655")),
-                                              ),
-                         br(),
-                         fluidRow(
-                           
-                           column(width = 12,
+                                actionButton("go_calculator", "Align data", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655")),
+                                              
+                         column(width = 12,
                                   # Show the table with the predictions
                                   DT::dataTableOutput("alignmentTable")),
                            
                            column(width = 4,
-                                  downloadButton("downloadData_calculator", "Download Aligned Data", icon("download"), style="padding:15px; font-size:180%;color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                           ) #end fluidrow for datatable 
-                         
-                         
-                       ) # closes fluidrow
+                                  br(),
+                                  downloadButton("downloadData_calculator", "Download Aligned Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                           
+                       )#close fluidrow for panel       
               )# closes tabpanel
                          
             ) #closes tabox
@@ -1756,7 +1769,7 @@ tabItem(tabName = "Calculators",
         ) #closes box
                      ), #close tabItem
 
-#### Predictions #####
+#### Predictions UI #####
 tabItem(tabName = "Predictions",
         
         box(title = "Model Predictions of Microplastics Effect Thresholds", status = "primary", width = 12, collapsible = TRUE,
@@ -1770,42 +1783,48 @@ tabItem(tabName = "Predictions",
                      tabPanel("Start",
                               
                               fluidRow(
+                                column(width = 12,
                                 
-                                p("This model predicts the ERM-aligned (1- 5,000 um) concentrations that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Test data may be used as a guide for preparing user data."),
+                                p("This model predicts the ERM-aligned (1- 5,000 um) concentrations that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Test data may be used as a guide for preparing user data.")),
+                                
+                                br(),
                                 
                                 column(width = 4,
                                        downloadButton("testData_prediction", "Download Test Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                              
-                                ), # end fluidRow
-                              br(),
-                              fluidRow(
-                                p("For categorical variables, ensure data are valid values (i.e. levels exist within training dataset). Click below to download a list of valid values for each variable name."),
+                                
+                                column(width = 12,
+                                       br(),
+                                p("For categorical variables, ensure data are valid values (i.e. levels exist within training dataset). Click below to download a list of valid values for each variable name.")),
+                                       br(),
                                 
                                 column(width = 4,
                                        downloadButton("validValues_prediction", "Download Valid Values", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                              )
-                     ), #end start tabPanel
+                              
+                              )), #end start tabPanel
                      
                      tabPanel("Upload Data",
                                 
-                              fluidRow(
+                              fluidRow(column(width = 12,
                                 p("It is critical for column names and factor levels to be formatted in exactly the same manner as the training dataset. Once data are formatted correctly, upload below. Note that the dataset may have any number of additional columns, so long as it has all of the columns listed in the example dataset."),
                                 # Input: Select a file ---
-                                fileInput("prediction_file", "Upload csv file:",
+                                column(width = 6,
+                                fileInput("prediction_file", "Upload csv File:",
                                           multiple = FALSE,
                                           accept = c("text/csv",
                                                      "text/comma-separated-values,text/plain",
-                                                     ".csv")), 
+                                                     ".csv"))), 
                               column(width = 12,
                                      plotOutput(outputId = "predictionDataSkim"))
-                              )
+                              ))
                               
                      ), # end upload tabPanel
                      
                      tabPanel("Model Selection",
                               
+                              fluidRow(
                               #model select
-                              p("Two models are currently available for predicting effect concentrations based on the `food dilution` and `tissue translocation` ERMs. Choose the ERM for model predictionsl"),
+                              column(width = 12,
+                              p("Two models are currently available for predicting effect concentrations based on the `food dilution` and `tissue translocation` Ecologically Relevant Effect Metrics (ERMs). Choose the ERM for model predictions.")),
                               column(width = 4,
                                      radioButtons(inputId = "ERM_radio", 
                                                   label = "ERM:",
@@ -1813,14 +1832,16 @@ tabItem(tabName = "Predictions",
                                                   selected = "tissue translocation")),
                                 #action buttons 
                                 column(width = 4,
+                                       br(),
                                        actionButton("go_predict", "Predict Effect Concentrations", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))
-                              ), #closes model selection tabPanel
+                              )), #closes model selection tabPanel
                      
                      tabPanel("Predictions Table",
                               
                               fluidRow(
                                 
-                                p("Predicted effect concentrations for the uploaded data can be viewed and downloaded here."),
+                                column(width = 12,
+                                p("Predicted effect concentrations for the uploaded data can be viewed and downloaded here.")),
                                 
                                 column(width = 12,
                                        downloadButton("downloadData_prediction", "Download Prediction Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
@@ -1837,11 +1858,12 @@ tabItem(tabName = "Predictions",
                      tabPanel("Prediction Accuracy",
                               
                               fluidRow(
-                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here."),
+                                column(width = 12,
+                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here.")),
                                 
                                 column(width = 3,
                                        pickerInput(inputId = "prediction_var",
-                                                   label = "Variable to highlight:",
+                                                   label = "Variable to Highlight:",
                                                    choices = c("`Organism Group`", "`Life Stage`", "`Species`","`Level of Biological Organization`","`Exposure Route`","Environment","`Acute/Chronic`",
                                                                "translocatable", "`Effect Score`", "`Effect Metric`","`Broad Endpoint Category`","`Specific Endpoint Category`"),
                                                    selected = "Organism Group",
@@ -1878,7 +1900,7 @@ tabItem(tabName = "Resources",
 
 tabItem(tabName = "Contact", 
          
-        box(title = "Contact", width = 6, status = "primary",
+        box(title = "Contact", width = 12, status = "primary",
          p("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
          br(),
          p("If you encounter technical problems with the web application, please contact Emily Darin (emilyd@sccwrp.org).")),
@@ -5943,6 +5965,7 @@ output$downloadSsdPlot <- downloadHandler(
   
   #skim user-input dataset
   output$predictionDataSkim <- renderPlot({
+    req(input$prediction_file)
     df <- readr::read_csv(input$prediction_file$datapath)
     skim <- df %>% 
       keep(is.numeric) %>%                     # Keep only numeric columns
