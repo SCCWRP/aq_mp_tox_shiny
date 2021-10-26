@@ -45,8 +45,9 @@ aoc_z <- readRDS("aoc_z.RDS")
 #prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
 predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
 predictionModel_food.dilution <- readRDS("prediction/randomForest_foodDilution.rds")
-test_data_prediction <- readr::read_csv("prediction/test_data_prediction.csv") %>% mutate_if(is.character, factor)
+test_data_prediction <- readr::read_csv("prediction/test_data_prediction.csv") %>% mutate_if(is.character, factor) %>%  dplyr::select(-`...1`) #contains spaces!
 test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE)
+valid_values <- readr::read_csv("prediction/valid_values.csv") %>%  dplyr::select(-`...1`) #contains spaces!test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE
 
 
 ##### Load functions #####
@@ -1774,20 +1775,30 @@ tabItem(tabName = "Predictions",
                                 
                                 column(width = 4,
                                        downloadButton("testData_prediction", "Download Test Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                              
+                                ), # end fluidRow
+                              br(),
+                              fluidRow(
+                                p("For categorical variables, ensure data are valid values (i.e. levels exist within training dataset). Click below to download a list of valid values for each variable name."),
+                                
+                                column(width = 4,
+                                       downloadButton("validValues_prediction", "Download Valid Values", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
                               )
                      ), #end start tabPanel
                      
                      tabPanel("Upload Data",
                                 
+                              fluidRow(
+                                p("It is critical for column names and factor levels to be formatted in exactly the same manner as the training dataset. Once data are formatted correctly, upload below. Note that the dataset may have any number of additional columns, so long as it has all of the columns listed in the example dataset."),
                                 # Input: Select a file ---
-                                fileInput("prediction_file", "upload csv file here",
+                                fileInput("prediction_file", "Upload csv file:",
                                           multiple = FALSE,
                                           accept = c("text/csv",
                                                      "text/comma-separated-values,text/plain",
                                                      ".csv")), 
                               column(width = 12,
                                      plotOutput(outputId = "predictionDataSkim"))
-                                     
+                              )
                               
                      ), # end upload tabPanel
                      
@@ -1831,9 +1842,9 @@ tabItem(tabName = "Predictions",
                                 column(width = 3,
                                        pickerInput(inputId = "prediction_var",
                                                    label = "Variable to highlight:",
-                                                   choices = c("organism.group", "life.stage", "species_f","bio.org","exposure.route","environment","acute.chronic_f",
-                                                               "translocatable", "effect.score", "effect.metric","lvl1_f","lvl2_f"),
-                                                   selected = "organism.group",
+                                                   choices = c("`Organism Group`", "`Life Stage`", "`Species`","`Level of Biological Organization`","`Exposure Route`","Environment","`Acute/Chronic`",
+                                                               "translocatable", "`Effect Score`", "`Effect Metric`","`Broad Endpoint Category`","`Specific Endpoint Category`"),
+                                                   selected = "Organism Group",
                                                    options = list(`actions-box` = FALSE), # option to de/select all
                                                    multiple = FALSE)),
                                 column(width = 12,
@@ -5919,9 +5930,20 @@ output$downloadSsdPlot <- downloadHandler(
     }
   )
   
+  # valid values
+  output$validValues_prediction <- downloadHandler(
+    filename = function() {
+      paste('validValues', '.csv', sep='')
+    },
+    content = function(file) {
+      write.csv(valid_values, file, row.names = FALSE)
+    }
+  )
+  
+  
   #skim user-input dataset
   output$predictionDataSkim <- renderPlot({
-    df <- read.csv(input$prediction_file$datapath, stringsAsFactors = TRUE)
+    df <- readr::read_csv(input$prediction_file$datapath)
     skim <- df %>% 
       keep(is.numeric) %>%                     # Keep only numeric columns
       gather() %>%                             # Convert to key-value pairs
@@ -5946,7 +5968,7 @@ output$downloadSsdPlot <- downloadHandler(
     model = predictionModel_food.dilution}
     
     #define dataframe based on user upload
-    df <- read.csv(input$prediction_file$datapath, stringsAsFactors = TRUE)
+    df <- readr::read_csv(input$prediction_file$datapath) #needs to be read_csv to keep names formatted
     
     df$predictions<-predict(model, newdata = df, type ="raw")
     
@@ -5955,9 +5977,10 @@ output$downloadSsdPlot <- downloadHandler(
       mutate(predictions.linear = 10 ^ predictions) %>% 
       dplyr::relocate(predictions, predictions.linear) %>% 
       rename("Predicted Conc. (particles/mL; 1-5,000 um)" = predictions.linear,
-             "Predicted Conc. (log10 particles/mL; 1-5,000 um)" = predictions,
-             "Empirical Tissue Translocation ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.ox.stress.known,
-             "Empirical Food Dilution ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.food.dilution.known)
+             "Predicted Conc. (log10 particles/mL; 1-5,000 um)" = predictions#,
+             #"Empirical Tissue Translocation ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.ox.stress.known,
+             #"Empirical Food Dilution ERM Conc. (log 10 particles/mL; 1-5,000 um)" = log10.particles.mL.food.dilution.known
+             )
     
     return(df)
   })
@@ -6014,7 +6037,7 @@ output$downloadSsdPlot <- downloadHandler(
    
     #add layers to plot
     scatterPlot <- scatterPlot +
-      geom_point(aes_string(color = prediction_var)) +
+      geom_point(aes_string(color = prediction_var)) + 
       geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
       #scale_color_manual(values = variable) +
       #display r2 and equation
