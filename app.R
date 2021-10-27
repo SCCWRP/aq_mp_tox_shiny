@@ -1859,7 +1859,7 @@ tabItem(tabName = "Predictions",
                               
                               fluidRow(
                                 column(width = 12,
-                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here.")),
+                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here. The dashed line represents a perfect agreement between predicted and measured effect concentrations.")),
                                 
                                 column(width = 3,
                                        pickerInput(inputId = "prediction_var",
@@ -6062,6 +6062,7 @@ output$downloadSsdPlot <- downloadHandler(
     scatterPlot <- scatterPlot +
       geom_point(aes_string(color = prediction_var)) + 
       geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
+      geom_abline(slope = 1, linetype = "dashed") +
       #scale_color_manual(values = variable) +
       #display r2 and equation
       ggpubr::stat_regline_equation(label.y = 7, aes(label = ..eq.label..)) +
