@@ -48,6 +48,7 @@ predictionModel_food.dilution <- readRDS("prediction/randomForest_foodDilution.r
 test_data_prediction <- readr::read_csv("prediction/test_data_prediction.csv") %>% mutate_if(is.character, factor) %>%  dplyr::select(-`...1`) #contains spaces!
 test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE)
 valid_values <- readr::read_csv("prediction/valid_values.csv") %>%  dplyr::select(-`...1`) #contains spaces!test_data_calculator <- read.csv("calculator/test_data_calculator.csv", stringsAsFactors = TRUE
+train_data_prediction <- readr::read_csv("prediction/training_data_prediction.csv") %>% mutate_if(is.character, factor) %>%  dplyr::select(-`...1`) #contains spaces!
 
 
 ##### Load functions #####
@@ -1619,8 +1620,8 @@ tabItem(tabName = "Calculators",
                                 #action buttons 
                                 column(width = 4,
                                        actionButton("go_simulate", "Simulate data", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655")),
-                                column(width = 3,
-                                       actionButton("reset_input", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
+                                #column(width = 3,
+                                 #      actionButton("reset_input", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
                                 column(width = 3,
                                        downloadButton("downloadData_simulate", "Download Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
                      ),
@@ -1804,18 +1805,31 @@ tabItem(tabName = "Predictions",
                      
                      tabPanel("Upload Data",
                                 
-                              fluidRow(column(width = 12,
+                              fluidRow(
+                                column(width = 12,
+                                       
                                 p("It is critical for column names and factor levels to be formatted in exactly the same manner as the training dataset. Once data are formatted correctly, upload below. Note that the dataset may have any number of additional columns, so long as it has all of the columns listed in the example dataset."),
+                                
                                 # Input: Select a file ---
                                 column(width = 6,
                                 fileInput("prediction_file", "Upload csv File:",
                                           multiple = FALSE,
                                           accept = c("text/csv",
                                                      "text/comma-separated-values,text/plain",
-                                                     ".csv"))), 
+                                                     ".csv"))
+                                )# end column
+                              )#end column
+                              ), #end fluidRow
+                              br(),
+                              fluidRow(column(width = 12,
+                                p("Smoothed histograms of the training dataset are overlaid on the user-uploaded data. As test data diverges in relative abundance from training data, model predictions lower in accuracy."),
                               column(width = 12,
                                      plotOutput(outputId = "predictionDataSkim"))
-                              ))
+                              ),
+                              column(width = 12,
+                                     column(width = 3,
+                                            downloadButton("download_predictionDataSkim", "Download Plot", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")))
+                              )
                               
                      ), # end upload tabPanel
                      
@@ -1859,7 +1873,7 @@ tabItem(tabName = "Predictions",
                               
                               fluidRow(
                                 column(width = 12,
-                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here.")),
+                                p("If known concentrations were uploaded, predicted effect concentrations can be compared here. The dashed line represents a perfect agreement between predicted and measured effect concentrations.")),
                                 
                                 column(width = 3,
                                        pickerInput(inputId = "prediction_var",
@@ -5966,17 +5980,39 @@ output$downloadSsdPlot <- downloadHandler(
   #skim user-input dataset
   output$predictionDataSkim <- renderPlot({
     req(input$prediction_file)
-    df <- readr::read_csv(input$prediction_file$datapath)
-    skim <- df %>% 
-      keep(is.numeric) %>%                     # Keep only numeric columns
-      gather() %>%                             # Convert to key-value pairs
-      ggplot(aes(value)) +                     # Plot the values
-      facet_wrap(~ key, scales = "free") +   # In separate panels
-      geom_histogram()   +                       # as density
-      theme_minimal()
+    #read in user data
+    test <- readr::read_csv(input$prediction_file$datapath) %>% 
+      mutate(train_test = "test")
+    #read in training data
+    train <- train_data_prediction %>% 
+      mutate(train_test = "train")
+    #merge user data with training data
+    df <- rbind(test, train)
     
-    print(skim)
+    #plot histograms with overlapping data by color
+    df %>% 
+   dplyr::select(c(where(is.numeric), "train_test")) %>%                     # Keep only numeric columns
+      gather(key = "attribue", value = "value", # Convert to key-value pairs
+             -train_test) %>%                             #keep train_test variable
+      ggplot(aes(x = value, fill = train_test, color = train_test)) +         # Plot the values
+      facet_wrap(~ attribue, scales = "free") +   # In separate panels
+     geom_density(alpha = 0.3, kernel = "rectangular") +
+      scale_fill_discrete(name = "Training or Test Data") +# as density
+      scale_color_discrete(name = "Training or Test Data") +# as density
+      ylab("Relative Proportion") +
+      xlab("Variable") +
+      theme_minimal() +
+      theme(legend.position = "top")
   })
+  
+  # Create downloadable png for skimr
+  output$download_predictionDataSkim <- downloadHandler(
+    filename = function() {
+      paste('Train_vs_Test_Histograms', Sys.Date(), '.png', sep='')
+    },
+    content = function(file) {
+      ggsave(file, plot = predictionDataSkim(), width = 16, height = 8, device = 'png')
+    })
   
   # make predictions based on user-uploaded dataste
   prediction_reactiveDF<-eventReactive(list(input$go_predict),{
@@ -6062,6 +6098,7 @@ output$downloadSsdPlot <- downloadHandler(
     scatterPlot <- scatterPlot +
       geom_point(aes_string(color = prediction_var)) + 
       geom_smooth(method = "lm", se=TRUE, color="red", formula = y ~ x) +
+      geom_abline(slope = 1, linetype = "dashed") +
       #scale_color_manual(values = variable) +
       #display r2 and equation
       ggpubr::stat_regline_equation(label.y = 7, aes(label = ..eq.label..)) +
