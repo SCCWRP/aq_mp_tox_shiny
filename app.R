@@ -628,7 +628,7 @@ tabItem(tabName = "Screening",
                      tabPanel("Study Screening", 
                               
                               column(width = 12,
-                                     strong("Warning:"),"'Red criteria' do not represent full scoring criteria from de Ruijter et al. (2020).",
+                                     strong("Warning:"),"'Red criteria' do not represent full scoring criteria.",
                                      br(),
                                      br(),
                               ), 
@@ -842,7 +842,7 @@ tabItem(tabName = "Exploration",
                       column(width = 12,
                          strong("Warning:"),"Only 'Particle Only' data are included in the study screening dataset.", 
                          br(),
-                         "'Red criteria' do not represent full scoring criteria. The full set of scoring criteria from de Ruijter et al. (2020) may be downloaded via the Search tab or visualized via the Study Screening tab.",
+                         "'Red criteria' do not represent full scoring criteria. Additional scoring criteria may be downloaded via the Search tab or visualized via the Study Screening tab.",
                          br(),
                          br(),
                          ),          
@@ -1234,11 +1234,11 @@ tabItem(tabName = "SSD",
                           column(width = 12,
                                  strong("Warning:"),"Only 'Particle Only' data are included in the study screening dataset.", 
                                  br(),
-                                 "'Red criteria' do not represent full scoring criteria. The full set of scoring criteria from de Ruijter et al. (2020) may be downloaded via the Search tab or visualized via the Study Screening tab.",
+                                 "'Red criteria' do not represent full scoring criteria. Additional scoring criteria may be downloaded via the Search tab or visualized via the Study Screening tab.",
                                  br(),
                                  br(),
-                          ),
-                          
+                          ),  
+                              
                           column(width = 4,    
                                   #technical criteria selection
                                   pickerInput(inputId = "tech_tier_zero_check_ssd", 
@@ -1786,13 +1786,13 @@ tabItem(tabName = "Predictions",
                               fluidRow(
                                 column(width = 12,
                                 
-                                p("This model predicts the ERM-aligned (1- 5,000 um) concentrations that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Additional details regarding this methodology, including a walkthrough of how to use this tab are included in", a(href = "https://www.youtube.com/watch?v=TNCGogGBM_o", "Dr. Scott Coffin's SETAC North America 2021 presentation (YouTube link).", .noWS = "outside")),
+                                p("This model predicts the ERM-aligned (1- 5,000 um) concentrations that would be expected to produce an effect in a species of interest for a given effect metric (e.g., NOEC, LOEC). The model was trained on quality-controlled effects data in the ToMEx database and utilizes a random forest structure. The model has been optimized to give the most accurate predictions using the fewest number of parameters. For the food dilution ERM, the model R^2 is 0.87, and for the tissue translocation ERM, the model R^22 is 0.82 based on a subset (25%) of the training data. See Coffin et al (in prep) for additional details, and instructions on the formatting of independent variables for uploading. Additional details regarding this methodology, including a walkthrough of how to use this tab are included in", a(href = "https://www.youtube.com/watch?v=TNCGogGBM_o/", "Dr. Scott Coffin's SETAC North America 2021 presentation (YouTube link).", .noOWs = "outside"))),
                                 
                                 br(),
                                 
-                                p("Test data may be used as a guide for preparing user data (download below)."), 
-                                
                                 column(width = 4,
+                                       p("Test data may be used as a guide for preparing user data."),
+                                       br(),
                                        downloadButton("testData_prediction", "Download Test Data", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
                                 
                                 column(width = 12,
