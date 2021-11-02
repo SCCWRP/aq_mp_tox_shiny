@@ -33,6 +33,8 @@ library(ggrepel)
 library(msm) ## rtnorm - get upper and lower limit of shape distribution
 library(GeneralizedHyperbolic) ## normal-inverse Gaussian
 library(stats)
+library(caret) # for random forest predictions
+library(randomForest) # for random forest predictions
 
 #### Load finalized dataset (prepped in RDAmaker.R) ####
 aoc <- readRDS("aoc.RDS")
@@ -6032,7 +6034,7 @@ output$downloadSsdPlot <- downloadHandler(
     #define dataframe based on user upload
     df <- readr::read_csv(input$prediction_file$datapath) #needs to be read_csv to keep names formatted
     
-    df$predictions <- stats::predict(model, newdata = df, type ="raw")
+    df$predictions <- caret::predict.train(model, newdata = df, na.action = na.omit)
     
     df <- df %>%
      # dplyr::select(-X) %>% 
