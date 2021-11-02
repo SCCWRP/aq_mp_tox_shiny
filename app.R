@@ -261,7 +261,7 @@ ui <- dashboardPage(
                      menuItem("SSD", tabName = "SSD", icon = icon("fish")),
                      menuItem("Study Screening", tabName = "Screening", icon = icon("check-circle")),
                      menuItem("Calculators", tabName = "Calculators", icon = icon("calculator")),
-                     menuItem("Predictions", tabName = "Predictions", icon = icon("brain")),
+                     # menuItem("Predictions", tabName = "Predictions", icon = icon("brain")),
                      menuItem("Resources", tabName = "Resources", icon = icon("question-circle")),
                      menuItem("Contact", tabName = "Contact", icon = icon("envelope")),
                      br(),
