@@ -34,6 +34,7 @@ library(msm) ## rtnorm - get upper and lower limit of shape distribution
 library(GeneralizedHyperbolic) ## normal-inverse Gaussian
 library(stats)
 library(caret) # for random forest predictions
+library(randomForest) # for random forest predictions
 
 #### Load finalized dataset (prepped in RDAmaker.R) ####
 aoc <- readRDS("aoc.RDS")
