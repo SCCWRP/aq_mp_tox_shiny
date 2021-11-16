@@ -363,6 +363,9 @@ ui <- dashboardPage(
                         
                         p(align = "center", a(href = "https://www.sccwrp.org/about/staff/syd-kotar/", "Sydney Kotar"),", Southern California Coastal Water Research Project"),
                         
+                        p(align = "center", a(href = "http://wincowger.com/", 'Dr. Win Cowger'),", Moore Institute for Plastic Pollution Research", 
+                          tags$a(href="https://twitter.com/Win_OpenData", icon("twitter")), tags$a(href="https://github.com/wincowgerDEV", icon("github"))),
+                        
                         p(align = "center", a(href = "https://branderlab.net/", 'Dr. Susanne Brander'),", Oregon State University",
                           tags$a(href="https://twitter.com/smbrander", icon("twitter"))),
                         
