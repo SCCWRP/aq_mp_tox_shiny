@@ -85,7 +85,7 @@ map <- pheatmap(MissingMatrix_size,
          number_color = "black",
          number_format = "%.0f%%",
          treeheight_row = 0, treeheight_col = 0, 
-         color = c("#EEFFFF", "#BAFFFF", "#88E7FF", "#55B4CC", "#3B9AB2", "#228199")) 
+         color = c('#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4')) 
 
 ggsave(filename = "Figure1.jpg",
        path = "App_Nonessential/TeamX_Manuscript_Figures/",
@@ -121,10 +121,10 @@ b <- a %>%
   ggplot(aes(x = year, y = freq, fill = fct_rev(dose_metric))) +
   geom_bar(position = "dodge", stat = "identity", color = "black") +
   theme_classic()+
-  scale_fill_manual(values = c("#3B9AB2", "#EBCC2A", "#F21A00")) +
+  scale_fill_manual(values = c('#d73027','#fee090','#4575b4')) +
   scale_y_continuous(expand = c(0,0), limits = c(0,40)) +
   labs(y = "Number of Studies", x = "Year", fill = "Concentration Metric") +
-  theme(text = element_text(size = 12), legend.position = "top")
+  theme(text = element_text(size = 20), legend.position = "top")
 
 ggsave(filename = "Figure2.jpg",
        path = "App_Nonessential/TeamX_Manuscript_Figures/",
@@ -164,7 +164,7 @@ a <- aoc_setup %>%
   labs(y = "Morphology", x = "Particles/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
-  scale_fill_manual(values = c("#3B9AB2", "#EBCC2A"))
+  scale_fill_manual(values = c("#fee090", '#4575b4'))
 
 plot(a)
 
@@ -190,7 +190,7 @@ a <- aoc_setup %>%
   labs(y = "Size Category", x = "Particles/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
-  scale_fill_manual(values = c("#3B9AB2", "#EBCC2A"))
+  scale_fill_manual(values = c("#fee090", '#4575b4'))
 
 plot(a)
 
@@ -206,7 +206,7 @@ b <- aoc_setup %>%
   labs(y = "Size Category", x = "µg/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
-  scale_fill_manual(values = c("#3B9AB2", "#EBCC2A"))
+  scale_fill_manual(values = c("#fee090", '#4575b4'))
 
 plot(b)
 
@@ -469,8 +469,8 @@ ggplot(aes(x = est, y = percent/100, color = size)) +
   geom_xribbon(aes(xmin = lcl, xmax = ucl, y = percent/100, fill = size),color = "black", alpha = 0.15) +
   geom_point(data = points_t1_large,aes(x = Conc, y =frac, color = size)) + 
   # scale_color_tron(name = "Size Bins") +
-  scale_fill_manual(values = c("#FF0000", "#00A08A", "#F2AD00", "#5BBCD6"),name = "Size Bins") +
-  scale_color_manual(values = c("#FF0000", "#00A08A", "#F2AD00", "#5BBCD6"),name = "Size Bins") +
+  scale_fill_manual(values = c('#d7191c','#fdae61','#abd9e9','#2c7bb6'),name = "Size Bins") +
+  scale_color_manual(values = c('#d7191c','#fdae61','#abd9e9','#2c7bb6'),name = "Size Bins") +
   # scale_fill_tron(name = "Size Bins") +
   guides(fill = FALSE) + # suppress different legend for colors and lines
   coord_trans(x = "log10") +
@@ -685,8 +685,8 @@ ggplot(aes(x = est, y = percent/100, color = size)) +
   geom_line(size = 1) +
   geom_xribbon(aes(xmin = lcl, xmax = ucl, y = percent/100, fill = size),color = "black", alpha = 0.15) +
   geom_point(data = points_t1_large,aes(x = Conc, y =frac, color = size)) +
-  scale_fill_manual(values = c("#FF0000", "#00A08A", "#F2AD00", "#5BBCD6"),name = "Size Bins") +
-  scale_color_manual(values = c("#FF0000", "#00A08A", "#F2AD00", "#5BBCD6"),name = "Size Bins") +
+  scale_fill_manual(values = c('#d7191c','#fdae61','#abd9e9','#2c7bb6'),name = "Size Bins") +
+  scale_color_manual(values = c('#d7191c','#fdae61','#abd9e9','#2c7bb6'),name = "Size Bins") +
   guides(fill = FALSE) + # suppress different legend for colors and lines
   coord_trans(x = "log10") +
       scale_x_continuous(limits = c(1e-15, 1e15),
