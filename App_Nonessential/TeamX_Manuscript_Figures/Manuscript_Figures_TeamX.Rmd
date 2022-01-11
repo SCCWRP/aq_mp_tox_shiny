@@ -728,8 +728,12 @@ Group_size <- aoc_setup %>%
   ylab("Number of Observations")+
   xlab("Particle Length (µm)") +
   theme_classic() +
-  theme(text = element_text(size = 12)) +
-  scale_x_log10()+
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(margin = margin(t = 10))) +
+  scale_x_log10(labels = scales::label_number(accuracy = 1))+
+  annotation_logticks(sides = "b", outside = TRUE)+
+  coord_cartesian(clip = "off")+
+  scale_y_continuous(expand = c(0,0))+
   labs(fill = "Organism Group")
 
 plot(Group_size)
@@ -741,8 +745,12 @@ Endpoint_size <- aoc_setup %>%
   xlab("Particle Length (µm)") +
   ylab("Number of Observations")+
   theme_classic() +
-  theme(text = element_text(size = 12)) +
-  scale_x_log10()+
+  theme(text = element_text(size = 12),
+        axis.text.x = element_text(margin = margin(t = 10))) +
+  scale_x_log10(labels = scales::label_number(accuracy = 1))+
+  annotation_logticks(sides = "b", outside = TRUE)+
+  coord_cartesian(clip = "off")+
+  scale_y_continuous(expand = c(0,0))+
   labs(fill = "Endpoint Category")
 
 plot(Endpoint_size)
