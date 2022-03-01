@@ -57,8 +57,6 @@ source("functions.R")
 
 #### Welcome Setup ####
 
-# All text inputs below.
-
 #### Overview Setup ####
 
 polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
@@ -409,8 +407,6 @@ ui <- dashboardPage(
                   tags$a(href="https://www.sccwrp.org", tags$img(src="sccwrp.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.utoronto.ca", tags$img(src="toronto.png", width = "100%", height = "100%")),
                   tags$a(href="https://www.sfei.org/", tags$img(src="sfei.png", width = "100%", height = "100%")))),
-                   
-                    
                   ),
                   
 #### Overview UI ####
@@ -502,11 +498,8 @@ tabItem(tabName = "Overview",
 
 tabItem(tabName = "Search",
         
-         box(title = "Search Database", status = "primary", width = 12,
-             
-             column(width = 12, 
-             dataTableOutput("databaseDataTable", height = "200px"))   
-             
+         box(title = "Search Database", status = "primary", width = 12, height = "1000px",
+             dataTableOutput("databaseDataTable", height = "600px")
              
          ), #close box
         
@@ -1491,13 +1484,10 @@ tabItem(tabName = "SSD",
             
         ), #closes out box #3
         
-        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE,
-          fluidRow(
-            
-            column(width = 12,
-            DT::dataTableOutput(outputId = "ssd_pred_table", height = "500px")),
-            
-          ),#closes out fluidrow    
+        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE, height = "600px",
+
+            DT::dataTableOutput(outputId = "ssd_pred_table", height = "500px"),
+
           
         ), #closes out box #4   
             
