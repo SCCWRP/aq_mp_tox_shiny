@@ -5,13 +5,11 @@
 #### Setup ####
 
 # Load packages
-
-# Load packages
 library(tidyverse) #General everything
 library(shinydashboard)
 library(RColorBrewer) #color palette
 library(ggplot2) #plotting
-library(calecopal) #Color palette
+library(calecopal) #Color palette devtools::install_github("an-bui/calecopal")
 library(shiny) #Runs shiny
 library(shinythemes) #Shiny theme for the page
 library(shinyWidgets) #Widgets
@@ -2110,6 +2108,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      filter = "top",
      rownames = FALSE,
      extensions = c('Buttons'),
+     style = "bootstrap",
      options = list(
        pageLength = 25,
        dom = 'Brtip',
@@ -5107,6 +5106,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
     datatable(aoc_filter_ssd() %>%  mutate_if(is.numeric, ~ signif(., 3)),
               extensions = c('Buttons'),
+              style = "bootstrap",
               options = list(
                 dom = 'Brtip',
                 buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
@@ -5162,6 +5162,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     
      datatable(gof,
               extensions = 'Buttons',
+              style = "bootstrap",
               options = list(
                 dom = 'Brt', #buttons, processing display element, table
                  buttons = c('copy', 'csv', 'excel')
@@ -5398,6 +5399,7 @@ output$downloadSsdPlot <- downloadHandler(
     
       datatable(aoc_pred,
                 rownames = FALSE,
+                style = "bootstrap",
                 extensions = c('Buttons', 'Scroller'),
                 options = list(
                   dom = 'Brtip',
@@ -5938,6 +5940,7 @@ output$downloadSsdPlot <- downloadHandler(
     
     datatable(alignedData_calculator() %>%  mutate_if(is.numeric, ~ signif(., 3)),
     extensions = c('Buttons'),
+    style = "bootstrap",
     options = list(
       dom = 'Brtip',
       buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
@@ -6058,6 +6061,7 @@ output$downloadSsdPlot <- downloadHandler(
     
     datatable(prediction_reactiveDF() %>%  mutate_if(is.numeric, ~ signif(., 3)),
               extensions = c('Buttons'),
+              style = "bootstrap",
               options = list(
                 dom = 'Brtip',
                 buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
