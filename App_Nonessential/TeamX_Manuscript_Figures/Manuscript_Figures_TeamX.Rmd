@@ -23,7 +23,7 @@ library(RColorBrewer)
 library(ggpubr)
 library(ssdtools)
 library(scales)
-
+library(DT)
 library(ggdark)
 library(ggsci)
 
@@ -87,9 +87,9 @@ map <- pheatmap(MissingMatrix_size,
          treeheight_row = 0, treeheight_col = 0, 
          color = c('#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4')) 
 
-ggsave(filename = "Figure1.jpg",
-       path = "App_Nonessential/TeamX_Manuscript_Figures/",
-       plot = map, width = 8, height = 4, units = "in")
+# ggsave(filename = "Figure1.jpg",
+#        path = "App_Nonessential/TeamX_Manuscript_Figures/",
+#        plot = map, width = 8, height = 4, units = "in")
  
 ```
 
@@ -105,25 +105,25 @@ a <- aoc_setup %>%
   mutate(particles_count = ifelse(dose.particles.mL.master.converted.reported == "reported" & dose.mg.L.master.converted.reported == "converted", 1, 0)) %>% 
   mutate(both_count = ifelse(dose.particles.mL.master.converted.reported == "reported" & dose.mg.L.master.converted.reported == "reported", 1, 0)) %>% 
   #Unique particles within each study
-  distinct(doi, year, poly_f, shape_f, size.length.um.used.for.conversions, dose.mg.L.master.converted.reported, dose.particles.mL.master.converted.reported, mass_count, particles_count, both_count) %>%  
+  distinct(doi, year, poly_f, shape_f, size.length.um.used.for.conversions, dose.mg.L.master.converted.reported, dose.particles.mL.master.converted.reported, mass_count, particles_count, both_count) %>%    
   #Remove letters from years if they exist
   mutate(year = str_remove(year,"[abc]")) %>% 
   #Count of the frequency of doses reported in mass, count or both within each year
-  group_by(year) %>% 
+  group_by(year) %>%
   mutate(`Mass Only` = sum(mass_count, na.rm = TRUE)) %>% 
   mutate(`Particles Only` = sum(particles_count, na.rm = TRUE)) %>% 
   mutate(Both = sum(both_count, na.rm = TRUE)) %>% 
   ungroup() %>% 
-  distinct(year, Both, `Mass Only`, `Particles Only`) %>% 
+  distinct(year, Both, `Mass Only`, `Particles Only`) %>%   
   pivot_longer(!year, names_to = "dose_metric", values_to = "freq")
 
 b <- a %>%
   ggplot(aes(x = year, y = freq, fill = fct_rev(dose_metric))) +
-  geom_bar(position = "dodge", stat = "identity", color = "black") +
+  geom_bar(stat = "identity", color = "black") +
   theme_classic()+
   scale_fill_manual(values = c('#d73027','#fee090','#4575b4')) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,40)) +
-  labs(y = "Number of Studies", x = "Year", fill = "Concentration Metric") +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(y = "Number of Test Concentrations Reported", x = "Year", fill = "Concentration Metric") +
   theme(text = element_text(size = 20), legend.position = "top")
 
 ggsave(filename = "Figure2.jpg",
@@ -152,25 +152,59 @@ a <- aoc_setup %>%
 
 ```{r}
 
+#Studies and measurements labels
 a <- aoc_setup %>% 
+      drop_na(dose.particles.mL.master) %>% #Drop data not reported in counts
+      drop_na(effect_f) %>% #drop ECX values
+      filter(shape_f != "Not Reported") %>% #drop studies where shapes aren't reported
+      group_by(shape_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose.particles.mL.master= quantile(dose.particles.mL.master, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(doi))
+
+#Select data
+b <- aoc_setup %>%
+  drop_na(dose.particles.mL.master) %>%
   filter(environment != "Terrestrial") %>% #drop terrestrial organisms
   filter(shape_f != "Not Reported") %>% #drop studies where shapes aren't reported
   filter(effect_f != "NA") %>% #drop ECX values
   filter(org_f %in% c("Crustacea", "Fish", "Mollusca")) %>%  #Select relevant organism groups
-  filter(lvl2_f %in% c("Growth", "Body Condition", "Development", "Mortality", "Reproduction")) %>% 
+  filter(lvl2_f %in% c("Growth", "Body Condition", "Development", "Mortality", "Reproduction"))
+
+#Plot
+c <- b %>% 
   ggplot(aes(y = shape_f, x = dose.particles.mL.master, fill = effect_f)) +
   geom_boxplot(alpha = 0.8) +
-  scale_x_log10() +
+  geom_text(data = a, 
+                aes(label = paste("(",measurements,",",studies,")"),
+                  y = shape_f,
+                  x = Inf,
+                  hjust = 1),
+                position = position_dodge(.9),
+                size = 3)+
+  scale_x_log10(limits = c(-1,10000000000000000)) +
   labs(y = "Morphology", x = "Particles/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
   scale_fill_manual(values = c("#fee090", '#4575b4'))
 
-plot(a)
+plot(c)
 
 ggsave(filename = "Figure3.jpg",
        path = "App_Nonessential/TeamX_Manuscript_Figures/",
-       plot = a, width = 8, height = 4, units = "in")
+       plot = c, width = 8, height = 4, units = "in")
+
+#Table
+
+d <- b %>%
+  select(doi, authors, year, species_f, life_f, shape_f, lvl1_f, lvl2_f, lvl3_f, dose.particles.mL.master, effect_f) %>% 
+  rename("DOI" = doi, "Authors" = authors, "Publication Year" = year, 
+         "Species" = species_f, "Life Stage" = life_f, "Shape" = shape_f, 
+         "Broad Endpoint Category" = lvl1_f, "Specific Endpoint Category" = lvl2_f,
+         "Endpoint" = lvl3_f, "Concentration (Particles/mL)" = dose.particles.mL.master, 
+         "Effect Detected?" = effect_f) 
+
+write.csv(d, "App_Nonessential/TeamX_Manuscript_Figures/Figure3_Data_SI.csv", row.names = FALSE)
 
 ```
 
@@ -179,6 +213,19 @@ ggsave(filename = "Figure3.jpg",
 ```{r}
 
 #Panel A (count)
+
+#Studies and measurements labels
+a_labs <- aoc_setup %>% 
+      drop_na(dose.mg.L.master|dose.particles.mL.master) %>%
+      drop_na(effect_f) %>% #drop ECX values
+      filter(environment != "Terrestrial") %>% #drop terrestrial organisms
+      filter(size_f != "Not Reported") %>% #drop studies where shapes aren't reported
+      filter(effect_f != "NA") %>% #drop ECX values
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose.particles.mL.master= quantile(dose.particles.mL.master, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(doi))
+
 a <- aoc_setup %>% 
   filter(environment != "Terrestrial") %>% #drop terrestrial organisms
   filter(size_f != "Not Reported") %>% #drop studies where shapes aren't reported
@@ -186,7 +233,14 @@ a <- aoc_setup %>%
   drop_na(dose.mg.L.master|dose.particles.mL.master) %>%
   ggplot(aes(y = size_f, x = dose.particles.mL.master, fill = effect_f)) +
   geom_boxplot(alpha = 0.8) +
-  scale_x_log10() +
+  geom_text(data = a_labs, 
+                aes(label = paste("(",measurements,",",studies,")"),
+                  y = size_f,
+                  x = Inf,
+                  hjust = 1),
+                position = position_dodge(.9),
+                size = 3)+
+  scale_x_log10(limits = c(-1,1E25)) +
   labs(y = "Size Category", x = "Particles/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
@@ -195,6 +249,19 @@ a <- aoc_setup %>%
 plot(a)
 
 #Panel B (mass)
+
+#Studies and measurements labels
+b_labs <- aoc_setup %>% 
+      drop_na(dose.mg.L.master|dose.particles.mL.master) %>%
+      drop_na(effect_f) %>% #drop ECX values
+      filter(environment != "Terrestrial") %>% #drop terrestrial organisms
+      filter(size_f != "Not Reported") %>% #drop studies where shapes aren't reported
+      filter(effect_f != "NA") %>% #drop ECX values
+      group_by(size_f, effect_f) %>% # need to include so there's a recognized "y"
+      summarize(dose.mg.L.master= quantile(dose.mg.L.master, .1), # need for recognized "x"
+                measurements = n(),
+                studies = n_distinct(doi))
+
 b <- aoc_setup %>% 
   filter(environment != "Terrestrial") %>% #drop terrestrial organisms
   filter(size_f != "Not Reported") %>% #drop studies where shapes aren't reported
@@ -202,7 +269,14 @@ b <- aoc_setup %>%
   drop_na(dose.mg.L.master|dose.particles.mL.master) %>%
   ggplot(aes(y = size_f, x = dose.mg.L.master, fill = effect_f)) +
   geom_boxplot(alpha = 0.8) +
-  scale_x_log10() +
+  geom_text(data = b_labs, 
+                aes(label = paste("(",measurements,",",studies,")"),
+                  y = size_f,
+                  x = Inf,
+                  hjust = 1),
+                position = position_dodge(.9),
+                size = 3)+
+  scale_x_log10(limits = c(-1,1E25)) +
   labs(y = "Size Category", x = "µg/mL", fill = "Effect") +
   theme_classic() +
   theme(text = element_text(size = 12))+
@@ -217,6 +291,24 @@ plot(ab)
 ggsave(filename = "Figure4.jpg",
        path = "App_Nonessential/TeamX_Manuscript_Figures/",
        plot = ab, width = 8, height = 8, units = "in")
+
+#Table
+
+d <- aoc_setup %>%
+  filter(environment != "Terrestrial") %>% #drop terrestrial organisms
+  filter(size_f != "Not Reported") %>% #drop studies where shapes aren't reported
+  filter(effect_f != "NA") %>% #drop ECX values
+  drop_na(dose.mg.L.master|dose.particles.mL.master) %>%
+  select(doi, authors, year, species_f, life_f, size_f, lvl1_f, lvl2_f, lvl3_f, 
+         dose.particles.mL.master, dose.mg.L.master, effect_f) %>% 
+  rename("DOI" = doi, "Authors" = authors, "Publication Year" = year, 
+         "Species" = species_f, "Life Stage" = life_f, "Size Category" = size_f, 
+         "Broad Endpoint Category" = lvl1_f, "Specific Endpoint Category" = lvl2_f,
+         "Endpoint" = lvl3_f, "Concentration (Particles/mL)" = dose.particles.mL.master, 
+         "Concentration (µg/mL)" = dose.mg.L.master,
+         "Effect Detected?" = effect_f) 
+
+write.csv(d, "App_Nonessential/TeamX_Manuscript_Figures/Figure4_Data_SI.csv", row.names = FALSE)
 
 #Alternate Option(facet wrap)
 # c <- aoc_setup %>% 
@@ -271,6 +363,26 @@ aoc_intermediate <- aoc_z %>%
          ) %>%  
   mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
 ```
+
+```{r}
+
+#Data table for export
+
+ssd_table <- aoc_intermediate %>% 
+  mutate(dose_filter = ifelse(is.na(dose.particles.mL.master)&is.na(dose.mg.L.master), "N", "Y")) %>% 
+  filter(dose_filter == "Y") %>% 
+  select(doi, authors, year, species_f, life_f, size_f, lvl1_f, lvl2_f, lvl3_f, 
+         dose.particles.mL.master, dose.mg.L.master, effect.metric) %>% 
+  rename("DOI" = doi, "Authors" = authors, "Publication Year" = year, 
+         "Species" = species_f, "Life Stage" = life_f, "Size Category" = size_f, 
+         "Broad Endpoint Category" = lvl1_f, "Specific Endpoint Category" = lvl2_f,
+         "Endpoint" = lvl3_f, "Concentration (Particles/mL)" = dose.particles.mL.master, 
+         "Concentration (µg/mL)" = dose.mg.L.master, "Effect Metric" = effect.metric) 
+
+write.csv(ssd_table, "App_Nonessential/TeamX_Manuscript_Figures/Figure5_Data_SI.csv", row.names = FALSE)
+  
+```
+
 
 ## Count
 
@@ -721,39 +833,79 @@ ggsave(filename = "Figure5.jpg",
 
 ```{r}
 
+#Group size plot
 Group_size <- aoc_setup %>% 
-  ggplot(aes(x = size.length.um.used.for.conversions, fill = org_f)) +
-  geom_histogram(bins = 20, color = "black") +
-  scale_fill_manual(values = c('#a50026','#d73027','#f46d43','#fdae61','#fee090','#ffffbf','#e0f3f8','#abd9e9','#74add1','#4575b4','#313695', '#641e16')) +
+  filter(org_f != "Mixed") %>% 
+  filter(size_f != "Not Reported") %>% 
+  group_by(org_f, size_f) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  group_by(org_f, size_f, count) %>% 
+  summarise() %>% 
+  ggplot(aes(x = reorder(org_f, count), y = count, fill = size_f)) +
+  geom_col(position = position_stack(reverse = TRUE), color = "black") +
+  scale_fill_manual(values = c('#d73027','#fc8d59','#fee090','#e0f3f8','#4575b4')) +
   ylab("Number of Observations")+
-  xlab("Particle Length (µm)") +
+  xlab("Organism Group") +
   theme_classic() +
   theme(text = element_text(size = 12),
-        axis.text.x = element_text(margin = margin(t = 10))) +
-  scale_x_log10(labels = scales::label_number(accuracy = 1))+
-  annotation_logticks(sides = "b", outside = TRUE)+
-  coord_cartesian(clip = "off")+
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = guide_legend(reverse = TRUE))+
   scale_y_continuous(expand = c(0,0))+
-  labs(fill = "Organism Group")
+  labs(fill = "Size Category")
 
 plot(Group_size)
 
-Endpoint_size <- aoc_setup %>% 
-  ggplot(aes(x = size.length.um.used.for.conversions, fill = lvl1_f)) +
-  geom_histogram(bins = 20, color = "black") +
-  scale_fill_manual(values = c('#d73027','#f46d43','#fdae61','#fee090','#ffffbf','#e0f3f8','#abd9e9','#74add1','#4575b4')) +
-  xlab("Particle Length (µm)") +
+#Group size table
+Group_size_table <- aoc_setup %>%
+  filter(org_f != "Mixed") %>% 
+  filter(size_f != "Not Reported") %>% 
+  group_by(org_f, size_f) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  group_by(org_f, size_f, count) %>% 
+  summarise() %>%
+  rename("Organism Group" = org_f, "Size Cateogry" = size_f, "Number of Observations" = count) 
+
+write.csv(Group_size_table, "App_Nonessential/TeamX_Manuscript_Figures/Figure7A_Data_SI.csv", row.names = FALSE)
+
+
+#Endpoint size plot
+Endpoint_size <- aoc_setup %>%
+  mutate(lvl1_f = ifelse(lvl1_f == "Behavioral, Sensory, Neurological", "Behavioral, Neurological", paste(lvl1_f))) %>% 
+  filter(size_f != "Not Reported") %>% 
+  group_by(lvl1_f, size_f) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  group_by(lvl1_f, size_f, count) %>% 
+  summarise() %>% 
+  ggplot(aes(x = reorder(lvl1_f, count), y = count, fill = size_f)) +
+  geom_col(position = position_stack(reverse = TRUE), color = "black") +
+  scale_fill_manual(values = c('#d73027','#fc8d59','#fee090','#e0f3f8','#4575b4')) +
   ylab("Number of Observations")+
+  xlab("Endpoint Category") +
   theme_classic() +
   theme(text = element_text(size = 12),
-        axis.text.x = element_text(margin = margin(t = 10))) +
-  scale_x_log10(labels = scales::label_number(accuracy = 1))+
-  annotation_logticks(sides = "b", outside = TRUE)+
-  coord_cartesian(clip = "off")+
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = guide_legend(reverse = TRUE))+
   scale_y_continuous(expand = c(0,0))+
-  labs(fill = "Endpoint Category")
+  labs(fill = "Size Category")+
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
 
 plot(Endpoint_size)
+
+#Endpoint size table
+Endpoint_size_table <- aoc_setup %>%
+  mutate(lvl1_f = ifelse(lvl1_f == "Behavioral, Sensory, Neurological", "Behavioral, Neurological", paste(lvl1_f))) %>% 
+  filter(size_f != "Not Reported") %>% 
+  group_by(lvl1_f, size_f) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  group_by(lvl1_f, size_f, count) %>% 
+  summarise() %>%
+  rename("Endpoint Category" = lvl1_f, "Size Cateogry" = size_f, "Number of Observations" = count) 
+
+write.csv(Endpoint_size_table, "App_Nonessential/TeamX_Manuscript_Figures/Figure7B_Data_SI.csv", row.names = FALSE)
 
 size_group_endpoint <- ggarrange(Group_size,Endpoint_size, nrow = 2, legend = "right", labels = "AUTO")
 
