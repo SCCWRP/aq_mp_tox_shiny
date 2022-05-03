@@ -265,6 +265,7 @@ ui <- dashboardPage(
                      menuItem("Calculators", tabName = "Calculators", icon = icon("calculator")),
                      menuItem("Predictions", tabName = "Predictions", icon = icon("brain")),
                      menuItem("Resources", tabName = "Resources", icon = icon("question-circle")),
+                     menuItem("Data Submission", tabName = "Submission", icon = icon("fas fa-file-upload")),
                      menuItem("Contact", tabName = "Contact", icon = icon("envelope")),
                      br(),
                      br(),
@@ -1918,14 +1919,32 @@ tabItem(tabName = "Resources",
          
         ), #close tab
 
+#### Data Submission UI ####
+
+tabItem(tabName = "Submission", 
+        
+        box(title = "Data Submission", width = 6, status = "primary",
+            p("To submit new data to ToMEx, download the data submission template using the link below. Complete the submission template
+              using the embedded descriptions and the ", 
+              a(href ="https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z",
+                'Data Category Descriptions', .noOWs = "outside"),
+              ". Once the data submission template is completed, use the submission form to complete the data upload."),
+            br(),
+            p("For questions regarding data submission or to check to see if data from a specific study has already been uploaded to ToMEx, please email tomex@sccwrp.org"),
+            br(),
+            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z", 'Data Submission Template')),
+            br(),
+            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EZ0r1AdQqsJGnPuvDJFNyxMBQ60ibEbAiCqrjNqRtlX7gg?e=18fTUr", 'Submission Form'))),
+        
+        ), #close tab
+
 #### Contact UI ####
 
 tabItem(tabName = "Contact", 
          
-        box(title = "Contact", width = 12, status = "primary",
-         p("For scientific questions, please contact Dr. Leah Thornton Hampton (leahth@sccwrp.org)."),
-         br(),
-         p("If you encounter technical problems with the web application, please contact Emily Darin (emilyd@sccwrp.org).")),
+        box(title = "Contact", width = 6, status = "primary",
+         p("For scientific and technical questions, please email tomex@sccwrp.org."),
+         ),
          
          )#closes tab
 
