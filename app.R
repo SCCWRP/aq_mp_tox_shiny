@@ -1942,9 +1942,9 @@ tabItem(tabName = "Submission",
             br(),
             p("For questions regarding data submission or to check to see if data from a specific study has already been uploaded to ToMEx, please email tomex@sccwrp.org"),
             br(),
-            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z", 'Data Submission Template')),
+            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EZ0Gvnn4BkdHsQ2VKVEQQnkBFToXfPW9r4qNX-qcZ5z_LA?e=eISa57", 'Data Submission Template')),
             br(),
-            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EZ0r1AdQqsJGnPuvDJFNyxMBQ60ibEbAiCqrjNqRtlX7gg?e=18fTUr", 'Submission Form'))),
+            p(align = "center",a(href = "https://forms.office.com/r/7syA1rnNgH", 'Submission Form'))),
         
         ), #close tab
 
