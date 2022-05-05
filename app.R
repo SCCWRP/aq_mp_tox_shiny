@@ -484,7 +484,7 @@ tabItem(tabName = "Overview",
           
           column(width = 12,
           #collapsible tree plot
-          collapsibleTree::collapsibleTreeOutput("plot", height = "400px"),
+          collapsibleTree::collapsibleTreeOutput("plot", height = "700px"),
           
           ), #closes out column
           
