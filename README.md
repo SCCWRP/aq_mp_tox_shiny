@@ -21,6 +21,7 @@ Andrea Faltynkova, Norwegian University of Science and Technology<br />
 Johannes Völker, Norwegian University of Science and Technology<br />
 Laura Monclús Anglada, Norwegian University of Science and Technology<br />
 Sydney Kotar, Southern California Coastal Water Research Project<br />
+Win Cowger, Moore Institute for Plastic Pollution Research<br />
 Susanne Brander, Oregon State University<br />
 Martin Wagner, Norwegian University of Science and Technology<br />
 Bart Koelmans, Wageningen University<br />
