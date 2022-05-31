@@ -328,6 +328,10 @@ ui <- dashboardPage(
                     to microplastics. Data is extracted from existing, peer-reviewed manuscripts containing 
                     toxicity data pertaining to microplastics."),
                   
+                    p("A full length description of the database and web application is published in ", 
+                      a(href = "https://www.springeropen.com/collections/sccwrp", 'Microplastics and Nanoplastics'),
+                      ". To access the open access manuscript, ", a(href = "https://microplastics.springeropen.com/articles/10.1186/s43591-022-00032-4", 'click here'),"."),
+                    
                     p("Use the side panel on the left of the page to navigate to each section. Each section provides different information or data visualization options. 
                       More specific instructions may be found within each section.")))),
               
@@ -1938,13 +1942,13 @@ tabItem(tabName = "Submission",
               using the embedded descriptions and the ", 
               a(href ="https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z",
                 'Data Category Descriptions', .noOWs = "outside"),
-              ". Once the data submission template is completed, use the submission form to complete the data upload."),
+              ". Once the data submission template is completed, upload the completed template using the button below."),
             br(),
             p("For questions regarding data submission or to check to see if data from a specific study has already been uploaded to ToMEx, please email tomex@sccwrp.org"),
             br(),
-            p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EZ0Gvnn4BkdHsQ2VKVEQQnkBFToXfPW9r4qNX-qcZ5z_LA?e=eISa57", 'Data Submission Template')),
+            p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EZ0Gvnn4BkdHsQ2VKVEQQnkBFToXfPW9r4qNX-qcZ5z_LA?e=eISa57&download=1", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
             br(),
-            p(align = "center",a(href = "https://forms.office.com/r/7syA1rnNgH", 'Submission Form'))),
+            p(align = "center", actionButton(inputId = "submit", onclick = "window.open('https://sccwrp-my.sharepoint.com/:f:/g/personal/leahth_sccwrp_org/EhnzSiN8GqZFjnGpTbNJgskBGaWp0sVKtnB9nrqszAYoQA')", label = "Upload Completed Data Template", icon("file-upload"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))),
         
         ), #close tab
 
