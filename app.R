@@ -503,8 +503,12 @@ tabItem(tabName = "Overview",
 
 tabItem(tabName = "Search",
         
-         box(title = "Search Database", status = "primary", width = 12, height = "1000px",
-             dataTableOutput("databaseDataTable", height = "600px")
+        box(title = "Search Database", status = "primary", width = 12, height = "1000px",
+            
+            column(width = 3,
+                   downloadButton("download_search", "Download Selected Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+            
+            dataTableOutput("databaseDataTable", height = "600px")
              
          ), #close box
         
@@ -2142,16 +2146,22 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      aoc_search,
      filter = "top",
      rownames = FALSE,
-     extensions = c('Buttons'),
+     # extensions = c('Buttons'),
      style = "bootstrap",
      options = list(
        pageLength = 25,
        dom = 'Brtip',
-       buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
+       # buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
        scrollY = 600,
        scrollX = TRUE,
        paging = TRUE,
        columnDefs = list(list(width = '100px', targets = "_all"))))
+   
+   output$download_search = downloadHandler(filename = paste('ToMEx_Search', Sys.Date(), '.csv', sep=''),
+                                            content = function(file) {
+                                              s = input$databaseDataTable_rows_all
+                                              write.csv(aoc_search[s, , drop = FALSE], file)
+                                            })
 
    #### Screening S ####
    
