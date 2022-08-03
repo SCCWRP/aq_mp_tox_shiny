@@ -2146,16 +2146,14 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
      aoc_search,
      filter = "top",
      rownames = FALSE,
-     # extensions = c('Buttons'),
      style = "bootstrap",
      options = list(
-       pageLength = 25,
-       dom = 'Brtip',
-       # buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
+       dom = 'ltipr',
        scrollY = 600,
        scrollX = TRUE,
-       paging = TRUE,
-       columnDefs = list(list(width = '100px', targets = "_all"))))
+       autoWidth = TRUE,
+       bautoWidth = FALSE
+       ))
    
    output$download_search = downloadHandler(filename = paste('ToMEx_Search', Sys.Date(), '.csv', sep=''),
                                             content = function(file) {
