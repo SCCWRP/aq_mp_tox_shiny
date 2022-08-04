@@ -807,13 +807,6 @@ aoc_search <- aoc_setup %>%
                 exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
                 media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
                 treatments, replicates, sample.size, dosing.frequency, chem.add.nominal, chem.add.dose.mg.L.nominal, chem.add.dose.mg.L.measured,
-                #reported doses
-                dose.particles.mL.nominal, dose.particles.mL.min.nominal,
-                dose.particles.mL.max.nominal, dose.mg.L.nominal, dose.mg.kg.sed.nominal, dose.mg.kg.food.nominal,
-                dose.particles.kg.food.nominal, dose.percent.sed.nominal, dose.particles.m2.nominal, dose.mg.m2.nominal, dose.percent.food.nominal,
-                dose.particles.kg.sed.nominal, dose.particles.mL.measured, dose.mg.L.measured, dose.mg.kg.sed.measured, dose.mg.kg.food.measured,
-                dose.particles.kg.food.measured, dose.particles.kg.food.min.measured, dose.particles.kg.food.max.measured,
-                dose.percent.sed.measured, dose.particles.m2.measured, 
                 #master doses
                 dose.particles.mL.master, dose.particles.mL.master.converted.reported, dose.mg.L.master, dose.mg.L.master.converted.reported,
                 dose.um3.mL.master, dose.um2.mL.master, dose.um2.ug.mL.master,
@@ -828,31 +821,54 @@ aoc_search <- aoc_setup %>%
                 concentration.valid, particle.behavior, uptake.valid, uptake.valid.method, tissue.distribution, fed,
                 #scores
                 tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
-                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20) %>%
-  #rename 'master' dose columns so they don't get pivoted
+                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
+                #reported doses
+                dose.particles.mL.nominal, dose.particles.mL.min.nominal,
+                dose.particles.mL.max.nominal, dose.mg.L.nominal, dose.mg.kg.sed.nominal, dose.mg.kg.food.nominal,
+                dose.particles.kg.food.nominal, dose.percent.sed.nominal, dose.particles.m2.nominal, dose.mg.m2.nominal, dose.percent.food.nominal,
+                dose.particles.kg.sed.nominal, dose.particles.mL.measured, dose.mg.L.measured, dose.mg.kg.sed.measured, dose.mg.kg.food.measured,
+                dose.particles.kg.food.measured, dose.particles.kg.food.min.measured, dose.particles.kg.food.max.measured,
+                dose.percent.sed.measured, dose.particles.m2.measured) %>%
+  #rename 'master' dose columns
   rename("particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
          "μg/mL (master)" = dose.mg.L.master, "μ/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
          "μm^3/mL (master)" = dose.um3.mL.master, "μm^2/mL (master)" = dose.um2.mL.master, "μm/ug/mL (master)" = dose.um2.ug.mL.master) %>% 
-  #pivot non-master dose columns
-  pivot_longer(cols = starts_with("dose"),
-               names_to = "Original Dose Units",
-               values_to = "Original Concentration") %>%  
-  mutate(`Original Dose Units Nominal or Measured` = case_when(grepl("nominal", `Original Dose Units`) ~ "nominal",
-                                                               grepl("measured", `Original Dose Units`) ~ "measured")) %>% 
-  mutate(`Original Dose Units` = case_when(grepl("particles.mL.min", `Original Dose Units`) ~ "particles/mL (min)",
-                                           grepl("particles.mL.max", `Original Dose Units`) ~ "particles/mL (max)",
-                                           grepl("particles.mL", `Original Dose Units`) ~ "particles/mL",
-                                           grepl("mg.L", `Original Dose Units`) ~ "μg/mL",
-                                           grepl("mg.kg.sed", `Original Dose Units`) ~ "mg/kg (sediment)",
-                                           grepl("mg.kg.food", `Original Dose Units`) ~ "mg/kg (food)",
-                                           grepl("particles.kg.food.min", `Original Dose Units`) ~ "particles/kg (min,food)",
-                                           grepl("particles.kg.food.max", `Original Dose Units`) ~ "particles/kg (max,food)",
-                                           grepl("particles.kg.food", `Original Dose Units`) ~ "particles/kg (food)",
-                                           grepl("particles.kg.sed", `Original Dose Units`) ~ "particles/kg (sediment)",
-                                           grepl("percent.sed", `Original Dose Units`) ~ "% sediment",
-                                           grepl("percent.food", `Original Dose Units`) ~ "% food",
-                                           grepl("particles.m2", `Original Dose Units`) ~ "particles/m^2",
-                                           grepl("mg.m2", `Original Dose Units`) ~ "mg/m^2")) 
+  #rename other dose columns
+  rename("particles/mL - nominal" = dose.particles.mL.nominal, "particles/mL (min) - nominal" = dose.particles.mL.min.nominal,
+         "particles/mL (max) - nominal" = dose.particles.mL.max.nominal, "mg/L - nominal" = dose.mg.L.nominal, "mg/kg sediment - nominal" = dose.mg.kg.sed.nominal, 
+         "mg/kg food - nominal" = dose.mg.kg.food.nominal,
+         "particles/kg food - nominal" = dose.particles.kg.food.nominal, "% sediment - nominal" = dose.percent.sed.nominal, 
+         "particles/m^2 - nominal" = dose.particles.m2.nominal, "mg/m^2 - nominal" = dose.mg.m2.nominal, "% food - nominal" = dose.percent.food.nominal,
+         "particles/kg sediment - nominal" = dose.particles.kg.sed.nominal, 
+         
+         "particles/mL - measured" = dose.particles.mL.measured, "mg/L - measured" = dose.mg.L.measured, "mg/kg sediment - measured" = dose.mg.kg.sed.measured, 
+         "mg/kg food - measured" = dose.mg.kg.food.measured,
+         "particles/kg food - measured" = dose.particles.kg.food.measured, "particles/kg food (min) - measured" = dose.particles.kg.food.min.measured, 
+         "particles/kg food (max) - measured" = dose.particles.kg.food.max.measured,
+         "% sediment - measured" = dose.percent.sed.measured, "particles/m^2 - measured" = dose.particles.m2.measured)
+  
+  
+  
+  # #pivot non-master dose columns
+  # pivot_longer(cols = starts_with("dose"),
+  #              names_to = "Original Dose Units",
+  #              values_to = "Original Concentration") %>%  
+  # mutate(`Original Dose Units Nominal or Measured` = case_when(grepl("nominal", `Original Dose Units`) ~ "nominal",
+  #                                                              grepl("measured", `Original Dose Units`) ~ "measured")) %>% 
+  # mutate(`Original Dose Units` = case_when(grepl("particles.mL.min", `Original Dose Units`) ~ "particles/mL (min)",
+  #                                          grepl("particles.mL.max", `Original Dose Units`) ~ "particles/mL (max)",
+  #                                          grepl("particles.mL", `Original Dose Units`) ~ "particles/mL",
+  #                                          grepl("mg.L", `Original Dose Units`) ~ "μg/mL",
+  #                                          grepl("mg.kg.sed", `Original Dose Units`) ~ "mg/kg (sediment)",
+  #                                          grepl("mg.kg.food", `Original Dose Units`) ~ "mg/kg (food)",
+  #                                          grepl("particles.kg.food.min", `Original Dose Units`) ~ "particles/kg (min,food)",
+  #                                          grepl("particles.kg.food.max", `Original Dose Units`) ~ "particles/kg (max,food)",
+  #                                          grepl("particles.kg.food", `Original Dose Units`) ~ "particles/kg (food)",
+  #                                          grepl("particles.kg.sed", `Original Dose Units`) ~ "particles/kg (sediment)",
+  #                                          grepl("percent.sed", `Original Dose Units`) ~ "% sediment",
+  #                                          grepl("percent.food", `Original Dose Units`) ~ "% food",
+  #                                          grepl("particles.m2", `Original Dose Units`) ~ "particles/m^2",
+  #                                          grepl("mg.m2", `Original Dose Units`) ~ "mg/m^2")) 
 #Turn all character strings into factors if they aren't already so they are searchable via dropdown
 aoc_search[sapply(aoc_search, is.character)] <- lapply(aoc_search[sapply(aoc_search, is.character)], as.factor)
 
