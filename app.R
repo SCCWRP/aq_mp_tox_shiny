@@ -6,7 +6,7 @@
 
 # Load packages
 library(tidyverse) #General everything
-library(shinydashboard)
+library(bs4Dash)
 library(RColorBrewer) #color palette
 library(ggplot2) #plotting
 library(calecopal) #Color palette devtools::install_github("an-bui/calecopal")
