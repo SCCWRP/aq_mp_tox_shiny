@@ -5150,15 +5150,18 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     datatable(aoc_filter_ssd() %>%  mutate_if(is.numeric, ~ signif(., 3)),
               extensions = c('Buttons'),
               style = "bootstrap",
+              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  dose_check_ssd), "Min Conc. Broad Endpoint", "Min Conc. Specfic Endpoint", "Min Environment", "DOI", "Minimum Effect Concentration", "95% Lower CI Effect Concentration", "1st Quartile Effect Concentration", "Average Effect Concentration", "Median Effect Concentration", "3rd Quartile Effect Concentration", "95% Upper CI Concentration", "Maximum Observed Effect Concentration", "Std Dev Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
+              caption = "Filtered Data",
               options = list(
                 dom = 'Brtip',
                 buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
                 scrollY = 400,
                 scrollH = TRUE,
-                sScrollX = TRUE,
-                columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
-              colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  dose_check_ssd), "Min Conc. Broad Endpoint", "Min Conc. Specfic Endpoint", "Min Environment", "DOI", "Minimum Effect Concentration", "95% Lower CI Effect Concentration", "1st Quartile Effect Concentration", "Average Effect Concentration", "Median Effect Concentration", "3rd Quartile Effect Concentration", "95% Upper CI Concentration", "Maximum Observed Effect Concentration", "Std Dev Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
-              caption = "Filtered Data") %>% 
+                sScrollX = TRUE)#, commented out ColumnDefs to avoid error
+                #   columnDefs = list(columnDefs = 
+                  #list(width = '50px, targets = "_all'))),#only display the table and nothing else. original code.
+                      #      )
+              ) %>% 
       formatStyle(
         "Conc",
         backgroundColor = '#a9d6d6')
@@ -5208,8 +5211,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
               style = "bootstrap",
               options = list(
                 dom = 'Brt', #buttons, processing display element, table
-                 buttons = c('copy', 'csv', 'excel')
-                 ),
+                 buttons = c('copy', 'csv', 'excel'),
+                  columnDefs = list(targets = c(1,2), render = JS(js)) #added to resolve error "Error: options$columnDefs must be `NULL` or a list of sub-lists, where each sub-list must contain a `targets` element."
+                )
+                 ,
               class = "compact",
               colnames = c("Distribution", "Anderson-Darling","Kolmogorv Smirnov", "Cramer-Von Mises", "Akaike's Information Criteria", "Akaike's Information Criteria (Corrected for sample size)", "Bayesian Information Criteria", "delta", "weight"),
               caption = "Distributions and their according fit paramaters are displayed",
@@ -5230,19 +5235,21 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     stats::predict(fit_dists(), #Predict fitdist. 
-            average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+           average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
             ic = pred_c_ic_ssd, #tells which information criteria to use - user input
             nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
-            ci= TRUE) #estimates confidence intervals
+            ci= TRUE #estimates confidence intervals
+          ) 
     }
     
     else{
       set.seed(99)
-      predict(fit_dists(), #Predict fitdist. 
-                     average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+      stats::predict(fit_dists(), #Predict fitdist. 
+                    average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
                      ic = pred_c_ic_ssd, #tells which information criteria to use - user input
                      nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
-                     ci= TRUE) %>%  #estimates confidence intervals
+                    ci= TRUE #estimates confidence intervals
+                    ) %>%  
         as.data.frame() %>% 
         filter(dist == dist_c)
     }
