@@ -1950,7 +1950,7 @@ tabItem(tabName = "Submission",
             br(),
             p("For questions regarding data submission or to check to see if data from a specific study has already been uploaded to ToMEx, please email tomex@sccwrp.org"),
             br(),
-            p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EZ0Gvnn4BkdHsQ2VKVEQQnkBFToXfPW9r4qNX-qcZ5z_LA?e=eISa57&download=1", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+            p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EfKDcb9J1ShHup4Js_NVZ_kBjGVqYfvVQ-2HPDAb79YOVg?e=Pq1S4V", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
             br(),
             p(align = "center", actionButton(inputId = "submit", onclick = "window.open('https://sccwrp-my.sharepoint.com/:f:/g/personal/leahth_sccwrp_org/EhnzSiN8GqZFjnGpTbNJgskBGaWp0sVKtnB9nrqszAYoQA')", label = "Upload Completed Data Template", icon("file-upload"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))),
         
@@ -5155,8 +5155,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 buttons = list(I('colvis'), c('copy', 'csv', 'excel')),
                 scrollY = 400,
                 scrollH = TRUE,
-                sScrollX = TRUE,
-                columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
+                sScrollX = TRUE),
+                # columnDefs = list(list(width = '50px, targets = "_all'))),#only display the table and nothing else
               colnames = c("Group", "Species", paste0("Most Sensitive Concentration ",  dose_check_ssd), "Min Conc. Broad Endpoint", "Min Conc. Specfic Endpoint", "Min Environment", "DOI", "Minimum Effect Concentration", "95% Lower CI Effect Concentration", "1st Quartile Effect Concentration", "Average Effect Concentration", "Median Effect Concentration", "3rd Quartile Effect Concentration", "95% Upper CI Concentration", "Maximum Observed Effect Concentration", "Std Dev Effect Concentration", "Number of doses with Effects", "Min Concentration Tested (with or without effects)", "Max Concentration Tested (with or without effects)", "Total # Doses Considered"),
               caption = "Filtered Data") %>% 
       formatStyle(
