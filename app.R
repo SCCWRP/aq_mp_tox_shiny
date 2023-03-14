@@ -1942,15 +1942,19 @@ tabItem(tabName = "Resources",
 tabItem(tabName = "Submission", 
         
         box(title = "Data Submission", width = 6, status = "primary",
-            p("To submit new data to ToMEx, download the data submission template using the link below. Complete the submission template
-              using the embedded descriptions and the ", 
-              a(href ="https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z",
-                'Data Category Descriptions', .noOWs = "outside"),
-              ". Once the data submission template is completed, upload the completed template using the button below."),
+            p("The ToMEx Database is currently being updated through the ToMEx 2.0 Workgroup. For more information or to find out how to get invovled, please contact tomex@sccwrp.org or visit the ",
+            a(href ="https://microplastics.sccwrp.org/",
+                   'SCCWRP ToMEx 2.0 Webpage', .noOWs = "outside"),"."),
+            
+            # p("To submit new data to ToMEx, download the data submission template using the link below. Complete the submission template
+            #   using the embedded descriptions and the ", 
+            #   a(href ="https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z",
+            #     'Data Category Descriptions', .noOWs = "outside"),
+            #   ". Once the data submission template is completed, upload the completed template using the button below."),
             br(),
             p("For questions regarding data submission or to check to see if data from a specific study has already been uploaded to ToMEx, please email tomex@sccwrp.org"),
             br(),
-            p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EfKDcb9J1ShHup4Js_NVZ_kBjGVqYfvVQ-2HPDAb79YOVg?e=Pq1S4V", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+            # p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EfKDcb9J1ShHup4Js_NVZ_kBjGVqYfvVQ-2HPDAb79YOVg?e=Pq1S4V", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
             br(),
             p(align = "center", actionButton(inputId = "submit", onclick = "window.open('https://sccwrp-my.sharepoint.com/:f:/g/personal/leahth_sccwrp_org/EhnzSiN8GqZFjnGpTbNJgskBGaWp0sVKtnB9nrqszAYoQA')", label = "Upload Completed Data Template", icon("file-upload"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))),
         
