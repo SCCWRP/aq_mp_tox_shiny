@@ -5,28 +5,27 @@ library(pdftools)
 library(dplyr)
 library(data.table)
 library(tidyverse)
+library(jsonlite)
 
-test_data <- read.csv("C:/Users/winco/OneDrive/Documents/tomex/Tomex/ToMEx_Search2023-02-25.csv")
+#test_data <- read.csv("C:/Users/winco/OneDrive/Documents/tomex/Tomex/ToMEx_Search2023-02-25.csv")
 
-questions <- read.csv("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/questions.csv")[1:3,]
+questions <- read.csv("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/questions.csv")
 
-paste(unique(test_data$DOI), collapse = ", ")
-paste(unique(test_data$Experiment.Type), collapse = ", ")
+#paste(unique(test_data$DOI), collapse = ", ")
+#paste(unique(test_data$Experiment.Type), collapse = ", ")
 
-files <- list.files(path = "C:/Users/winco/OneDrive/Documents/tomex/TomexOG/Exported Items", pattern = ".pdf", recursive = T, full.names = T)[1:10]
+#files <- list.files(path = "C:/Users/winco/OneDrive/Documents/tomex/TomexOG/Exported Items", pattern = ".pdf", recursive = T, full.names = T)[1:10]
 
 api_key = readLines("G:/My Drive/MooreInstitute/Projects/TrashTaxonomy_2/openai.txt")
 
-model = 'text-davinci-003'
+model = 'gpt-3.5-turbo'
 
-split_length = 3500*4
+split_length = 3800*4
 
-for(file in 1:length(files)){
-  text <- pdf_text(files[file]) %>%
-    paste0(collapse = " ") %>%
-    paste0(collapse = " ") %>%
-    stringr::str_squish() %>%
-    tolower()
+text_files <- list.files(pattern = ".txt", path = "C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/text_converted", full.names = T)
+
+for(file in 1:length(text_files)){
+  text <- readLines(text_files[file])
   
   for(q in 1:nrow(questions)){
     question = questions[q,1]
@@ -39,15 +38,14 @@ for(file in 1:length(files)){
       Sys.sleep(0.1)
       excerpt = paste0("Excerpt from a peer-reviewed manuscript on microplastic toxicity: \n", split_text[chunk])
       prompt = paste(excerpt, question, sep = "\n\n")
-      parameter_list = list(prompt = prompt, 
+      parameter_list = list(messages = data.frame(role = "user", content = prompt),
                             model = model,
                             temperature = 0,
                             max_tokens = 10,
-                            top_p = 1,
                             frequency_penalty = 0,
                             presence_penalty = 0)
       
-      request_base = httr::POST(url = "https://api.openai.com/v1/completions", 
+      request_base = httr::POST(url = "https://api.openai.com/v1/chat/completions", 
                                 body = parameter_list, 
                                 httr::add_headers(Authorization = paste("Bearer", api_key)),
                                 encode = "json")
@@ -66,12 +64,12 @@ for(file in 1:length(files)){
         Column = questions[q,2],
         Answer = answer_table
       ),
-      paste0("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/answers/", gsub(".*/", "", files[file]), "_", questions[q,2], ".csv")  
+      paste0("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/results/", gsub(".*/", "", files[file]), "_", questions[q,2], ".csv")  
     )
   }
 }
 
-answer_files <- list.files("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/answers", pattern = ".csv", full.names = T)
+answer_files <- list.files("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/results/", pattern = ".csv", full.names = T)
 
 binded_answers <- lapply(answer_files, read_csv) %>%
   rbindlist(.)
@@ -87,9 +85,59 @@ hugging_face = readLines("C:/Users/winco/OneDrive/Documents/tomex/huggingface.tx
 
 request_base = httr::POST(url = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli", 
                           body = list(inputs = text, 
-                                      parameters = list(candidate_labels = c("Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Not Reported"))), 
+                                      parameters = list(candidate_labels = c("Negative Control: N"))), 
                           httr::add_headers(Authorization = paste("Bearer", hugging_face)),
                           encode = "json")
   
 output_base = httr::content(request_base)
 #Seems to work pretty well. 
+
+#Convert files ----
+files <- list.files(path = "C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export", pattern = ".pdf", recursive = T, full.names = T)
+questions <- read.csv("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/question_input.csv")
+questions_formatted <- questions %>%
+  mutate_all(as.character) %>%
+  pivot_longer(cols = everything(), names_to = "columns", values_to = "option") %>%
+  distinct() %>%
+  filter(!is.na(option), option != "") %>%
+  mutate(prompt = gsub(",", "", paste0(columns, ": ", option)))
+
+write.csv(questions_formatted, "questions_formatted.csv")
+setwd("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/text_converted")
+
+#for(file in files){
+#  name <- gsub(".*/|.pdf", "", file)
+#  text <- pdf_text(file) %>%
+#    paste0(collapse = " ") %>%
+#    paste0(collapse = " ") %>%
+#    stringr::str_squish() %>%
+#    tolower()  
+#  fileConn<-file(paste0(name, ".txt"))
+#  writeLines(text, fileConn)
+#  close(fileConn)
+#}
+
+text_files <- list.files(pattern = ".txt", path = "C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/text_converted", full.names = T)
+
+#chunks <- ceiling(seq_along(1:nrow(questions_formatted))/20)
+#rows <- 1:nrow(questions_formatted)
+#n = 93
+#chunks = split(rows, sort(rows%%n))
+#test <- unlist(new_file[rows, "prompt"])
+for(file in text_files){
+  text <- readLines(file)
+  new_file = questions_formatted
+  print(file)
+  for(row in 1:nrow(new_file)){
+    print(row)
+    request_base = httr::POST(url = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli", 
+                              body = list(inputs = text, 
+                                          parameters = list(candidate_labels = c(unlist(new_file[row, "prompt"])))), 
+                              httr::add_headers(Authorization = paste("Bearer", hugging_face)),
+                              encode = "json")
+    output_base = httr::content(request_base)
+    new_file[row, "score"] = unlist(output_base$scores)
+  }
+  name = gsub(".*/", "", gsub("\\.txt", "", file))
+  fwrite(new_file, paste0("C:/Users/winco/OneDrive/Documents/tomex/TomexOG/full_export/TomexOG/results/", name, ".csv"))
+}
