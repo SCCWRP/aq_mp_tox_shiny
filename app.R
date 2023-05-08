@@ -1956,7 +1956,8 @@ tabItem(tabName = "Submission",
             br(),
             # p(align = "center", downloadButton(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EfKDcb9J1ShHup4Js_NVZ_kBjGVqYfvVQ-2HPDAb79YOVg?e=Pq1S4V", label = "Download Data Submission Template", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
             br(),
-            p(align = "center", actionButton(inputId = "submit", onclick = "window.open('https://sccwrp-my.sharepoint.com/:f:/g/personal/leahth_sccwrp_org/EhnzSiN8GqZFjnGpTbNJgskBGaWp0sVKtnB9nrqszAYoQA')", label = "Upload Validated Data Template", icon("file-upload"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))),
+            # p(align = "center", actionButton(inputId = "submit", onclick = "window.open('https://sccwrp-my.sharepoint.com/:f:/g/personal/leahth_sccwrp_org/EhnzSiN8GqZFjnGpTbNJgskBGaWp0sVKtnB9nrqszAYoQA')", label = "Upload Validated Data Template", icon("file-upload"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"))
+            ),
         
         ), #close tab
 
