@@ -1,0 +1,557 @@
+#ToMEx 2.0 Data Tidying Script
+#Date: 4/24/23
+#Created By: Leah Thornton Hampton
+#Description: Script to join validated data templates from ToMEx 2.0 exercise, re-structure to match ToMEx 1.0, bind to existing ToMEx 1.0 Database
+
+#Load Packages
+library(tidyverse)
+library(readr)
+
+source("functions.R") # necessary for surface area, volume calculations
+
+#### Extract Data from Submitted Templates ####
+
+#Set working directory
+setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/ToMEx2.0_Onboarding/Validated Templates/")
+
+#Make a list of all files in folder - templates need to be saved as csv files first
+file.list <- list.files(pattern='*.csv')
+
+
+df.list <- lapply(file.list,function(x) {
+  #Read data, skipping first line
+  sheets <- read_csv(x, skip = 1,
+                     #Specify column types
+                     col_types = cols(
+                       #General Information
+                       DOI = col_character(),
+                       Authors = col_character(),
+                       Year = col_double(),
+                       #Data Category 1: Test Organism
+                       Species = col_character(),
+                       `Organism Group` = col_character(),
+                       Environment = col_character(),
+                       `Life Stage` = col_character(),
+                       `In vitro In vivo` = col_character(),
+                       Sex = col_character(),
+                       #Data Category 2: Experimental Parameters
+                       `Experiment Type` = col_character(),
+                       `Exposure Route` = col_character(),
+                       `Particle Mix?` = col_character(),
+                       `Negative Control` = col_character(),
+                       `Reference Particle` = col_character(),
+                       `Exposure Media` = col_character(),
+                       Solvent = col_character(),
+                       Detergent = col_character(),
+                       `Media Salinity (ppt)` = col_double(),
+                       `Media pH` = col_double(),
+                       `Media Temp (Mean)` = col_double(),
+                       `Media Temp Min` = col_double(),
+                       `Media Temp Max` = col_double(),
+                       `Exposure Duration (Days)` = col_double(),
+                       Treatments = col_double(),
+                       Replicates = col_double(),
+                       `Dosing Frequency` = col_double(),
+                       `Sample Size` = col_double(),
+                       `Nominal Dose - Mass` = col_double(),
+                       `Nominal Dose - Mass Units` = col_character(),
+                       `Nominal Dose - Particles` = col_double(),
+                       `Nominal Dose - Particles Units` = col_character(),
+                       `Nominal Dose Alternative Category` = col_character(),
+                       `Nominal Dose - Alternative Type` = col_double(),
+                       `Nominal Dose - Alternative Type Units` = col_character(),
+                       `Nominal Chemicals Added` = col_character(),
+                       `Nominal Added Chemical Dose` = col_double(),
+                       `Nominal Added Chemical Dose Units` = col_character(),
+                       `Measured Dose - Mass` = col_double(),
+                       `Measured Dose - Mass Units` = col_character(),
+                       `Measured Dose - Particles` = col_double(),
+                       `Measured Dose - Particles Units` = col_character(),
+                       `Measured Dose Alternative Category` = col_character(),
+                       `Measured Dose Alternative` = col_double(),
+                       `Measured Dose Alternative Units` = col_character(),
+                       `Measured Chemicals Added` = col_character(),
+                       `Measured Chemical Dose` = col_double(),
+                       `Measured Chemical Dose Units` = col_character(),
+                       #Data Category 3: Biological Effects
+                       Effect = col_character(),
+                       `Effect Metric` = col_character(),
+                       Direction = col_character(),
+                       `Broad Endpoint Category` = col_character(),
+                       `Specific Endpoint Category` = col_character(),
+                       Endpoint = col_character(),
+                       `Level of Biological Organization` = col_character(),
+                       `Target Cell or Tissue` = col_character(),
+                       #Data Category 4: Particle Characteristics
+                       Polymer = col_character(),
+                       `Density (g/cm^3)` = col_double(),
+                       `Density (Reported/Estimated)` = col_character(),
+                       Shape = col_character(),
+                       Charge = col_character(),
+                       `Zeta Potential (mV)` = col_double(),
+                       `Zeta Potential Media` = col_character(),
+                       `Functional Group` = col_character(),
+                       `Size Length mm Nominal` = col_double(),
+                       `Size Length mm Nominal (minimum)` = col_double(),
+                       `Size Length mm Nominal (maximum)` = col_double(),
+                       `Size Length mm Measured` = col_double(),
+                       `Size Length mm Measured (minimum)` = col_double(),
+                       `Size Length mm Measured (Maximum)` = col_double(),
+                       `Size Width mm Nominal` = col_double(),
+                       `Size Width mm Nominal (minimum)` = col_double(),
+                       `Size Width mm Nominal (maximum)` = col_double(),
+                       `Size Width mm Measured` = col_double(),
+                       `Size Width mm Measured (minimum)` = col_double(),
+                       `Size Width mm Measured (maximum)` = col_double(),
+                       `Size Height mm Nominal` = col_double(),
+                       `Size Height mm Nominal (minimum)` = col_double(),
+                       `Size Height mm Nominal (maximum)` = col_double(),
+                       `Size Height mm Measured` = col_double(),
+                       `Size Height mm Measured (minimum)` = col_double(),
+                       `Size Height mm Measured (maximum)` = col_double(),
+                       `Weathered or Biofouled?` = col_character(),
+                       #Data Category 5: Quality Criteria
+                       `Size Validated?` = col_character(),
+                       `Shape Validated?` = col_character(),
+                       `Polymer Validated?` = col_character(),
+                       `Particle Source` = col_character(),
+                       `Sodium Azide Present?` = col_character(),
+                       `Screened for Chemical Contamination?` = col_character(),
+                       `Particle Cleaning?` = col_character(),
+                       `Solvent Rinse` = col_character(),
+                       `Background Contamination Monitored?` = col_character(),
+                       `Concentration Validated?` = col_character(),
+                       `Particle Behavior` = col_character(),
+                       `Uptake Validated?` = col_character(),
+                       `Uptake Validation Method` = col_character(),
+                       `Tissue Distribution` = col_character(),
+                       `Organisms Fed?` = col_character(),
+                       #Screening Criteria
+                       `Tech A1` = col_character(),
+                       `Tech A2` = col_character(),
+                       `Tech A3` = col_character(),
+                       `Tech A4` = col_character(),
+                       `Tech A5` = col_character(),
+                       `Tech A6` = col_character(),
+                       `Tech 1` = col_double(),
+                       `Tech 2` = col_double(),
+                       `Tech 3` = col_double(),
+                       `Tech 4` = col_double(),
+                       `Tech 5` = col_double(),
+                       `Tech 6` = col_double(),
+                       `Tech 7` = col_double(),
+                       `Tech 8` = col_double(),
+                       `Tech 9` = col_double(),
+                       `Tech 10` = col_double(),
+                       `Tech 11` = col_double(),
+                       `Tech 12` = col_double(),
+                       `Risk B1` = col_character(),
+                       `Risk 13` = col_double(),
+                       `Risk 14` = col_double(),
+                       `Risk 15` = col_double(),
+                       `Risk 16` = col_double(),
+                       `Risk 17` = col_double(),
+                       `Risk 18` = col_double(),
+                       `Risk 19` = col_double(),
+                       `Risk 20` = col_double(),
+                       `Tech Total` = col_double(),
+                       `Risk Total` = col_double(),
+                       `Overall Total` = col_double())) %>%
+    #Drop any blank rows using empty DOI cell
+    filter(!is.na(DOI))  
+    
+  })
+
+#Create one data frame from all templates
+tomex2.0 <- bind_rows(df.list)
+
+#change all column names to lowercase
+names(tomex2.0) <- tolower(names(tomex2.0))
+
+#### Match Data Structure to ToMEx 1.0 ####
+
+#Set working directory
+setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/")
+
+#Read in ToMEx 1.0 Tidy Data sets
+aoc <- readRDS("aoc.RDS")
+# aoc_endpoint <- readRDS("aoc_endpoint.RDS")
+# aoc_quality <- readRDS("aoc_quality.RDS")
+# aoc_search <- readRDS("aoc_search.RDS")
+aoc_setup <- readRDS("aoc_setup.RDS")
+# aoc_v1 <- readRDS("aoc_v1.RDS")
+# aoc_z <- readRDS("aoc_z.RDS")
+
+##### AOC SETUP #####
+
+tomex2.0_aoc_setup <- tomex2.0 %>%
+   replace_na(list(shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
+   #Add rowid column
+   rowid_to_column() %>% 
+   #Add source column
+   add_column(source = "ToMEx 2.0", .before = "doi") %>% 
+   #Add article number column
+   transform(article=as.numeric(factor(doi))) %>% 
+   relocate(article, .after = doi) %>% 
+   #Move screening scores up
+   relocate(101:130, .after = article) %>% 
+   #Change pass/fail descriptors to 2/0
+   mutate(`tech.a1` = case_when(`tech.a1` == "Pass" ~ 2,
+                                `tech.a1` == "Fail" ~ 0)) %>%
+   mutate(`tech.a2` = case_when(`tech.a2` == "Pass" ~ 2,
+                                `tech.a2` == "Fail" ~ 0)) %>%
+   mutate(`tech.a3` = case_when(`tech.a3` == "Pass" ~ 2,
+                                `tech.a3` == "Fail" ~ 0)) %>%
+   mutate(`tech.a4` = case_when(`tech.a4` == "Pass" ~ 2,
+                                `tech.a4` == "Fail" ~ 0)) %>%
+   mutate(`tech.a5` = case_when(`tech.a5` == "Pass" ~ 2,
+                                `tech.a5` == "Fail" ~ 0)) %>%
+   mutate(`tech.a6` = case_when(`tech.a6` == "Pass" ~ 2,
+                                `tech.a6` == "Fail" ~ 0)) %>%
+   mutate(`risk.b1` = case_when(`risk.b1` == "Pass" ~ 2,
+                                `risk.b1` == "Fail" ~ 0)) %>% 
+   #Change column names of summed scores to match
+   rename(technical.quality = `tech.total`,
+          risk.quality = `risk.total`,
+          total.quality = `overall.total`) %>% 
+   #Add columns for red criteria failures
+   mutate(tier_zero_tech_f = if_else((`tech.a1` == 0|`tech.a2` == 0|`tech.a3` == 0|`tech.a4` == 0|`tech.a5` == 0|`tech.a6` == 0), "Red Criteria Failed", "Red Criteria Passed")) %>% 
+   relocate(tier_zero_tech_f , .after = total.quality) %>% 
+   mutate(tier_zero_risk_f  = if_else((`risk.b1` == 0), "Red Criteria Failed", "Red Criteria Passed")) %>% 
+   relocate(tier_zero_risk_f, .after = tier_zero_tech_f ) %>%
+   replace_na(list(tier_zero_tech_f  = "Scoring Not Applicable", tier_zero_risk_f = "Scoring Not Applicable")) %>%
+   mutate(tier_zero_tech_f  = factor(tier_zero_tech_f )) %>% 
+   mutate(tier_zero_risk_f = factor(tier_zero_risk_f)) %>%
+   #Factor species
+   mutate(species = factor(species)) %>% 
+   rename(species_f = species) %>% 
+   #Factor organism group
+   mutate(organism.group = factor(organism.group)) %>% 
+   rename(org_f = organism.group) %>% 
+   #Factor in vitro in vivo
+   mutate(in.vitro.in.vivo = factor(in.vitro.in.vivo)) %>% 
+   rename(vivo_f = in.vitro.in.vivo) %>%
+   #Factor life stage
+   mutate(life.stage = factor(life.stage)) %>% 
+   rename(life_f = life.stage) %>%
+   #Factor environment
+   mutate(environment = factor(environment)) %>% 
+   rename(env_f = environment) %>%
+   #Factor experiment type
+   mutate(experiment.type = factor(experiment.type)) %>% 
+   rename(exp_type_f = experiment.type) %>%
+   #Rename particle mix, reference particle, salinity, temp, exposure duration columns to match
+   rename(mix = `particle.mix.`,
+          reference.material = `reference.particle`,
+          media.sal.ppt = `media.salinity..ppt.`,
+          media.temp = `media.temp..mean.`,
+          exposure.duration.d = `exposure.duration..days.`) %>%
+   #Paste the range of treatments used within each study - there is often a range because this is different depending on the endpoint
+   group_by(doi) %>% 
+   mutate(treatment_range = ifelse(min(treatments) == max(treatments), paste0(treatments), paste0(min(treatments),"-",max(treatments)))) %>% 
+   ungroup() %>% 
+   relocate(treatment_range, .after = treatments) %>% 
+   
+  #Dosing restructuring #ONBOARDING CHECK - ADD UNITS AS NEEDED TO CASE_WHEN STATEMENTS#
+   #Count - Nominal
+   mutate(dose.particles.mL.nominal = case_when(
+     nominal.dose...particles.units == "particles/L" ~ nominal.dose...particles/1000
+     )) %>% 
+  relocate(dose.particles.mL.nominal, .after = sample.size) %>% 
+  #Count - Measured
+  mutate(dose.particles.mL.measured = case_when(
+    measured.dose...particles.units == "particles/L" ~ measured.dose...particles/1000
+  )) %>% 
+  relocate(dose.particles.mL.measured, .after = dose.particles.mL.nominal) %>% 
+   #Mass - Nominal
+   mutate(dose.mg.L.nominal = case_when(
+     nominal.dose...mass.units == "mg/L" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "ug/L" ~ nominal.dose...mass/1000,
+     )) %>% 
+  relocate(dose.mg.L.nominal, .after = dose.particles.mL.nominal) %>% 
+  #Mass - Measured
+  mutate(dose.mg.L.measured = case_when(
+    measured.dose...mass.units == "mg/L" ~ measured.dose...mass,
+    measured.dose...mass.units == "ug/L" ~ measured.dose...mass/1000,
+  )) %>% 
+    relocate(dose.mg.L.measured, .after = dose.particles.mL.measured) %>% 
+  #Create master columns for dose and count - measured doses preferred
+  mutate(dose.particles.mL.master = if_else(!is.na(dose.particles.mL.measured), dose.particles.mL.measured, dose.particles.mL.nominal)) %>% 
+  relocate(dose.particles.mL.master, .after = dose.mg.L.measured) %>% 
+  mutate(dose.mg.L.master = if_else(!is.na(dose.mg.L.measured), dose.mg.L.measured, dose.mg.L.nominal)) %>% 
+  relocate(dose.mg.L.master, .after = dose.particles.mL.master)  %>% 
+  #Mark that doses were reported (converted doses are to be added later in script)
+  mutate(dose.particles.mL.master.converted.reported = if_else(!is.na(dose.particles.mL.master), "reported", NA_character_)) %>% 
+  relocate(dose.particles.mL.master.converted.reported, .after = dose.particles.mL.master) %>% 
+  mutate(dose.mg.L.master.converted.reported = if_else(!is.na(dose.mg.L.master), "reported", NA_character_)) %>% 
+  relocate(dose.mg.L.master.converted.reported, .after = dose.mg.L.master) %>% 
+  
+  #Chemical Dosing
+  rename(chem.add.nominal = nominal.chemicals.added) %>% 
+  mutate(chem.add.dose.mg.L.nominal = case_when(
+    nominal.added.chemical.dose.units == "mg/L" ~ nominal.added.chemical.dose,
+    nominal.added.chemical.dose.units == "ug/L" ~ nominal.added.chemical.dose,
+  )) %>% 
+  relocate(chem.add.nominal, .after = dose.mg.L.master.converted.reported) %>% 
+  relocate(chem.add.dose.mg.L.nominal, .after = chem.add.nominal) %>% 
+  
+  rename(chem.add.measured = measured.chemicals.added) %>% 
+  mutate(chem.add.dose.mg.L.measured = case_when(
+    measured.chemical.dose.units == "mg/L" ~ measured.chemical.dose,
+    measured.chemical.dose.units == "ug/L" ~ measured.chemical.dose,
+  )) %>% 
+  relocate(chem.add.measured, .after = nominal.added.chemical.dose) %>% 
+  relocate(chem.add.dose.mg.L.measured, .after = chem.add.measured) %>% 
+  
+  #Factor effect
+  mutate(effect = factor(effect)) %>% 
+  rename(effect_f = effect) %>%
+  #Factor effect metric
+  mutate(effect.metric = factor(effect.metric)) %>% 
+  #Add new columns for assessment factors
+  mutate(af.time = case_when(
+    org_f == "Algae" & exposure.duration.d < 3 ~ 10,
+    org_f == "Algae" & exposure.duration.d >= 3 ~ 1,
+    org_f == "Plant" & exposure.duration.d < 28 ~ 10,
+    org_f == "Plant" & exposure.duration.d >= 28 ~ 1,
+    org_f == "Crustacea" & exposure.duration.d < 21 ~ 10,
+    org_f == "Crustacea" & exposure.duration.d >= 21 ~ 1,
+    org_f == "Mollusca" & exposure.duration.d < 28 ~ 10,
+    org_f == "Mollusca" & exposure.duration.d >= 28 ~ 1,
+    org_f == "Fish" & exposure.duration.d < 28 ~ 10,
+    org_f == "Fish" & exposure.duration.d >= 28 ~ 1,
+    #Assessment factors outside of Wigger et al., 2020 DOI: 10.1002/ieam.4214
+    exposure.duration.d < 21 ~ 10,
+    exposure.duration.d >= 21 ~ 1)) %>%
+  #Define acute and chronic exposures and factor
+  mutate(acute.chronic_f = factor(
+    if_else(af.time == 1, "Chronic", "Acute"))) %>% 
+  #Assign assessment factors for effect metrics Wigger et al., 2020 DOI: 10.1002/ieam.4214
+  mutate(af.noec = case_when(
+    effect.metric == "NOEC" ~ 1,
+    effect.metric == "LOEC" ~ 2,
+    effect.metric == "EC50" ~ 10,
+    effect.metric == "EC10" ~ 1,
+    effect.metric == "IC10" ~ 1,
+    effect.metric == "HONEC" ~ 1,
+    effect.metric == "IC50" ~ 10,
+    effect.metric == "LC50" ~ 10)) %>% 
+  #Factor and rename endpoint columns
+  mutate(broad.endpoint.category = factor(broad.endpoint.category)) %>% 
+  rename(lvl1_f = broad.endpoint.category) %>%
+  mutate(specific.endpoint.category = factor(specific.endpoint.category)) %>% 
+  rename(lvl2_f = specific.endpoint.category) %>% 
+  mutate(endpoint = factor(endpoint)) %>% 
+  rename(lvl3_f = endpoint) %>% 
+  #Factor and rename biological level of organization
+  mutate(level.of.biological.organization = factor(level.of.biological.organization)) %>% 
+  rename(bio_f = level.of.biological.organization) %>%  
+  #Rename target cell or tissue column
+  rename(target.cell.tissue = target.cell.or.tissue) %>% 
+  #Factor polymer
+  mutate(polymer = factor(polymer)) %>% 
+  rename(poly_f = polymer) %>%  
+  #Rename density column
+  rename(density.g.cm3 = density..g.cm.3.) %>% 
+  rename(density.reported.estimated = density..reported.estimated.) %>% 
+  #Factor shape
+  mutate(shape = factor(shape)) %>% 
+  rename(shape_f = shape) %>%  
+  #Rename zeta potential column
+  rename(zetapotential.mV = zeta.potential..mv.,
+         zetapotential.media = zeta.potential.media) %>% 
+  #Rename size columns
+  rename(
+    size.length.min.mm.nominal = size.length.mm.nominal..minimum.,
+    size.length.max.mm.nominal = size.length.mm.nominal..maximum.,
+    size.length.min.mm.measured = size.length.mm.measured..minimum.,
+    size.length.max.mm.measured = size.length.mm.measured..maximum.,
+    
+    size.width.min.mm.nominal = size.width.mm.nominal..minimum.,
+    size.width.max.mm.nominal = size.width.mm.nominal..maximum.,
+    size.width.min.mm.measured = size.width.mm.measured..minimum.,
+    size.width.max.mm.measured = size.width.mm.measured..maximum.,
+    
+    size.height.min.mm.nominal = size.height.mm.nominal..minimum.,
+    size.height.max.mm.nominal = size.height.mm.nominal..maximum.,
+    size.height.min.mm.measured = size.height.mm.measured..minimum.,
+    size.height.max.mm.measured = size.height.mm.measured..maximum.) %>%
+  #Select size lengths to be used for conversions
+  mutate(size.length.um.used.for.conversions = case_when(
+    !is.na(size.length.mm.measured) ~ size.length.mm.measured*1000,
+    !is.na(size.length.min.mm.measured) ~ ((size.length.max.mm.measured + size.length.min.mm.measured)/2)*1000,
+    !is.na(size.length.mm.nominal) ~ size.length.mm.nominal*1000,
+    !is.na(size.length.min.mm.nominal) ~ ((size.length.max.mm.nominal + size.length.min.mm.nominal)/2)*1000)) %>% 
+  relocate(size.length.um.used.for.conversions, .after = zetapotential.media) %>% 
+  #Select size widths to be used for conversions
+  mutate(size.width.um.used.for.conversions = case_when(
+    !is.na(size.width.mm.measured) ~ size.width.mm.measured*1000,
+    !is.na(size.width.min.mm.measured) ~ ((size.width.max.mm.measured + size.width.min.mm.measured)/2)*1000,
+    !is.na(size.width.mm.nominal) ~ size.width.mm.nominal*1000,
+    !is.na(size.width.min.mm.nominal) ~ ((size.width.max.mm.nominal + size.width.min.mm.nominal)/2)*1000)) %>% 
+  relocate(size.width.um.used.for.conversions, .after = size.length.um.used.for.conversions) %>% 
+  #Add size category column 
+  mutate(size_f = factor(case_when(
+    size.length.um.used.for.conversions < 0.1 ~ "1nm < 100nm",
+    size.length.um.used.for.conversions >= 0.1 & size.length.um.used.for.conversions < 1 ~ "100nm < 1µm",
+    size.length.um.used.for.conversions >= 1 & size.length.um.used.for.conversions < 100 ~ "1µm < 100µm",
+    size.length.um.used.for.conversions >= 100 & size.length.um.used.for.conversions < 1000 ~ "100µm < 1mm",
+    size.length.um.used.for.conversions >= 1000 & size.length.um.used.for.conversions < 5000 ~ "1mm < 5mm",
+    size.length.um.used.for.conversions == NA_real_ ~ "Not Reported"),
+    levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
+  relocate(size_f, .after = size.width.um.used.for.conversions) %>% 
+  #Calculate particle surface area
+  mutate(particle.surface.area.um2 = case_when(shape_f == "Sphere" ~ 4*pi*((size.length.um.used.for.conversions/2)^2),
+                                               shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
+                                               shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
+                                               shape_f == "Fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
+                                                                           b = 0.77 * size.length.um.used.for.conversions,
+                                                                           c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>%
+  relocate(particle.surface.area.um2, .after = size_f) %>% 
+  #Calculate particle volume
+  mutate(particle.volume.um3 = case_when(shape_f == "Sphere" ~ (3/4)*pi*((size.length.um.used.for.conversions/2)^3),
+                                         shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assume 15 um as width (kooi et al 2021)
+                                         shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width reported
+                                         shape_f == "Fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
+  relocate(particle.volume.um3, .after = particle.surface.area.um2) %>% 
+  #Calculate particle mass
+  mutate(mass.per.particle.mg = (particle.volume.um3*density.g.cm3)*0.000000001) %>% 
+  relocate(mass.per.particle.mg, .after = particle.volume.um3) %>%
+  ####
+  #calculate dose metrics accordingly
+  mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
+  mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
+  
+  # create label for polydispersity
+  mutate(polydispersity = case_when(
+    is.na(size.length.min.mm.nominal) ~ "monodisperse",
+    !is.na(size.length.min.mm.nominal) ~ "polydisperse")) %>% 
+  
+  ####prioritize measured parameters for conversions ###
+  # minima
+  mutate(size.length.min.um.used.for.conversions = case_when(
+    is.na(size.length.min.mm.measured) ~ size.length.min.mm.nominal * 1000,
+    !is.na(size.length.min.mm.measured) ~ size.length.min.mm.measured * 1000)) %>% 
+  mutate(size.width.min.um.used.for.conversions = case_when(
+    shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
+    shape_f == "Fiber" ~ 0.77 * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
+    shape_f == "Not Reported" ~ 0.77 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ 0.77 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+  mutate(size.height.min.um.used.for.conversions = case_when(
+    shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
+    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~  0.77 * size.length.min.um.used.for.conversions, #height same as width for fibers
+    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+  # maxima
+  mutate(size.length.max.um.used.for.conversions = case_when(
+    is.na(size.length.max.mm.measured) ~ size.length.max.mm.nominal * 1000,
+    !is.na(size.length.max.mm.measured) ~ size.length.max.mm.measured * 1000)) %>% 
+  mutate(size.width.max.um.used.for.conversions = case_when(
+    shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
+    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
+    shape_f == "Not Reported" ~ 0.77 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ 0.77 * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+  mutate(size.height.max.um.used.for.conversions = case_when(
+    shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
+    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #hieght same as width
+    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+  
+  #calculate minimum and maximum surface area for polydisperse particles
+  mutate(particle.surface.area.um2.min = SAfnx(a = size.length.min.um.used.for.conversions,
+                                               b = size.width.min.um.used.for.conversions,
+                                               c = size.height.min.um.used.for.conversions)) %>%
+  mutate(particle.surface.area.um2.max = SAfnx(a = size.length.max.um.used.for.conversions,
+                                               b = size.width.max.um.used.for.conversions,
+                                               c = size.height.max.um.used.for.conversions)) %>% 
+  #calculate minimum and maximum volume for polydisperse particles
+  mutate(particle.volume.um3.min = volumefnx_poly(length = size.length.min.um.used.for.conversions,
+                                                  width =  size.width.min.um.used.for.conversions)) %>% 
+  mutate(particle.volume.um3.max = volumefnx_poly(length = size.length.max.um.used.for.conversions,
+                                                  width = size.width.max.um.used.for.conversions)) %>% 
+  #calculate minimum and maximum volume for polydisperse particles
+  mutate(mass.per.particle.mg.min = massfnx_poly(length = size.length.min.um.used.for.conversions,
+                                                 width = size.width.min.um.used.for.conversions,
+                                                 p = density.g.cm3)) %>% #equation usess g/cm3
+  mutate(mass.per.particle.mg.max = massfnx_poly(length = size.length.max.um.used.for.conversions,
+                                                 width = size.width.max.um.used.for.conversions,
+                                                 p = density.g.cm3)) %>%   #equation usess g/cm3
+  
+  #Volume
+  mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
+  
+  #Surface Area
+  mutate(dose.um2.mL.master = as.numeric(particle.surface.area.um2) * dose.particles.mL.master) %>% 
+  
+  #Specific Surface Area
+  mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
+  #Factor particle weathering
+  mutate(weathered.or.biofouled. = factor(weathered.or.biofouled.)) %>% 
+  #Rename columns to match
+  rename(weather.biofoul_f = weathered.or.biofouled.,
+         size.valid = size.validated.,
+         shape.valid = shape.validated.,
+         polymer.valid = polymer.validated.,
+         sodium.azide = sodium.azide.present.,
+         contaminant.screen = screened.for.chemical.contamination.,
+         clean.method = particle.cleaning.,
+         sol.rinse = solvent.rinse,
+         background.plastics = background.contamination.monitored.,
+         concentration.valid = concentration.validated.,
+         uptake.valid = uptake.validated.,
+         uptake.valid.method = uptake.validation.method,
+         fed = organisms.fed.) 
+  
+  
+#Add-in body size metrics from ToMEx 1.0
+
+#Create summary data frame from ToMEx 1.0
+  bodysize_summary <- aoc_setup %>% 
+    group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>% 
+    summarise()
+  
+#Join summary to tidy ToMEx 2.0 data frame
+  
+tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f"))
+
+#Join tomex2.0_aoc_setup to aoc_setup (from ToMEx 1.0)
+
+#Get names of relevant columns from tomex 2.0
+names <- tomex2.0_aoc_setup %>% 
+  select(-c(nominal.dose...mass, nominal.dose...mass.units, nominal.dose...particles, nominal.dose...particles.units,
+            nominal.dose.alternative.category, nominal.dose...alternative.type, nominal.dose...alternative.type.units,
+            nominal.added.chemical.dose, nominal.added.chemical.dose.units, measured.dose...mass, measured.dose...mass.units,
+            measured.dose...particles, measured.dose...particles.units, measured.dose.alternative.category,
+            measured.dose.alternative, measured.dose.alternative.units, measured.chemical.dose, measured.chemical.dose.units)) %>% 
+  colnames() 
+
+  # 1:73,82,83,94:174
+  
+# names_aoc <- aoc_setup %>% 
+#   colnames() %>% 
+#   as.data.frame()
+
+#Select columns from each data frame
+tomex2.0_aoc_setup <- tomex2.0_aoc_setup %>% 
+  select(all_of(names))
+
+aoc_setup <- aoc_setup %>%
+  mutate(chem.add.dose.mg.L.measured = as.numeric(aoc_setup$chem.add.dose.mg.L.measured)) %>% 
+  add_column(chem.add.measured = NA_character_) %>% 
+  select(names)
+  
+#Join rows
+tomex2.0_aoc_setup_final <- bind_rows(tomex2.0_aoc_setup, aoc_setup) 
+
+#Save RDS file
+saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
+
+
+
+
+
+
+
+
+
+
