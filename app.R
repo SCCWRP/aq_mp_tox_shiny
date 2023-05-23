@@ -35,13 +35,13 @@ library(caret) # for random forest predictions
 library(randomForest) # for random forest predictions
 
 #### Load finalized dataset (prepped in RDAmaker.R) ####
-aoc <- readRDS("aoc.RDS")
-aoc_endpoint <- readRDS("aoc_endpoint.RDS")
-aoc_quality <- readRDS("aoc_quality.RDS")
-aoc_search <- readRDS("aoc_search.RDS")
-aoc_setup <- readRDS("aoc_setup.RDS")
-aoc_v1 <- readRDS("aoc_v1.RDS")
-aoc_z <- readRDS("aoc_z.RDS")
+aoc <- readRDS("aoc_setup_tomex2.RDS")
+aoc_endpoint <- readRDS("aoc_endpoint_tomex2.RDS")
+aoc_quality <- readRDS("aoc_quality_tomex2.RDS")
+aoc_search <- readRDS("aoc_search_tomex2.RDS")
+aoc_setup <- readRDS("aoc_setup_tomex2.RDS")
+# aoc_v1 <- readRDS("aoc_v1.RDS")
+aoc_z <- readRDS("aoc_z_tomex2.RDS")
 
 #prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
 predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
@@ -59,189 +59,189 @@ source("functions.R")
 
 #### Overview Setup ####
 
-polydf<-rowPerc(xtabs( ~polymer +effect, aoc)) #pulls polymers by effect 
+polydf<-rowPerc(xtabs( ~poly_f +effect_f, aoc)) #pulls polymers by effect 
 polyf<-as.data.frame(polydf)%>% #Makes data frame
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>% #Sorts into Yes and No
-  mutate(polymer = factor(case_when(
-    polymer == "BIO" ~ "Biopolymer",
-    polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
-    polymer == "LTX" ~ "Latex",
-    polymer == "PA" ~ "Polyamide",
-    polymer == "PE" ~ "Polyethylene",
-    polymer == "PC" ~ "Polycarbonate",
-    polymer == "PET" ~ "Polyethylene Terephthalate",
-    polymer == "PI" ~ "Polyisoprene",
-    polymer == "PMMA" ~ "Polymethylmethacrylate",
-    polymer == "PP" ~ "Polypropylene",
-    polymer == "PS" ~ "Polystyrene",
-    polymer == "PUR" ~ "Polyurethane",
-    polymer == "PVC" ~ "Polyvinylchloride",
-    polymer == "PLA" ~ "Polylactic Acid",
-    polymer == "Not Reported" ~ "Not Reported"))) %>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>% 
+  filter(effect_f %in% c("Yes","No"))%>% #Sorts into Yes and No
+  # mutate(polymer = factor(case_when(
+  #   polymer == "BIO" ~ "Biopolymer",
+  #   polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
+  #   polymer == "LTX" ~ "Latex",
+  #   polymer == "PA" ~ "Polyamide",
+  #   polymer == "PE" ~ "Polyethylene",
+  #   polymer == "PC" ~ "Polycarbonate",
+  #   polymer == "PET" ~ "Polyethylene Terephthalate",
+  #   polymer == "PI" ~ "Polyisoprene",
+  #   polymer == "PMMA" ~ "Polymethylmethacrylate",
+  #   polymer == "PP" ~ "Polypropylene",
+  #   polymer == "PS" ~ "Polystyrene",
+  #   polymer == "PUR" ~ "Polyurethane",
+  #   polymer == "PVC" ~ "Polyvinylchloride",
+  #   polymer == "PLA" ~ "Polylactic Acid",
+  #   polymer == "Not Reported" ~ "Not Reported"))) %>%
   mutate_if(is.numeric, round,0) #rounds percents 
 
-Endpoints<-xtabs(~polymer +effect ,aoc) #Pulls all study obs. for polymer from dataset
+Endpoints<-xtabs(~poly_f +effect_f ,aoc) #Pulls all study obs. for polymer from dataset
 
 polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
   rename(Endpoints='Freq.1')%>% #renames column
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-sizedf<-rowPerc(xtabs(~size.category +effect, aoc))
+sizedf<-rowPerc(xtabs(~size_f +effect_f, aoc))
 
 sizef<-as.data.frame(sizedf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  mutate(size.category = case_when(
-    size.category == 1 ~ "1nm < 100nm",
-    size.category == 2 ~ "100nm < 1µm",
-    size.category == 3 ~ "1µm < 100µm",
-    size.category == 4 ~ "100µm < 1mm",
-    size.category == 5 ~ "1mm < 5mm",
-    size.category == 0 ~ "Not Reported"))%>% 
-  rename(Type = "size.category")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  # mutate(size.category = case_when(
+  #   size.category == 1 ~ "1nm < 100nm",
+  #   size.category == 2 ~ "100nm < 1µm",
+  #   size.category == 3 ~ "1µm < 100µm",
+  #   size.category == 4 ~ "100µm < 1mm",
+  #   size.category == 5 ~ "1mm < 5mm",
+  #   size.category == 0 ~ "Not Reported"))%>%
+  rename(Type = "size_f")%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Size")
 
-study_s<-xtabs(~size.category +effect ,aoc)
+study_s<-xtabs(~size_f +effect_f,aoc)
 
-sizefinal<- data.frame(cbind(sizef, study_s))%>% 
+sizefinal<- data.frame(cbind(sizef, study_s))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='size.category')%>%
+  rename(category='size_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-shapedf<-rowPerc(xtabs(~shape + effect, aoc))
+shapedf<-rowPerc(xtabs(~shape_f + effect_f, aoc))
 
 shapef<-as.data.frame(shapedf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  rename(Type="shape")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  rename(Type="shape_f")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Shape")%>%
-  mutate(Type = case_when(
-    Type == "sphere" ~ "Sphere",
-    Type == "fragment" ~ "Fragment",
-    Type == "fiber" ~ "Fiber"))
+  mutate(plot="Shape")
+  # mutate(Type = case_when(
+  #   Type == "sphere" ~ "Sphere",
+  #   Type == "fragment" ~ "Fragment",
+  #   Type == "fiber" ~ "Fiber"))
 
-study_sh<-xtabs(~shape + effect,aoc)
+study_sh<-xtabs(~shape_f + effect_f,aoc)
 
-shapefinal<- data.frame(cbind(shapef, study_sh))%>% 
+shapefinal<- data.frame(cbind(shapef, study_sh))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='shape')%>%
+  rename(category='shape_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-taxdf<-rowPerc(xtabs(~organism.group +effect, aoc))
+taxdf<-rowPerc(xtabs(~org_f +effect_f, aoc))
 
 taxf<-as.data.frame(taxdf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  rename(Type= "organism.group")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  rename(Type= "org_f")%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Organism")
 
-study_t<-xtabs(~organism.group +effect,aoc)
+study_t<-xtabs(~org_f +effect_f,aoc)
 
-taxfinal<- data.frame(cbind(taxf, study_t))%>% 
+taxfinal<- data.frame(cbind(taxf, study_t))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='organism.group')%>%
+  rename(category='org_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-lvl1df<-rowPerc(xtabs(~lvl1 +effect, aoc))
+lvl1df<-rowPerc(xtabs(~lvl1_f +effect_f, aoc))
 
 lvl1f<-as.data.frame(lvl1df)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  rename(Type= "lvl1")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  rename(Type= "lvl1_f")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Lvl1")%>%
-  mutate(Type = case_when(
-    Type == "alimentary.excretory" ~ "Alimentary, Excretory",
-    Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
-    Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
-    Type == "community" ~ "Community",
-    Type == "fitness" ~ "Fitness",
-    Type == "immune" ~ "Immune",
-    Type == "metabolism" ~ "Metabolism",
-    Type == "microbiome" ~ "Microbiome",
-    Type == "stress" ~ "Stress")) 
+  mutate(plot="Lvl1")
+  # mutate(Type = case_when(
+  #   Type == "alimentary.excretory" ~ "Alimentary, Excretory",
+  #   Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
+  #   Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
+  #   Type == "community" ~ "Community",
+  #   Type == "fitness" ~ "Fitness",
+  #   Type == "immune" ~ "Immune",
+  #   Type == "metabolism" ~ "Metabolism",
+  #   Type == "microbiome" ~ "Microbiome",
+  #   Type == "stress" ~ "Stress"))
 
-study_l<-xtabs(~lvl1 +effect,aoc)
+study_l<-xtabs(~lvl1_f +effect_f,aoc)
 
-lvl1final<- data.frame(cbind(lvl1f, study_l))%>% 
+lvl1final<- data.frame(cbind(lvl1f, study_l))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='lvl1')%>%
+  rename(category='lvl1_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
-  
-lifedf<-rowPerc(xtabs(~life.stage +effect, aoc))
+
+lifedf<-rowPerc(xtabs(~life_f +effect_f, aoc))
 
 lifef<-as.data.frame(lifedf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  rename(Type= "life.stage")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  rename(Type= "life_f")%>%
   mutate_if(is.numeric, round,0)%>%
   mutate(plot="Life.stage")
 
-studyli<-xtabs(~life.stage +effect ,aoc)
+studyli<-xtabs(~life_f +effect_f ,aoc)
 
-lifefinal<- data.frame(cbind(lifef, studyli))%>% 
+lifefinal<- data.frame(cbind(lifef, studyli))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='life.stage')%>%
+  rename(category='life_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-vivodf<-rowPerc(xtabs(~invitro.invivo +effect, aoc))
+vivodf<-rowPerc(xtabs(~vivo_f +effect_f, aoc))
 
 vivof<-as.data.frame(vivodf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
-  rename(Type= "invitro.invivo")%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
+  rename(Type= "vivo_f")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Invivo.invivo")%>%
-  mutate(Type = case_when(
-    Type=="invivo"~"In Vivo",
-    Type=="invitro"~"In Vitro"))
+  mutate(plot="Invivo.invivo")
+  # mutate(Type = case_when(
+  #   Type=="invivo"~"In Vivo",
+  #   Type=="invitro"~"In Vitro"))
 
-study_v<-xtabs(~invitro.invivo +effect,aoc)
+study_v<-xtabs(~vivo_f +effect_f,aoc)
 
-vivofinal<- data.frame(cbind(vivof, study_v))%>% 
+vivofinal<- data.frame(cbind(vivof, study_v))%>%
   rename(Endpoints='Freq.1')%>%
-  rename(category='invitro.invivo')%>%
+  rename(category='vivo_f')%>%
   mutate(logEndpoints = log(Endpoints))%>%
   rename(Percent = Freq)#renames column
 
-routedf<-rowPerc(xtabs(~exposure.route +effect, aoc))
+routedf<-rowPerc(xtabs(~exposure.route +effect_f, aoc))
 
 routef<-as.data.frame(routedf)%>%
-  mutate(effect = case_when(effect == "Y" ~ "Yes",
-                            effect == "N" ~ "No")) %>% 
-  filter(effect %in% c("Yes","No"))%>%
+  # mutate(effect = case_when(effect == "Y" ~ "Yes",
+  #                           effect == "N" ~ "No")) %>%
+  filter(effect_f %in% c("Yes","No"))%>%
   rename(Type= "exposure.route")%>%
   mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Exposure.route")%>%
-  mutate(Type = case_when(
-    Type == "coparental.exposure" ~"Co-Parental Exposure",
-    Type == "paternal.exposure" ~ "Paternal Exposure",
-    Type == "maternal.exposure" ~ "Maternal Exposure",
-    Type == "food" ~ "Food",
-    Type == "water" ~ "Water",
-    Type == "sediment" ~ "Sediment",
-    Type == "media" ~ "Media"))
+  mutate(plot="Exposure.route")
+  # mutate(Type = case_when(
+  #   Type == "coparental.exposure" ~"Co-Parental Exposure",
+  #   Type == "paternal.exposure" ~ "Paternal Exposure",
+  #   Type == "maternal.exposure" ~ "Maternal Exposure",
+  #   Type == "food" ~ "Food",
+  #   Type == "water" ~ "Water",
+  #   Type == "sediment" ~ "Sediment",
+  #   Type == "media" ~ "Media"))
 
-study_r<-xtabs(~exposure.route +effect,aoc)
+study_r<-xtabs(~exposure.route +effect_f,aoc)
 
-routefinal<- data.frame(cbind(routef, study_r))%>% 
+routefinal<- data.frame(cbind(routef, study_r))%>%
   rename(Endpoints='Freq.1')%>%
   rename(category='exposure.route')%>%
   mutate(logEndpoints = log(Endpoints))%>%
@@ -523,7 +523,8 @@ tabItem(tabName = "Screening",
             shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
             id = "screen", # adds ID for resetting filters
             
-            p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification. 
+            p("This plot displays scores from the quality screening exercise developed by", a(href ="https://pubs.acs.org/doi/abs/10.1021/acs.est.0c03057", 'de Ruijter et al. (2020)', .noOWs = "outside"), "with some modification.
+            If a single study received multiple scores within a category, the highest score is shown in the plot. 
             For more information, including the scoring rubric used, see Resources."),
             
             fluidRow(
@@ -1994,7 +1995,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$polymer_plot <- renderPlot({
     
     # generate plot
-     ggplot(polyfinal,aes(fill=effect, y= logEndpoints, x= polymer, Percent=Percent)) +
+     ggplot(polyfinal,aes(fill=effect_f, y= logEndpoints, x= poly_f, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("seagrass"))+
@@ -2014,7 +2015,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$vivo_plot <- renderPlot({
      
      # generate plot
-     ggplot(vivofinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(vivofinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("lupinus"))+
@@ -2033,7 +2034,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$size_plot <- renderPlot({
      
      # generate plot
-     ggplot(sizefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(sizefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("bigsur2"))+
@@ -2052,7 +2053,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$shape_plot <- renderPlot({
      
      # generate plot
-     ggplot(shapefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(shapefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("vermillion"))+
@@ -2071,7 +2072,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$life_plot <- renderPlot({
      
      # generate plot
-     ggplot(lifefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(lifefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("lake"))+
@@ -2090,7 +2091,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$tax_plot <- renderPlot({
      
      # generate plot
-     ggplot(taxfinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(taxfinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("superbloom2"))+
@@ -2109,7 +2110,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$exposure_plot <- renderPlot({
      
      # generate plot
-     ggplot(routefinal,aes(fill=effect, y= logEndpoints, x= Type, Percent=Percent)) +
+     ggplot(routefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
        geom_bar(position="stack", stat="identity") +
        geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
        scale_fill_manual(values = cal_palette("wetland"))+
@@ -2213,12 +2214,15 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    tech_plotly <- eventReactive(list(input$go_quality),{
      
      #Technical
-     tech <- quality_filtered() %>%
+     tech <- quality_filtered() %>% 
        filter(Category_f == "Technical") %>%  
        #summarize data for plotly
        group_by(Study_plus, Criteria_f, Score) %>%  
        summarise() %>%
-       ungroup() %>%
+       ungroup() %>% 
+       group_by(Study_plus, Criteria_f) %>% 
+       slice_max(Score) %>% #If multiple scores are received for a single category, the highest score is selected
+       ungroup() %>% 
        pivot_wider(names_from = Study_plus, 
                    values_from = Score) %>%   
        column_to_rownames(var="Criteria_f")  
@@ -2269,7 +2273,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        #summarize data for plotly
        group_by(Study_plus, Criteria_f, Score) %>%  
        summarise() %>%
-       ungroup() %>%  
+       ungroup() %>%
+       group_by(Study_plus, Criteria_f) %>% 
+       slice_max(Score) %>% #If multiple scores are received for a single category, the highest score is selected
+       ungroup() %>%
        pivot_wider(names_from = Study_plus, 
                    values_from = Score) %>%   
        column_to_rownames(var="Criteria_f") 
@@ -2405,7 +2412,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       #calculate CF_bio for all conversions
       mutate(CF_bio = CFfnx(x1M = x1M_set, x2M = x2M, x1D = x1D_set, x2D = x2D_set, a = alpha)) %>%  
       ## Calculate environmentally relevant effect threshold for particles
-      mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentraiton (1-5000 um)
+      mutate(EC_env_p.particles.mL = EC_poly_p.particles.mL * CF_bio) %>%  #aligned particle effect concentration (1-5000 um)
       
       #### Surface area ERM ####
     ##--- environmental calculations ---###
@@ -3005,25 +3012,25 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
     # new dataset based on filtering
     aoc_setup %>% # take original dataset
-      filter(exp_type_f %in% exp_type_c) %>% #filter by experiment type
-      filter(org_f %in% org_c) %>% # filter by organism inputs
-      filter(lvl1_f %in% lvl1_c) %>% # filter by level inputs
-      filter(lvl2_f %in% lvl2_c) %>% #filter by level 2 inputs 
-      filter(bio_f %in% bio_c) %>% #filter by bio organization
-      filter(effect_f %in% effect_c) %>% #filter by effect
-      filter(life_f %in% life_c) %>% #filter by life stage
-      filter(poly_f %in% poly_c) %>% #filter by polymer
-      filter(size_f %in% size_c) %>% #filter by size class
-      filter(shape_f %in% shape_c) %>% #filter by shape
-      filter(species_f %in% species_c) %>%  #filter by species
-      filter(env_f %in% env_c) %>% #filter by environment
-      filter(acute.chronic_f %in% acute.chronic.c) %>%  #acute/chronic
-      filter(tier_zero_tech_f %in% tech_tier_zero_c) %>% #technical quality
-      filter(tier_zero_risk_f %in% risk_tier_zero_c) %>%    #risk assessment quality
-      filter(case_when(ingestion.translocation.switch == "translocation" ~  between(size.length.um.used.for.conversions, x1D_set, upper.tissue.trans.size.um), #if tissue-trans limited, don't use data with non-translocatable particles
-                       ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set)))  #if ingestion-limited, don't use data outside upper default size range
+    filter(exp_type_f %in% exp_type_c) %>%   #filter by experiment type
+    filter(org_f %in% org_c) %>%  # filter by organism inputs
+    filter(lvl1_f %in% lvl1_c) %>%  # filter by level inputs
+    filter(lvl2_f %in% lvl2_c) %>%   #filter by level 2 inputs
+    filter(bio_f %in% bio_c) %>%  #filter by bio organization
+    filter(effect_f %in% effect_c) %>%  #filter by effect
+    filter(life_f %in% life_c) %>%  #filter by life stage
+    filter(poly_f %in% poly_c) %>%  #filter by polymer
+    filter(size_f %in% size_c) %>%  #filter by size class
+    filter(shape_f %in% shape_c) %>%  #filter by shape
+    filter(species_f %in% species_c) %>%  #filter by species
+    filter(env_f %in% env_c) %>%  #filter by environment
+    filter(acute.chronic_f %in% acute.chronic.c) %>% #acute/chronic
+    filter(tier_zero_tech_f %in% tech_tier_zero_c) %>%  #technical quality
+    filter(tier_zero_risk_f %in% risk_tier_zero_c)  %>%  #risk assessment quality
+    filter(case_when(ingestion.translocation.switch == "translocation" ~  between(size.length.um.used.for.conversions, x1D_set, upper.tissue.trans.size.um), #if tissue-trans limited, don't use data with non-translocatable particles
+                      ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set)))  #if ingestion-limited, don't use data outside upper default size range
       #filter(size.length.um.used.for.conversions <= range_n) #For size slider widget - currently commented out
-    
+  
   })
 
 #caption ouput       
@@ -5088,7 +5095,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set))) %>%  #if ingestion-limited, don't use data outside upper default size range
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       group_by(Species, Group) %>%
-      summarise(minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1[which.min(dose_new)], Minlvl2EffectType = lvl2[which.min(dose_new)], MinEnvironment = environment[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life.stage[which.min(dose_new)], Mininvitro.invivo = invitro.invivo[which.min(dose_new)])# %>%  #set concentration to minimum observed effect
+      summarise(minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1_f[which.min(dose_new)], Minlvl2EffectType = lvl2_f[which.min(dose_new)], MinEnvironment = env_f[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life_f[which.min(dose_new)], Mininvitro.invivo = vivo_f[which.min(dose_new)])# %>%  #set concentration to minimum observed effect
       #mutate_if(is.numeric, ~ signif(., 6))
    
     #dynamically change concentrations used based on user input

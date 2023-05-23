@@ -174,27 +174,23 @@ names(tomex2.0) <- tolower(names(tomex2.0))
 setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/")
 
 #Read in ToMEx 1.0 Tidy Data sets
-aoc <- readRDS("aoc.RDS")
-# aoc_endpoint <- readRDS("aoc_endpoint.RDS")
-# aoc_quality <- readRDS("aoc_quality.RDS")
-# aoc_search <- readRDS("aoc_search.RDS")
 aoc_setup <- readRDS("aoc_setup.RDS")
-# aoc_v1 <- readRDS("aoc_v1.RDS")
-# aoc_z <- readRDS("aoc_z.RDS")
 
 ##### AOC SETUP #####
 
 tomex2.0_aoc_setup <- tomex2.0 %>%
    replace_na(list(shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
-   #Add rowid column
-   rowid_to_column() %>% 
    #Add source column
    add_column(source = "ToMEx 2.0", .before = "doi") %>% 
-   #Add article number column
-   transform(article=as.numeric(factor(doi))) %>% 
-   relocate(article, .after = doi) %>% 
+   #Use only last name of first author
+   mutate(authors = word(authors,1,sep = ",")) %>% 
+   arrange(authors) %>% 
+   transform(article=as.numeric(factor(doi))+162) %>% 
+   relocate(article, .after = doi) %>%   
+   #Add rowid column
+   rowid_to_column() %>% 
    #Move screening scores up
-   relocate(101:130, .after = article) %>% 
+   relocate(100:129, .after = article) %>% 
    #Change pass/fail descriptors to 2/0
    mutate(`tech.a1` = case_when(`tech.a1` == "Pass" ~ 2,
                                 `tech.a1` == "Fail" ~ 0)) %>%
@@ -300,8 +296,8 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     measured.chemical.dose.units == "mg/L" ~ measured.chemical.dose,
     measured.chemical.dose.units == "ug/L" ~ measured.chemical.dose,
   )) %>% 
-  relocate(chem.add.measured, .after = nominal.added.chemical.dose) %>% 
-  relocate(chem.add.dose.mg.L.measured, .after = chem.add.measured) %>% 
+  relocate(chem.add.measured, .after = chem.add.dose.mg.L.nominal) %>% 
+  relocate(chem.add.dose.mg.L.measured, .after = chem.add.measured) %>%  
   
   #Factor effect
   mutate(effect = factor(effect)) %>% 
@@ -397,7 +393,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     size.length.um.used.for.conversions >= 1 & size.length.um.used.for.conversions < 100 ~ "1µm < 100µm",
     size.length.um.used.for.conversions >= 100 & size.length.um.used.for.conversions < 1000 ~ "100µm < 1mm",
     size.length.um.used.for.conversions >= 1000 & size.length.um.used.for.conversions < 5000 ~ "1mm < 5mm",
-    size.length.um.used.for.conversions == NA_real_ ~ "Not Reported"),
+    is.na(size.length.um.used.for.conversions) ~ "Not Reported"),  
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   relocate(size_f, .after = size.width.um.used.for.conversions) %>% 
   #Calculate particle surface area
@@ -487,7 +483,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
   #Factor particle weathering
   mutate(weathered.or.biofouled. = factor(weathered.or.biofouled.)) %>% 
-  #Rename columns to match
+  #Rename columns to match/look nicer
   rename(weather.biofoul_f = weathered.or.biofouled.,
          size.valid = size.validated.,
          shape.valid = shape.validated.,
@@ -500,7 +496,13 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
          concentration.valid = concentration.validated.,
          uptake.valid = uptake.validated.,
          uptake.valid.method = uptake.validation.method,
-         fed = organisms.fed.) 
+         fed = organisms.fed.,
+         `Nominal Dose Alternative Category` = `nominal.dose.alternative.category`,
+         `Nominal Dose Alternative Type` = `nominal.dose...alternative.type`,
+         `Nominal Dose Alternative Type Units` = `nominal.dose...alternative.type.units`,
+         `Measured Dose Alternative Category` = `measured.dose.alternative.category`,
+         `Measured Dose Alternative Type` = `measured.dose.alternative`,
+         `Measured Dose Alternative Type Units` = `measured.dose.alternative.units`) 
   
   
 #Add-in body size metrics from ToMEx 1.0
@@ -514,44 +516,252 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   
 tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f"))
 
+#Re-structure alternative dosing columns in aoc-setup
+aoc_setup <- aoc_setup %>%
+  #Nominal Alternative Doses
+  mutate(`Nominal Dose Alternative Type` = case_when(
+    !is.na(dose.mg.kg.sed.nominal) ~ dose.mg.kg.sed.nominal,
+    !is.na(dose.mg.kg.food.nominal) ~ dose.mg.kg.food.nominal,
+    !is.na(dose.particles.kg.food.nominal) ~ dose.particles.kg.food.nominal,
+    !is.na(dose.percent.sed.nominal) ~ dose.percent.sed.nominal,
+    !is.na(dose.particles.m2.nominal) ~ dose.particles.m2.nominal,
+    !is.na(dose.percent.food.nominal) ~ dose.percent.food.nominal,
+    !is.na(dose.particles.kg.sed.nominal) ~ dose.particles.kg.sed.nominal,
+  )) %>%  
+  mutate(`Nominal Dose Alternative Type Units` = case_when(
+    !is.na(dose.mg.kg.sed.nominal) ~ "mg/kg sediment",
+    !is.na(dose.mg.kg.food.nominal) ~ "mg/kg food",
+    !is.na(dose.particles.kg.food.nominal) ~ "particles/kg food",
+    !is.na(dose.percent.sed.nominal) ~ "percent mass (%) sediment",
+    !is.na(dose.particles.m2.nominal) ~ "particles/m^2",
+    !is.na(dose.percent.food.nominal) ~ "percent mass (%) food",
+    !is.na(dose.particles.kg.sed.nominal) ~ "particles/kg sediment",
+  )) %>% 
+  #Measured Alternative Doses
+  mutate(`Measured Dose Alternative Type` = case_when(
+    !is.na(dose.mg.kg.sed.measured) ~ dose.mg.kg.sed.measured,
+    !is.na(dose.mg.kg.food.measured) ~ dose.mg.kg.food.measured,
+    !is.na(dose.particles.kg.food.measured) ~ dose.particles.kg.food.measured,
+    !is.na(dose.particles.kg.food.min.measured) ~ dose.particles.kg.food.min.measured,
+    !is.na(dose.particles.kg.food.max.measured) ~ dose.particles.kg.food.max.measured,
+    !is.na(dose.percent.sed.measured) ~ dose.percent.sed.measured,
+    !is.na(dose.particles.m2.measured) ~ dose.particles.m2.measured,
+  )) %>%  
+  mutate(`Measured Dose Alternative Type Units` = case_when(
+    !is.na(dose.mg.kg.sed.measured) ~ "mg/kg sediment",
+    !is.na(dose.mg.kg.food.measured) ~ "mg/kg food",
+    !is.na(dose.particles.kg.food.measured) ~ "particles/kg food",
+    !is.na(dose.particles.kg.food.min.measured) ~ "particles/kg food minimum",
+    !is.na(dose.particles.kg.food.max.measured) ~ "particles/kg food maximum",
+    !is.na(dose.percent.sed.measured) ~ "percent mass (%) sediment",
+    !is.na(dose.particles.m2.measured) ~ "particles/m^2",
+  ))
+  
 #Join tomex2.0_aoc_setup to aoc_setup (from ToMEx 1.0)
 
 #Get names of relevant columns from tomex 2.0
-names <- tomex2.0_aoc_setup %>% 
-  select(-c(nominal.dose...mass, nominal.dose...mass.units, nominal.dose...particles, nominal.dose...particles.units,
-            nominal.dose.alternative.category, nominal.dose...alternative.type, nominal.dose...alternative.type.units,
-            nominal.added.chemical.dose, nominal.added.chemical.dose.units, measured.dose...mass, measured.dose...mass.units,
-            measured.dose...particles, measured.dose...particles.units, measured.dose.alternative.category,
-            measured.dose.alternative, measured.dose.alternative.units, measured.chemical.dose, measured.chemical.dose.units)) %>% 
+names <- tomex2.0_aoc_setup %>%
+  select(-c(nominal.dose...mass, nominal.dose...mass.units, nominal.dose...particles, nominal.dose...particles.units, 
+            nominal.added.chemical.dose, nominal.added.chemical.dose.units, 
+            measured.dose...mass, measured.dose...mass.units, 
+            measured.dose...particles, measured.dose...particles.units, 
+            measured.chemical.dose, measured.chemical.dose.units)) %>% 
   colnames() 
 
-  # 1:73,82,83,94:174
-  
-# names_aoc <- aoc_setup %>% 
-#   colnames() %>% 
-#   as.data.frame()
-
 #Select columns from each data frame
-tomex2.0_aoc_setup <- tomex2.0_aoc_setup %>% 
+tomex2.0_aoc_setup <- tomex2.0_aoc_setup %>%
   select(all_of(names))
 
 aoc_setup <- aoc_setup %>%
   mutate(chem.add.dose.mg.L.measured = as.numeric(aoc_setup$chem.add.dose.mg.L.measured)) %>% 
-  add_column(chem.add.measured = NA_character_) %>% 
+  add_column(chem.add.measured = NA_character_,
+             `Nominal Dose Alternative Category` = NA_character_,
+             `Measured Dose Alternative Category` = NA_character_) %>%
   select(names)
-  
+
 #Join rows
-tomex2.0_aoc_setup_final <- bind_rows(tomex2.0_aoc_setup, aoc_setup) 
+tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
 
+##### AOC ENDPOINT #####
 
+#Endpoint Categorization setup
+tomex2.0_aoc_endpoint_final <- tomex2.0_aoc_setup_final %>% 
+  group_by(lvl1_f,lvl2_f,lvl3_f,bio_f) %>% 
+  summarise()
 
+#Save RDS file
+saveRDS(tomex2.0_aoc_endpoint_final, file = "aoc_endpoint_tomex2.RDS")
 
+##### AOC SEARCH #####
 
+tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>% 
+  dplyr::select(doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
+                #experimental parameters
+                exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
+                media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
+                treatments, replicates, sample.size, dosing.frequency, chem.add.nominal, chem.add.dose.mg.L.nominal, chem.add.dose.mg.L.measured,
+                #master/alternative doses
+                dose.particles.mL.master, dose.particles.mL.master.converted.reported, dose.mg.L.master, dose.mg.L.master.converted.reported,
+                dose.um3.mL.master, dose.um2.mL.master, dose.um2.ug.mL.master, 
+                `Nominal Dose Alternative Category`, `Nominal Dose Alternative Type`, `Nominal Dose Alternative Type Units`,
+                `Measured Dose Alternative Category`, `Measured Dose Alternative Type`, `Measured Dose Alternative Type Units`,
+                #biological effects
+                effect_f, direction, lvl1_f, lvl2_f, lvl3_f, bio_f, target.cell.tissue, effect.metric, af.time, af.noec,
+                #particle characteristics
+                poly_f, shape_f, density.g.cm3, density.reported.estimated, charge, zetapotential.mV, zetapotential.media, functional.group,
+                size.length.um.used.for.conversions, size.width.um.used.for.conversions, size_f, particle.surface.area.um2, particle.volume.um3,
+                mass.per.particle.mg, weather.biofoul_f,
+                #quality
+                size.valid, polymer.valid, shape.valid, particle.source, sodium.azide, contaminant.screen, clean.method, sol.rinse, background.plastics,
+                concentration.valid, particle.behavior, uptake.valid, uptake.valid.method, tissue.distribution, fed,
+                #scores
+                tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20)
 
+#Turn all character strings into factors if they aren't already so they are searchable via dropdown
+tomex2.0_aoc_search[sapply(tomex2.0_aoc_search, is.character)] <- lapply(tomex2.0_aoc_search[sapply(tomex2.0_aoc_search, is.character)], as.factor)
 
+tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>% 
+  dplyr::rename('DOI' = doi,'Authors' = authors, 'Year' = year, 'Technical "Red Criteria"' = tier_zero_tech_f, 
+                'Risk Assessment "Red Criteria"' = tier_zero_risk_f,'Species' = species_f, 
+                'Organism Group' = org_f, 'Environment' = env_f, 'Life Stage' = life_f, 'In vitro/in vivo' = vivo_f,
+                'Sex' = sex, 'Estimated Body Length (cm)' = body.length.cm, 
+                'Estimated Maximum Ingestible Size (mm)' = max.size.ingest.mm, 'Experiment Type' = exp_type_f,
+                'Exposure Route' = exposure.route, 'Particle Mix?' = mix, 'Negative Control' = negative.control, 
+                'Reference Particle' = reference.material, 'Exposure Media' = exposure.media,
+                'Solvent' = solvent, 'Detergent' = detergent, 'pH' = media.ph, 'Salinity (ppt)' = media.sal.ppt, 
+                'Temperature (Avg)' = media.temp, 'Temperature (Min)' = media.temp.min,
+                'Temperature (Max)' = media.temp.max, 'Exposure Duration (days)' = exposure.duration.d, 
+                'Acute/Chronic' = acute.chronic_f, 'Number of Doses' = treatments, 'Replicates' = replicates,
+                'Sample Size' = sample.size, 'Dosing Frequency' = dosing.frequency, 'Chemicals Added' = chem.add.nominal, 
+                'Added Chemical Dose (nominal)' = chem.add.dose.mg.L.nominal,
+                'Added Chemical Dose (measured)' = chem.add.dose.mg.L.measured, 
+                'Effect' = effect_f, 'Direction' = direction, 'Broad Endpoint Category' = lvl1_f, 
+                'Specific Endpoint Category' = lvl2_f,'Endpoint' = lvl3_f, 
+                'Level of Biological Organization' = bio_f, 'Target Cell or Tissue' = target.cell.tissue, 
+                'Effect Metric' = effect.metric, 'AF Time' = af.time,
+                'AF NOEC' = af.noec, 'Polymer' = poly_f, 'Shape' = shape_f, 'Density (g/cm^3)' = density.g.cm3, 
+                'Density, reported or estimated' = density.reported.estimated, 'Charge' = charge,
+                'Zeta Potential (mV)' = zetapotential.mV, 'Size Category' = size_f,'Zeta Potential Media' = zetapotential.media, 
+                'Functional Group' = functional.group, 'Particle Length (μm)' = size.length.um.used.for.conversions,
+                'Particle Width (μm)' = size.width.um.used.for.conversions, 'Particle Surface Area (μm^2)' = particle.surface.area.um2, 
+                'Particle Volume (μm^3)' = particle.volume.um3, 'Particle Mass (mg)'= mass.per.particle.mg,
+                'Weathered or Biofouled?' = weather.biofoul_f, 'Size Validated?' = size.valid, 
+                'Polymer Validated?' = polymer.valid, 'Shape Validated' = shape.valid, 'Particle Source' = particle.source,
+                'Sodium Azide Present?' = sodium.azide,
+                'Screened for Chemical Contamination?' = contaminant.screen, 'Particle Cleaning?' = clean.method, 
+                'Solvent Rinse'= sol.rinse, 'Background Contamination Monitored?' = background.plastics,
+                'Concentration Validated?' = concentration.valid, 
+                'Particle Behavior' = particle.behavior, 'Uptake Validated?' = uptake.valid, 'Uptake Validation Method' = uptake.valid.method,
+                'Tissue Distribution' = tissue.distribution, 'Organisms Fed?' = fed, 
+                'Test Medium Score' = tech.a1, 'Administration Route Score' = tech.a2, 'Test Species Score'= tech.a3, 'Sample Size Score'= tech.a4, 
+                'Control Group Score'= tech.a5, 'Exposure Duration Score'= tech.a6, 'Particle Size Score'= tech.1,
+                'Particle Shape Score'= tech.2, 'Polymer Type Score'= tech.3, 'Source of Microplastics Score'= tech.4, 'Data Reporting Score'= tech.5, 
+                'Chemical Purity Score'= tech.6, 'Laboratory Preparation Score'= tech.7, 'Background Contamination Score'= tech.8,
+                'Exposure Verification Score'= tech.9, 'Exposure Homogeneity Score'= tech.10, 'Exposure Assessment Score'= tech.11, 
+                'Replication Score'= tech.12, 'Number of Treatments Score'= risk.b1, 'Endpoints Score'= risk.13, 'Food Availability Score'= risk.14,
+                'Effect Thresholds Score'= risk.15, 'Dose Response Score'= risk.16, 'Concentration Range Score'= risk.17, 'Aging and Biofouling Score'= risk.18, 
+                'Microplastic Diversity Score' = risk.19, 'Exposure Time Score' = risk.20,
+                "particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
+                "μg/mL (master)" = dose.mg.L.master, "μ/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
+                "μm^3/mL (master)" = dose.um3.mL.master, "μm^2/mL (master)" = dose.um2.mL.master, "μm/ug/mL (master)" = dose.um2.ug.mL.master)
 
+#Save RDS file
+saveRDS(tomex2.0_aoc_search_final, file = "aoc_search_tomex2.RDS")
 
+##### AOC SSD (AOC_Z) #####
 
+tomex2.0_aoc_z_final <- tomex2.0_aoc_setup_final %>%
+  rename(Species = species_f) %>%  #must make value 'Species" (uppercase)
+  rename(Group = org_f)
+
+#Save RDS file
+saveRDS(tomex2.0_aoc_z_final, file = "aoc_z_tomex2.RDS")
+
+##### AOC QUALITY #####
+
+tomex2.0_aoc_quality_final <- tomex2.0_aoc_setup_final %>%
+  filter(tier_zero_tech_f != "Scoring Not Applicable") %>% 
+  filter(tier_zero_risk_f != "Scoring Not Applicable") %>% 
+  mutate(Study = paste0(authors, " (", year,")")) %>%
+  mutate(Study_plus = as.factor(paste0(authors, " (", year,")", " (",doi,")"))) %>%
+  distinct(Study, Study_plus, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+           tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
+           lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f) %>%     
+  
+  pivot_longer(!c(Study, Study_plus, doi, treatment_range, lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f),
+               names_to ="Criteria", 
+               values_to ="Score") %>%  
+  #Assign descriptions to numerical scores
+  mutate(Score_f = factor(case_when(Score == 0 ~ "Inadequate",
+                                    Score == 1 ~ "Adequate with Restrictions",
+                                    Score == 2 ~ "Adequate"))) %>% 
+  #Assign each criteria to appropriate category
+  mutate(Category = case_when(Criteria == "tech.a1" ~ "Technical",
+                              Criteria == "tech.a2" ~ "Technical",
+                              Criteria == "tech.a3" ~ "Technical",
+                              Criteria == "tech.a4" ~ "Technical",
+                              Criteria == "tech.a5" ~ "Technical",
+                              Criteria == "tech.a6" ~ "Technical",
+                              Criteria == "tech.1" ~ "Technical",
+                              Criteria == "tech.2" ~ "Technical",
+                              Criteria == "tech.3" ~ "Technical",
+                              Criteria == "tech.4" ~ "Technical",
+                              Criteria == "tech.5" ~ "Technical",
+                              Criteria == "tech.6" ~ "Technical",
+                              Criteria == "tech.7" ~ "Technical",
+                              Criteria == "tech.8" ~ "Technical",
+                              Criteria == "tech.9" ~ "Technical",
+                              Criteria == "tech.10" ~ "Technical",
+                              Criteria == "tech.11" ~ "Technical",
+                              Criteria == "tech.12" ~ "Technical",
+                              Criteria == "risk.13" ~ "Risk Assessment",
+                              Criteria == "risk.13" ~ "Risk Assessment",
+                              Criteria == "risk.14" ~ "Risk Assessment",
+                              Criteria == "risk.15" ~ "Risk Assessment",
+                              Criteria == "risk.16" ~ "Risk Assessment",
+                              Criteria == "risk.17" ~ "Risk Assessment",
+                              Criteria == "risk.18" ~ "Risk Assessment",
+                              Criteria == "risk.19" ~ "Risk Assessment",
+                              Criteria == "risk.20" ~ "Risk Assessment")) %>%
+  #Set order of categories so they plot in correct order
+  mutate(Category_f = factor(Category, levels = c("Technical", "Risk Assessment"))) %>% 
+  #Assign descriptions to each criteria
+  mutate(Criteria = case_when(Criteria == "tech.a1" ~ "Test Medium*",
+                              Criteria == "tech.a2" ~ "Administration Route*",
+                              Criteria == "tech.a3" ~ "Test Species*",
+                              Criteria == "tech.a4" ~ "Sample Size*",
+                              Criteria == "tech.a5" ~ "Control Group*",
+                              Criteria == "tech.a6" ~ "Exposure Duration*",
+                              Criteria == "tech.1" ~ "Particle Size*",
+                              Criteria == "tech.2" ~ "Particle Shape*",
+                              Criteria == "tech.3" ~ "Polymer Type*",
+                              Criteria == "tech.4" ~ "Source of Microplastics*",
+                              Criteria == "tech.5" ~ "Data Reporting*",
+                              Criteria == "tech.6" ~ "Chemical Purity",
+                              Criteria == "tech.7" ~ "Laboratory Preparation",
+                              Criteria == "tech.8" ~ "Background Contamination",
+                              Criteria == "tech.9" ~ "Exposure Verification",
+                              Criteria == "tech.10" ~ "Exposure Homogeneity",
+                              Criteria == "tech.11" ~ "Exposure Assessment",
+                              Criteria == "tech.12" ~ "Replication",
+                              Criteria == "risk.13" ~ "Endpoints",
+                              Criteria == "risk.14" ~ "Food Availability",
+                              Criteria == "risk.15" ~ "Effect Thresholds",
+                              Criteria == "risk.16" ~ "Dose Response",
+                              Criteria == "risk.17" ~ "Concentration Range",
+                              Criteria == "risk.18" ~ "Aging and Biofouling",
+                              Criteria == "risk.19" ~ "Microplastic Diversity",
+                              Criteria == "risk.20" ~ "Exposure Time")) %>% 
+  #Create factor for criteria and set order - need to be in reverse order here to plot correctly
+  mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Aging and Biofouling", "Concentration Range", "Dose Response",
+                                                  "Effect Thresholds", "Food Availability", "Endpoints", "Replication", "Exposure Assessment", "Exposure Homogeneity",
+                                                  "Exposure Verification", "Background Contamination", "Laboratory Preparation","Chemical Purity","Data Reporting*",
+                                                  "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration*","Control Group*",
+                                                  "Sample Size*", "Test Species*", "Administration Route*","Test Medium*")))
+
+#Save RDS file
+saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
