@@ -7,6 +7,8 @@
 library(tidyverse)
 library(readr)
 
+#Set working directory
+setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/")
 source("functions.R") # necessary for surface area, volume calculations
 
 #### Extract Data from Submitted Templates ####
@@ -17,12 +19,11 @@ setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/ToMEx2.0_Onboarding/Vali
 #Make a list of all files in folder - templates need to be saved as csv files first
 file.list <- list.files(pattern='*.csv')
 
-
 df.list <- lapply(file.list,function(x) {
   #Read data, skipping first line
   sheets <- read_csv(x, skip = 1,
-                     #Specify column types
-                     col_types = cols(
+                       #Specify column types
+                       col_types = cols(
                        #General Information
                        DOI = col_character(),
                        Authors = col_character(),
@@ -162,11 +163,18 @@ df.list <- lapply(file.list,function(x) {
     
   })
 
+###STOP! IF THERE ARE PARSING ERRORS AND YOU DON'T FIX THEM NOW - YOU'RE GONNA HAVE A BAD TIME!
+
 #Create one data frame from all templates
 tomex2.0 <- bind_rows(df.list)
 
 #change all column names to lowercase
 names(tomex2.0) <- tolower(names(tomex2.0))
+
+#remove unwanted character strings from DOI column
+tomex2.0$doi <- gsub('https://','',tomex2.0$doi)
+tomex2.0$doi <- gsub('doi.org/','',tomex2.0$doi)
+tomex2.0$doi <- gsub('https://doi.org/','',tomex2.0$doi)
 
 #### Match Data Structure to ToMEx 1.0 ####
 
@@ -179,6 +187,7 @@ aoc_setup <- readRDS("aoc_setup.RDS")
 ##### AOC SETUP #####
 
 tomex2.0_aoc_setup <- tomex2.0 %>%
+   #Replace NAs
    replace_na(list(shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
    #Add source column
    add_column(source = "ToMEx 2.0", .before = "doi") %>% 
@@ -251,24 +260,36 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   #Dosing restructuring #ONBOARDING CHECK - ADD UNITS AS NEEDED TO CASE_WHEN STATEMENTS#
    #Count - Nominal
    mutate(dose.particles.mL.nominal = case_when(
+     nominal.dose...particles.units == "p/mL" ~ nominal.dose...particles,
      nominal.dose...particles.units == "particles/L" ~ nominal.dose...particles/1000
      )) %>% 
   relocate(dose.particles.mL.nominal, .after = sample.size) %>% 
   #Count - Measured
   mutate(dose.particles.mL.measured = case_when(
+    measured.dose...particles.units == "p/mL" ~ measured.dose...particles,
     measured.dose...particles.units == "particles/L" ~ measured.dose...particles/1000
   )) %>% 
   relocate(dose.particles.mL.measured, .after = dose.particles.mL.nominal) %>% 
    #Mass - Nominal
    mutate(dose.mg.L.nominal = case_when(
      nominal.dose...mass.units == "mg/L" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "ug/mL" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "µg/mL" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "mg/mL" ~ nominal.dose...mass*1000,
      nominal.dose...mass.units == "ug/L" ~ nominal.dose...mass/1000,
+     nominal.dose...mass.units == "µg/L" ~ nominal.dose...mass/1000,
+     nominal.dose...mass.units == "ng/L" ~ nominal.dose...mass/1000000,
      )) %>% 
   relocate(dose.mg.L.nominal, .after = dose.particles.mL.nominal) %>% 
   #Mass - Measured
   mutate(dose.mg.L.measured = case_when(
     measured.dose...mass.units == "mg/L" ~ measured.dose...mass,
+    measured.dose...mass.units == "ug/mL" ~ measured.dose...mass,
+    measured.dose...mass.units == "µg/mL" ~ measured.dose...mass,
+    measured.dose...mass.units == "mg/mL" ~ measured.dose...mass*1000,
     measured.dose...mass.units == "ug/L" ~ measured.dose...mass/1000,
+    measured.dose...mass.units == "µg/L" ~ measured.dose...mass/1000,
+    measured.dose...mass.units == "ng/L" ~ measured.dose...mass/1000000,
   )) %>% 
     relocate(dose.mg.L.measured, .after = dose.particles.mL.measured) %>% 
   #Create master columns for dose and count - measured doses preferred
@@ -577,7 +598,7 @@ aoc_setup <- aoc_setup %>%
   add_column(chem.add.measured = NA_character_,
              `Nominal Dose Alternative Category` = NA_character_,
              `Measured Dose Alternative Category` = NA_character_) %>%
-  select(names)
+  select(all_of(names))
 
 #Join rows
 tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)

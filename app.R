@@ -307,7 +307,7 @@ ui <- dashboardPage(
       tabItem(tabName = "Welcome",
                
               #Header     
-              h1("Welcome to the Toxicity of Microplastics Explorer,",br(),"Aquatic Organisms Database!", align = 'center'),
+              h1("Welcome to the Toxicity of Microplastics Explorer 2.0,",br(),"Aquatic Organisms Database!", align = 'center'),
               br(),
               
               
