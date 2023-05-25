@@ -272,6 +272,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   relocate(dose.particles.mL.measured, .after = dose.particles.mL.nominal) %>% 
    #Mass - Nominal
    mutate(dose.mg.L.nominal = case_when(
+     nominal.dose...mass.units == "g/L" ~ nominal.dose...mass*1000,
      nominal.dose...mass.units == "mg/L" ~ nominal.dose...mass,
      nominal.dose...mass.units == "ug/mL" ~ nominal.dose...mass,
      nominal.dose...mass.units == "µg/mL" ~ nominal.dose...mass,
@@ -283,6 +284,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   relocate(dose.mg.L.nominal, .after = dose.particles.mL.nominal) %>% 
   #Mass - Measured
   mutate(dose.mg.L.measured = case_when(
+    measured.dose...mass.units == "g/L" ~ measured.dose...mass*1000,
     measured.dose...mass.units == "mg/L" ~ measured.dose...mass,
     measured.dose...mass.units == "ug/mL" ~ measured.dose...mass,
     measured.dose...mass.units == "µg/mL" ~ measured.dose...mass,

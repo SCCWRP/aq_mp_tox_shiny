@@ -2164,7 +2164,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
    output$download_search = downloadHandler(filename = paste('ToMEx_Search', Sys.Date(), '.csv', sep=''),
                                             content = function(file) {
                                               s = input$databaseDataTable_rows_all
-                                              write.csv(aoc_search[s, , drop = FALSE], file)
+                                              readr::write_excel_csv(aoc_search[s, , drop = FALSE], file)
                                             })
 
    #### Screening S ####
@@ -3590,12 +3590,10 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   # Create downloadable csv of filtered dataset.
   # Removed columns created above so the dataset matches Leah's original dataset.
   output$downloadData <- downloadHandler(
-    filename = function() {
-      paste('data-', Sys.Date(), '.csv', sep='')
-    },
+    filename = paste('ToMEx_Exploration', Sys.Date(), '.csv', sep=''),
     content = function(file) {
       
-      write.csv(aoc_filter() %>%
+      aoc_filter_tidy <- aoc_filter() %>%
         #Select columns
         dplyr::select(c(doi, authors, year, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
                         #experimental parameters
@@ -3642,10 +3640,9 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
             "Sodium Azide Present?" = sodium.azide, "Screened for Chemical Contamination?" = contaminant.screen, "Particle Cleaning?" = clean.method,
             "Solvent Rinse" = sol.rinse, "Background Contamination Monitored?" = background.plastics,
             "Concentration Validated?"  = concentration.valid, "Particle Behavior" = particle.behavior, "Uptake Validated?" = uptake.valid,
-            "Uptake Validation Method" = uptake.valid.method, "Tissue Distribution" = tissue.distribution, "Organisms Fed?" = fed)),
+            "Uptake Validation Method" = uptake.valid.method, "Tissue Distribution" = tissue.distribution, "Organisms Fed?" = fed))
   
-      file, row.names = FALSE)
-        
+      readr::write_excel_csv(aoc_filter_tidy, file)
     }
   )
 
