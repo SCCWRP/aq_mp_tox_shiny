@@ -2227,8 +2227,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                    values_from = Score) %>%   
        column_to_rownames(var="Criteria_f")  
        
-     colnames(tech)<- gsub(" \\(10.*", "",colnames(tech))
-     colnames(tech)<- gsub(" \\(doi.*", "",colnames(tech))
+     # colnames(tech)<- gsub(" \\(10.*", "",colnames(tech))
+     # colnames(tech)<- gsub(" \\(doi.*", "",colnames(tech))
      
      tech <- tech %>% 
        as.matrix()
@@ -2281,8 +2281,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                    values_from = Score) %>%   
        column_to_rownames(var="Criteria_f") 
      
-     colnames(risk)<- gsub(" \\(10.*", "",colnames(risk))
-     colnames(risk)<- gsub(" \\(doi.*", "",colnames(risk))
+     # colnames(risk)<- gsub(" \\(10.*", "",colnames(risk))
+     # colnames(risk)<- gsub(" \\(doi.*", "",colnames(risk))
      
      risk <- risk %>% 
        as.matrix()
@@ -3598,7 +3598,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         dplyr::select(c(doi, authors, year, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
                         #experimental parameters
                         exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
-                        media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
+                        media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, `Recovery (Days)`, acute.chronic_f,
                         treatments, replicates, sample.size, dosing.frequency, chem.add.nominal, chem.add.dose.mg.L.nominal, chem.add.dose.mg.L.measured,
                         #selected dose
                         dose_new,

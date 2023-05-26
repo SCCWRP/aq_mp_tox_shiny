@@ -20,8 +20,10 @@ setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/ToMEx2.0_Onboarding/Vali
 file.list <- list.files(pattern='*.csv')
 
 df.list <- lapply(file.list,function(x) {
+
   #Read data, skipping first line
-  sheets <- read_csv(x, skip = 1,
+  sheets <- read_csv(x, 
+                       skip = 1,
                        #Specify column types
                        col_types = cols(
                        #General Information
@@ -44,12 +46,13 @@ df.list <- lapply(file.list,function(x) {
                        `Exposure Media` = col_character(),
                        Solvent = col_character(),
                        Detergent = col_character(),
-                       `Media Salinity (ppt)` = col_double(),
-                       `Media pH` = col_double(),
-                       `Media Temp (Mean)` = col_double(),
-                       `Media Temp Min` = col_double(),
-                       `Media Temp Max` = col_double(),
+                       `Media Salinity (ppt)` = col_character(),
+                       `Media pH` = col_character(),
+                       `Media Temp (Mean)` = col_character(),
+                       `Media Temp Min` = col_character(),
+                       `Media Temp Max` = col_character(),
                        `Exposure Duration (Days)` = col_double(),
+                       `Recovery (Days)` = col_double(),
                        Treatments = col_double(),
                        Replicates = col_double(),
                        `Dosing Frequency` = col_double(),
@@ -89,7 +92,7 @@ df.list <- lapply(file.list,function(x) {
                        `Density (Reported/Estimated)` = col_character(),
                        Shape = col_character(),
                        Charge = col_character(),
-                       `Zeta Potential (mV)` = col_double(),
+                       `Zeta Potential (mV)` = col_character(),
                        `Zeta Potential Media` = col_character(),
                        `Functional Group` = col_character(),
                        `Size Length mm Nominal` = col_double(),
@@ -164,6 +167,7 @@ df.list <- lapply(file.list,function(x) {
   })
 
 ###STOP! IF THERE ARE PARSING ERRORS AND YOU DON'T FIX THEM NOW - YOU'RE GONNA HAVE A BAD TIME!
+###The following named parsers don't match the column names: Recovery (Days) - normal warning - just flagging missing columns from templates w/o recovery period
 
 #Create one data frame from all templates
 tomex2.0 <- bind_rows(df.list)
@@ -172,9 +176,10 @@ tomex2.0 <- bind_rows(df.list)
 names(tomex2.0) <- tolower(names(tomex2.0))
 
 #remove unwanted character strings from DOI column
-tomex2.0$doi <- gsub('https://','',tomex2.0$doi)
-tomex2.0$doi <- gsub('doi.org/','',tomex2.0$doi)
+tomex2.0$doi <- gsub('https://dx.doi.org/','',tomex2.0$doi)
 tomex2.0$doi <- gsub('https://doi.org/','',tomex2.0$doi)
+tomex2.0$doi <- gsub('doi.org/','',tomex2.0$doi)
+tomex2.0$doi <- gsub('https://','',tomex2.0$doi)
 
 #### Match Data Structure to ToMEx 1.0 ####
 
@@ -261,21 +266,31 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    #Count - Nominal
    mutate(dose.particles.mL.nominal = case_when(
      nominal.dose...particles.units == "p/mL" ~ nominal.dose...particles,
-     nominal.dose...particles.units == "particles/L" ~ nominal.dose...particles/1000
+     nominal.dose...particles.units == "particles/ml" ~ nominal.dose...particles,
+     nominal.dose...particles.units == "particles/mL" ~ nominal.dose...particles,
+     nominal.dose...particles.units == "particles/m3" ~ nominal.dose...particles/1000000,
+     nominal.dose...particles.units == "particles/L" ~ nominal.dose...particles/1000,
+     nominal.dose...particles.units == "L" ~ nominal.dose...particles/1000
      )) %>% 
   relocate(dose.particles.mL.nominal, .after = sample.size) %>% 
   #Count - Measured
   mutate(dose.particles.mL.measured = case_when(
     measured.dose...particles.units == "p/mL" ~ measured.dose...particles,
-    measured.dose...particles.units == "particles/L" ~ measured.dose...particles/1000
+    measured.dose...particles.units == "particles/ml" ~ measured.dose...particles,
+    measured.dose...particles.units == "particles/mL" ~ measured.dose...particles,
+    measured.dose...particles.units == "particles/m3" ~ measured.dose...particles/1000000,
+    measured.dose...particles.units == "particles/L" ~ measured.dose...particles/1000,
+    measured.dose...particles.units == "L" ~ measured.dose...particles/1000
   )) %>% 
   relocate(dose.particles.mL.measured, .after = dose.particles.mL.nominal) %>% 
    #Mass - Nominal
    mutate(dose.mg.L.nominal = case_when(
      nominal.dose...mass.units == "g/L" ~ nominal.dose...mass*1000,
      nominal.dose...mass.units == "mg/L" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "mg/l" ~ nominal.dose...mass,
      nominal.dose...mass.units == "ug/mL" ~ nominal.dose...mass,
      nominal.dose...mass.units == "µg/mL" ~ nominal.dose...mass,
+     nominal.dose...mass.units == "g/mL" ~ nominal.dose...mass*1000000,
      nominal.dose...mass.units == "mg/mL" ~ nominal.dose...mass*1000,
      nominal.dose...mass.units == "ug/L" ~ nominal.dose...mass/1000,
      nominal.dose...mass.units == "µg/L" ~ nominal.dose...mass/1000,
@@ -286,8 +301,10 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   mutate(dose.mg.L.measured = case_when(
     measured.dose...mass.units == "g/L" ~ measured.dose...mass*1000,
     measured.dose...mass.units == "mg/L" ~ measured.dose...mass,
+    measured.dose...mass.units == "mg/l" ~ measured.dose...mass,
     measured.dose...mass.units == "ug/mL" ~ measured.dose...mass,
     measured.dose...mass.units == "µg/mL" ~ measured.dose...mass,
+    measured.dose...mass.units == "g/mL" ~ measured.dose...mass*1000000,
     measured.dose...mass.units == "mg/mL" ~ measured.dose...mass*1000,
     measured.dose...mass.units == "ug/L" ~ measured.dose...mass/1000,
     measured.dose...mass.units == "µg/L" ~ measured.dose...mass/1000,
@@ -345,6 +362,9 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   #Define acute and chronic exposures and factor
   mutate(acute.chronic_f = factor(
     if_else(af.time == 1, "Chronic", "Acute"))) %>% 
+  #Rename recovery column 
+  rename(`Recovery (Days)` = `recovery..days.`) %>% 
+  relocate(`Recovery (Days)`, .after = exposure.duration.d) %>% 
   #Assign assessment factors for effect metrics Wigger et al., 2020 DOI: 10.1002/ieam.4214
   mutate(af.noec = case_when(
     effect.metric == "NOEC" ~ 1,
@@ -596,10 +616,25 @@ tomex2.0_aoc_setup <- tomex2.0_aoc_setup %>%
   select(all_of(names))
 
 aoc_setup <- aoc_setup %>%
-  mutate(chem.add.dose.mg.L.measured = as.numeric(aoc_setup$chem.add.dose.mg.L.measured)) %>% 
+  mutate(media.sal.ppt = as.character(media.sal.ppt)) %>% 
+  mutate(media.ph = as.character(media.ph)) %>% 
+  mutate(media.temp = as.character(media.temp)) %>% 
+  mutate(media.temp.min = as.character(media.temp.min)) %>% 
+  mutate(media.temp.max = as.character(media.temp.max)) %>% 
+  mutate(zetapotential.mV = as.character(zetapotential.mV)) %>% 
+  mutate(chem.add.dose.mg.L.measured = as.numeric(aoc_setup$chem.add.dose.mg.L.measured)) %>% #warning message expected
   add_column(chem.add.measured = NA_character_,
              `Nominal Dose Alternative Category` = NA_character_,
-             `Measured Dose Alternative Category` = NA_character_) %>%
+             `Measured Dose Alternative Category` = NA_character_,
+             `Recovery (Days)` = NA_real_)
+
+#remove unwanted character strings from DOI column
+aoc_setup$doi <- gsub('https://dx.doi.org/','',aoc_setup$doi)
+aoc_setup$doi <- gsub('https://doi.org/','',aoc_setup$doi)
+aoc_setup$doi <- gsub('doi.org/','',aoc_setup$doi)
+aoc_setup$doi <- gsub('https://','',aoc_setup$doi)
+
+aoc_setup <- aoc_setup %>%
   select(all_of(names))
 
 #Join rows
@@ -624,7 +659,7 @@ tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>%
   dplyr::select(doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
                 #experimental parameters
                 exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
-                media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, acute.chronic_f,
+                media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, `Recovery (Days)`, acute.chronic_f,
                 treatments, replicates, sample.size, dosing.frequency, chem.add.nominal, chem.add.dose.mg.L.nominal, chem.add.dose.mg.L.measured,
                 #master/alternative doses
                 dose.particles.mL.master, dose.particles.mL.master.converted.reported, dose.mg.L.master, dose.mg.L.master.converted.reported,
