@@ -54,9 +54,9 @@ df.list <- lapply(file.list,function(x) {
                        `Exposure Duration (Days)` = col_double(),
                        `Recovery (Days)` = col_double(),
                        Treatments = col_double(),
-                       Replicates = col_double(),
+                       Replicates = col_character(),
                        `Dosing Frequency` = col_double(),
-                       `Sample Size` = col_double(),
+                       `Sample Size` = col_character(),
                        `Nominal Dose - Mass` = col_double(),
                        `Nominal Dose - Mass Units` = col_character(),
                        `Nominal Dose - Particles` = col_double(),
@@ -239,7 +239,12 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    mutate(organism.group = factor(organism.group)) %>% 
    rename(org_f = organism.group) %>% 
    #Factor in vitro in vivo
-   mutate(in.vitro.in.vivo = factor(in.vitro.in.vivo)) %>% 
+   mutate(in.vitro.in.vivo = factor(case_when(
+     in.vitro.in.vivo == "In Vivo" ~ "In Vivo",
+     in.vitro.in.vivo == "In Vitro" ~ "In Vitro",
+     in.vitro.in.vivo == "in vivo" ~ "In Vivo",
+     in.vitro.in.vivo == "in vitro" ~ "In Vivo",
+   ))) %>% 
    rename(vivo_f = in.vitro.in.vivo) %>%
    #Factor life stage
    mutate(life.stage = factor(life.stage)) %>% 
@@ -270,6 +275,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
      nominal.dose...particles.units == "particles/mL" ~ nominal.dose...particles,
      nominal.dose...particles.units == "particles/m3" ~ nominal.dose...particles/1000000,
      nominal.dose...particles.units == "particles/L" ~ nominal.dose...particles/1000,
+     nominal.dose...particles.units == "particles/l" ~ nominal.dose...particles/1000,
      nominal.dose...particles.units == "L" ~ nominal.dose...particles/1000
      )) %>% 
   relocate(dose.particles.mL.nominal, .after = sample.size) %>% 
@@ -280,12 +286,14 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     measured.dose...particles.units == "particles/mL" ~ measured.dose...particles,
     measured.dose...particles.units == "particles/m3" ~ measured.dose...particles/1000000,
     measured.dose...particles.units == "particles/L" ~ measured.dose...particles/1000,
+    measured.dose...particles.units == "particles/l" ~ measured.dose...particles/1000,
     measured.dose...particles.units == "L" ~ measured.dose...particles/1000
   )) %>% 
   relocate(dose.particles.mL.measured, .after = dose.particles.mL.nominal) %>% 
    #Mass - Nominal
    mutate(dose.mg.L.nominal = case_when(
      nominal.dose...mass.units == "g/L" ~ nominal.dose...mass*1000,
+     nominal.dose...mass.units == "Kg/L" ~ nominal.dose...mass*1000000,
      nominal.dose...mass.units == "mg/L" ~ nominal.dose...mass,
      nominal.dose...mass.units == "mg/l" ~ nominal.dose...mass,
      nominal.dose...mass.units == "ug/mL" ~ nominal.dose...mass,
@@ -294,12 +302,15 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
      nominal.dose...mass.units == "mg/mL" ~ nominal.dose...mass*1000,
      nominal.dose...mass.units == "ug/L" ~ nominal.dose...mass/1000,
      nominal.dose...mass.units == "µg/L" ~ nominal.dose...mass/1000,
+     nominal.dose...mass.units == "ug/l" ~ nominal.dose...mass/1000,
+     nominal.dose...mass.units == "µg/l" ~ nominal.dose...mass/1000,
      nominal.dose...mass.units == "ng/L" ~ nominal.dose...mass/1000000,
      )) %>% 
   relocate(dose.mg.L.nominal, .after = dose.particles.mL.nominal) %>% 
   #Mass - Measured
   mutate(dose.mg.L.measured = case_when(
     measured.dose...mass.units == "g/L" ~ measured.dose...mass*1000,
+    measured.dose...mass.units == "Kg/L" ~ measured.dose...mass*1000000,
     measured.dose...mass.units == "mg/L" ~ measured.dose...mass,
     measured.dose...mass.units == "mg/l" ~ measured.dose...mass,
     measured.dose...mass.units == "ug/mL" ~ measured.dose...mass,
@@ -308,6 +319,8 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     measured.dose...mass.units == "mg/mL" ~ measured.dose...mass*1000,
     measured.dose...mass.units == "ug/L" ~ measured.dose...mass/1000,
     measured.dose...mass.units == "µg/L" ~ measured.dose...mass/1000,
+    measured.dose...mass.units == "ug/l" ~ measured.dose...mass/1000,
+    measured.dose...mass.units == "µg/l" ~ measured.dose...mass/1000,
     measured.dose...mass.units == "ng/L" ~ measured.dose...mass/1000000,
   )) %>% 
     relocate(dose.mg.L.measured, .after = dose.particles.mL.measured) %>% 
@@ -388,7 +401,38 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   #Rename target cell or tissue column
   rename(target.cell.tissue = target.cell.or.tissue) %>% 
   #Factor polymer
-  mutate(polymer = factor(polymer)) %>% 
+  mutate(polymer = factor(case_when(
+    polymer == "Biopolymer" ~ "Biopolymer",
+    polymer == "Latex" ~ "Latex",
+    polymer == "Not Reported" ~ "Not Reported",
+    polymer == "Polyamide" ~ "Polyamide",
+    polymer == "Polycarbonate" ~ "Polycarbonate",
+    polymer == "Polyethylene" ~ "Polyethylene",
+    polymer == "Polyethylene Terephthalate" ~ "Polyethylene Terephthalate",
+    polymer == "Polyethylene Vinyl Acetate" ~ "Polyethylene Vinyl Acetate",
+    polymer == "Polyisoprene" ~ "Polyisoprene",
+    polymer == "Polylactic Acid" ~ "Polylactic Acid",
+    polymer == "Polymethylmethacrylate" ~ "Polymethylmethacrylate",
+    polymer == "Polypropylene" ~ "Polypropylene",
+    polymer == "Polystyrene" ~ "Polystyrene",
+    polymer == "PS" ~ "Polystyrene",
+    polymer == "High Density Polyethylene" ~ "High Density Polyethylene",
+    polymer == "High density polyethylene (HDPE)" ~ "High Density Polyethylene",
+    polymer == "High density polyethylene" ~ "High Density Polyethylene",
+    polymer == "Low Density Polyethylene" ~ "Low Density Polyethylene",
+    polymer == "Low density polyethylene" ~ "Low Density Polyethylene",
+    polymer == "LDPE" ~ "Low Density Polyethylene",
+    polymer == "Medium Density Polyethylene" ~ "Medium Density Polyethylene",
+    polymer == "Poly-amidoamine (PAMAM)" ~ "Polyamidoamine",
+    polymer == "Poly (Styrene-co-acrylonitrile)" ~ "Poly(Styrene-co-acrylonitrile)",
+    polymer == "Polyamide 66" ~ "Polyamide 66",
+    polymer == "Polyethylene (co-Vinyl acetate)" ~ "Polyethylene (co-Vinyl acetate)",
+    polymer == "Polytetrafluoroethylene" ~ "Polytetrafluoroethylene",
+    polymer == "Polyvinyl Acetate" ~ "Polyvinyl Acetate",
+    polymer == "polyvinyl chloride/ vinyl acetate co-polymer" ~ "Polyvinylchloride/vinylacetate co-polymer",
+    polymer == "pristine tire wear particles (P-TWP)" ~ "Tire Wear",
+    polymer == "Sodium Polyacrylate" ~ "Sodium Polyacrylate",
+    polymer == "Starch/PBAT/PLA" ~ "Starch/Polybutylene Adipate Terephthalate/Polylactic Acid"))) %>% 
   rename(poly_f = polymer) %>%  
   #Rename density column
   rename(density.g.cm3 = density..g.cm.3.) %>% 
@@ -616,6 +660,8 @@ tomex2.0_aoc_setup <- tomex2.0_aoc_setup %>%
   select(all_of(names))
 
 aoc_setup <- aoc_setup %>%
+  mutate(sample.size = as.character(sample.size)) %>% 
+  mutate(replicates = as.character(replicates)) %>% 
   mutate(media.sal.ppt = as.character(media.sal.ppt)) %>% 
   mutate(media.ph = as.character(media.ph)) %>% 
   mutate(media.temp = as.character(media.temp)) %>% 
@@ -640,6 +686,23 @@ aoc_setup <- aoc_setup %>%
 #Join rows
 tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
 
+##### QA/QC - FLAGGING STUDIES ####
+
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
+  group_by(doi) %>% 
+  mutate(`Issue Flag` = case_when(
+    source == "ToMEx 2.0" & all(is.na(effect.metric)) 
+    ~ "Effect metrics missing.")) %>%
+  relocate(`Issue Flag`, .before = doi) %>% 
+  ungroup() %>% 
+  mutate(`Issue Flag` = case_when(
+    !is.na(`Issue Flag`) ~ `Issue Flag`,
+    source == "ToMEx 2.0" & exp_type_f == "Particle Only" & is.na(tech.a1) 
+    ~ "Screening scores need to be completed for Particle Only type data.",
+    source == "ToMEx 2.0" & effect_f == "Yes" & is.na(direction)
+    ~ "Detected effects missing direction."
+  )) 
+
 #Save RDS file
 saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
 
@@ -656,7 +719,7 @@ saveRDS(tomex2.0_aoc_endpoint_final, file = "aoc_endpoint_tomex2.RDS")
 ##### AOC SEARCH #####
 
 tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>% 
-  dplyr::select(doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
+  dplyr::select(source, `Issue Flag`, doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
                 #experimental parameters
                 exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
                 media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, `Recovery (Days)`, acute.chronic_f,
@@ -677,13 +740,16 @@ tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>%
                 concentration.valid, particle.behavior, uptake.valid, uptake.valid.method, tissue.distribution, fed,
                 #scores
                 tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
-                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20)
+                tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
+                #issue flag
+                # `Issue Flag`
+                )
 
 #Turn all character strings into factors if they aren't already so they are searchable via dropdown
 tomex2.0_aoc_search[sapply(tomex2.0_aoc_search, is.character)] <- lapply(tomex2.0_aoc_search[sapply(tomex2.0_aoc_search, is.character)], as.factor)
 
 tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>% 
-  dplyr::rename('DOI' = doi,'Authors' = authors, 'Year' = year, 'Technical "Red Criteria"' = tier_zero_tech_f, 
+  dplyr::rename('Source' = source,'DOI' = doi,'Authors' = authors, 'Year' = year, 'Technical "Red Criteria"' = tier_zero_tech_f, 
                 'Risk Assessment "Red Criteria"' = tier_zero_risk_f,'Species' = species_f, 
                 'Organism Group' = org_f, 'Environment' = env_f, 'Life Stage' = life_f, 'In vitro/in vivo' = vivo_f,
                 'Sex' = sex, 'Estimated Body Length (cm)' = body.length.cm, 
