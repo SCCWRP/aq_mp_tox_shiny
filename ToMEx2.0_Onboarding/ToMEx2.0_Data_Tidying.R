@@ -339,7 +339,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   rename(chem.add.nominal = nominal.chemicals.added) %>% 
   mutate(chem.add.dose.mg.L.nominal = case_when(
     nominal.added.chemical.dose.units == "mg/L" ~ nominal.added.chemical.dose,
-    nominal.added.chemical.dose.units == "ug/L" ~ nominal.added.chemical.dose,
+    nominal.added.chemical.dose.units == "ug/L" ~ nominal.added.chemical.dose/1000,
   )) %>% 
   relocate(chem.add.nominal, .after = dose.mg.L.master.converted.reported) %>% 
   relocate(chem.add.dose.mg.L.nominal, .after = chem.add.nominal) %>% 
@@ -347,7 +347,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   rename(chem.add.measured = measured.chemicals.added) %>% 
   mutate(chem.add.dose.mg.L.measured = case_when(
     measured.chemical.dose.units == "mg/L" ~ measured.chemical.dose,
-    measured.chemical.dose.units == "ug/L" ~ measured.chemical.dose,
+    measured.chemical.dose.units == "ug/L" ~ measured.chemical.dose/1000,
   )) %>% 
   relocate(chem.add.measured, .after = chem.add.dose.mg.L.nominal) %>% 
   relocate(chem.add.dose.mg.L.measured, .after = chem.add.measured) %>%  
@@ -492,7 +492,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
                                                                            c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>%
   relocate(particle.surface.area.um2, .after = size_f) %>% 
   #Calculate particle volume
-  mutate(particle.volume.um3 = case_when(shape_f == "Sphere" ~ (3/4)*pi*((size.length.um.used.for.conversions/2)^3),
+  mutate(particle.volume.um3 = case_when(shape_f == "Sphere" ~ (4/3)*pi*((size.length.um.used.for.conversions/2)^3),
                                          shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assume 15 um as width (kooi et al 2021)
                                          shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width reported
                                          shape_f == "Fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
@@ -889,3 +889,29 @@ tomex2.0_aoc_quality_final <- tomex2.0_aoc_setup_final %>%
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
+
+#quick stats
+library(tidyverse)
+
+pubs <- as.data.frame(unique(aoc_setup_tomex2$doi))
+
+study_types <- aoc_setup_tomex2 %>%
+  group_by(doi, exp_type_f) %>% 
+  summarise()
+  
+acute_chronic <- aoc_setup_tomex2 %>% 
+  filter(acute.chronic_f == "Chronic")
+  
+vivo <- aoc_setup_tomex2 %>% 
+  filter(vivo_f == "In Vitro")
+
+species <- aoc_setup_tomex2 %>%
+  filter(env_f == "Freshwater") %>% 
+  group_by(species_f) %>% 
+  summarise()
+
+effect_metrics <- aoc_setup_tomex2 %>% 
+  # filter(source != "ToMEx 2.0") %>% 
+  filter(effect.metric %in% c("EC50", "LC50", "EC10", "IC50", "EC20", "LC20")) %>% 
+  group_by(doi, env_f, org_f, species_f, effect.metric, lvl1_f, lvl2_f, lvl3_f) %>% 
+  summarise()

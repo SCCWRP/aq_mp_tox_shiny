@@ -263,7 +263,7 @@ synthetic_data_builder <- function(count){
 
 ui <- dashboardPage(
 
-  dashboardHeader(title = "Toxicity of Microplastics Explorer", titleWidth = 400),
+  dashboardHeader(title = "Toxicity of Microplastics Explorer 2.0", titleWidth = 400),
 
   dashboardSidebar(width = 175,
                    
