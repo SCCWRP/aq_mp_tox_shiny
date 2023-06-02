@@ -891,27 +891,27 @@ tomex2.0_aoc_quality_final <- tomex2.0_aoc_setup_final %>%
 saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
 
 #quick stats
-library(tidyverse)
-
-pubs <- as.data.frame(unique(aoc_setup_tomex2$doi))
-
-study_types <- aoc_setup_tomex2 %>%
-  group_by(doi, exp_type_f) %>% 
-  summarise()
-  
-acute_chronic <- aoc_setup_tomex2 %>% 
-  filter(acute.chronic_f == "Chronic")
-  
-vivo <- aoc_setup_tomex2 %>% 
-  filter(vivo_f == "In Vitro")
-
-species <- aoc_setup_tomex2 %>%
-  filter(env_f == "Freshwater") %>% 
-  group_by(species_f) %>% 
-  summarise()
-
-effect_metrics <- aoc_setup_tomex2 %>% 
-  # filter(source != "ToMEx 2.0") %>% 
-  filter(effect.metric %in% c("EC50", "LC50", "EC10", "IC50", "EC20", "LC20")) %>% 
-  group_by(doi, env_f, org_f, species_f, effect.metric, lvl1_f, lvl2_f, lvl3_f) %>% 
-  summarise()
+# library(tidyverse)
+# 
+# pubs <- as.data.frame(unique(aoc_setup_tomex2$doi))
+# 
+# study_types <- aoc_setup_tomex2 %>%
+#   group_by(doi, exp_type_f) %>% 
+#   summarise()
+#   
+# acute_chronic <- aoc_setup_tomex2 %>% 
+#   filter(acute.chronic_f == "Chronic")
+#   
+# vivo <- aoc_setup_tomex2 %>% 
+#   filter(vivo_f == "In Vitro")
+# 
+# species <- aoc_setup_tomex2 %>%
+#   filter(env_f == "Freshwater") %>% 
+#   group_by(species_f) %>% 
+#   summarise()
+# 
+# effect_metrics <- aoc_setup_tomex2 %>% 
+#   # filter(source != "ToMEx 2.0") %>% 
+#   filter(effect.metric %in% c("EC50", "LC50", "EC10", "IC50", "EC20", "LC20")) %>% 
+#   group_by(doi, env_f, org_f, species_f, effect.metric, lvl1_f, lvl2_f, lvl3_f) %>% 
+#   summarise()
