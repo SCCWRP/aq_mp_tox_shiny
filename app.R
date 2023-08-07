@@ -5575,14 +5575,13 @@ output$downloadSsdPlot <- downloadHandler(
   })
   
   output$downloadData_ssd <- downloadHandler(
-    filename = function() {
-      paste('data-', Sys.Date(), '.csv', sep='')
-    },
+    filename = paste('SSD_RawData', Sys.Date(), '.csv', sep=''),
+    
     content = function(file) {
       
-      write.csv(aoc_ssd_filtered() %>%
+      ssd_raw_data_tidy <- aoc_ssd_filtered() %>%
                   ungroup() %>% 
-                  dplyr::select(doi, authors, org_f, species_f, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
+                  dplyr::select(doi, authors, Group, Species, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
                          size.length.um.used.for.conversions, dose.particles.mL.master, dose.particles.mL.master.converted.reported, 
                          dose.mg.L.master, dose.mg.L.master.converted.reported, EC_env_v.particles.mL, dose_new,
                          tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6,
@@ -5603,8 +5602,8 @@ output$downloadSsdPlot <- downloadHandler(
                          "Original Dose (Particles/mL), Reported or Converted" = dose.particles.mL.master.converted.reported,
                          "Original Dose (mg/L)" = dose.mg.L.master,
                          "Original Dose (mg/L), Reported or Converted" = dose.mg.L.master.converted.reported,
-                         "Organism Group" = org_f,
-                         "Species" = species_f,
+                         "Organism Group" = Group,
+                         "Species" = Species,
                          "Endpoint Category" = lvl1_f,
                          "Measured Endpoint" = lvl3_f,
                          "Biological Level of Organization" = bio_f,
@@ -5637,7 +5636,9 @@ output$downloadSsdPlot <- downloadHandler(
                          "Concentration Range Tested" = risk.17,
                          "Aging and Biofouling" = risk.18, 
                          "Diversity of MP Tested" = risk.19, 
-                         "Exposure Time" = risk.20),file, row.names = FALSE)
+                         "Exposure Time" = risk.20)
+      
+      readr::write_excel_csv(ssd_raw_data_tidy, file)
   })
   
   ##### Calculators #####
