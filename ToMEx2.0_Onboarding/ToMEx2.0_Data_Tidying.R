@@ -8,13 +8,13 @@ library(tidyverse)
 library(readr)
 
 #Set working directory
-setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/")
+#setwd("~aq_mp_tox_shiny/")
 source("functions.R") # necessary for surface area, volume calculations
 
 #### Extract Data from Submitted Templates ####
 
-#Set working directory
-setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/ToMEx2.0_Onboarding/Validated Templates/")
+#Set working directory to location with .csv files
+setwd("ToMEx2.0_Onboarding/Validated Templates/")
 
 #Make a list of all files in folder - templates need to be saved as csv files first
 file.list <- list.files(pattern='*.csv')
@@ -183,8 +183,9 @@ tomex2.0$doi <- gsub('https://','',tomex2.0$doi)
 
 #### Match Data Structure to ToMEx 1.0 ####
 
-#Set working directory
-setwd("C:/Users/leahth/Documents/GitHub/aq_mp_tox_shiny/")
+#Set working directory back to root
+setwd("..")
+setwd("..")
 
 #Read in ToMEx 1.0 Tidy Data sets
 aoc_setup <- readRDS("aoc_setup.RDS")
