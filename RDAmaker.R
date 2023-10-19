@@ -55,7 +55,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "Not Reported" ~ "Not Reported"))) %>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea",
-                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
+                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
                                    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
                                    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
