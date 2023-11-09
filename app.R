@@ -320,8 +320,10 @@ ui <- dashboardPage(
                     
                     h3("Toxicity of Microplastics Explorer 2.0", align = "center"), 
                     
-                    strong(p("The Toxicity of Microplastics Explorer 2.0 (ToMEx 2.0) is a major expansion of the orginal ToMEx database coordinated by SCCWRP through
-                              a four-part virtual workshop series of approximately 70 researchers from 14 different nations. ToMEx 2.0 will be released to the public in fall 2023.")),
+                    p("The Toxicity of Microplastics Explorer 2.0 (ToMEx 2.0) is a major expansion of the orginal ToMEx database coordinated by SCCWRP through
+                              a four-part virtual workshop series of approximately 70 researchers from 14 different nations. ToMEx 2.0 will be released to the public in fall 2023."),
+                    
+                    strong(p("Disclaimer: When using ToMEx 2.0, it is highly recommended that underlying data are carefully scrutinized before finalizing analyses or drawing major conclusions.")),
                     
                     h3("What is the Microplastics Toxicity Database?", align = "center"), 
                     
