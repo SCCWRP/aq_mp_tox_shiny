@@ -1501,11 +1501,11 @@ tabItem(tabName = "SSD",
             
         ), #closes out box #3
         
-        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE, height = "600px",
+        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE, height = "675px",
 
+            
             DT::dataTableOutput(outputId = "ssd_pred_table", height = "500px"),
-
-          
+           
         ), #closes out box #4   
             
         box(title = "Model Selections (Advanced)", status = "primary", width = 12, collapsible = TRUE, collapsed = TRUE,
@@ -5460,16 +5460,32 @@ output$downloadSsdPlot <- downloadHandler(
                 style = "bootstrap",
                 extensions = c('Buttons', 'Scroller'),
                 options = list(
+                  autoWidth = FALSE,
                   dom = 'Brtip',
                   scrollY = 400,
                   scroller = TRUE,
                   buttons = c('copy', 'csv', 'excel')
                 ), 
                 class = "compact",
-                colnames = c("Percent", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
-                caption = "Predicted species sensitivity distribution concentrations with uncertanties."
-                )
+                colnames = c("Percent", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution", "Proportion of Data Sets Successfully Fitted"),
+                caption = "Predicted species sensitivity distribution concentrations with uncertanties.
+                Note: Mehinto et al. (2022) (doi: 10.1186/s43591-022-00033-3) refers to the point estimate as the 'median' which is interchangable with the 'estimated mean concentration' reported in the table below. If 10 or more iterations are used to bootstrap the model, the mean and median become identical.")
+               
   })
+  
+  output$databaseDataTable <- DT::renderDataTable(
+    aoc_search,
+    filter = "top",
+    rownames = FALSE,
+    style = "bootstrap",
+    options = list(
+      dom = 'ltipr',
+      scrollY = 600,
+      scrollX = TRUE,
+      autoWidth = TRUE,
+      bautoWidth = FALSE
+    ))
+  
 
   # Cullen and Frey Graph
   output$ssd_CF_plot <- renderPlot({
