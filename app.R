@@ -5599,7 +5599,7 @@ output$downloadSsdPlot <- downloadHandler(
       
       ssd_raw_data_tidy <- aoc_ssd_filtered() %>%
                   ungroup() %>% 
-                  dplyr::select(doi, authors, Group, Species, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
+                  dplyr::select(source, doi, authors, Group, Species, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
                          size.length.um.used.for.conversions, dose.particles.mL.master, dose.particles.mL.master.converted.reported, 
                          dose.mg.L.master, dose.mg.L.master.converted.reported, EC_env_v.particles.mL, dose_new,
                          tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6,
