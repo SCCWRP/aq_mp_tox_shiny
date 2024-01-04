@@ -798,7 +798,7 @@ tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>%
                 'Effect Thresholds Score'= risk.15, 'Dose Response Score'= risk.16, 'Concentration Range Score'= risk.17, 'Aging and Biofouling Score'= risk.18, 
                 'Microplastic Diversity Score' = risk.19, 'Exposure Time Score' = risk.20,
                 "particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
-                "μg/mL (master)" = dose.mg.L.master, "μ/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
+                "μg/mL (master)" = dose.mg.L.master, "μg/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
                 "μm^3/mL (master)" = dose.um3.mL.master, "μm^2/mL (master)" = dose.um2.mL.master, "μm/ug/mL (master)" = dose.um2.ug.mL.master)
 
 #Save RDS file
