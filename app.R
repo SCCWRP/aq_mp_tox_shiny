@@ -6238,7 +6238,13 @@ output$downloadSsdPlot <- downloadHandler(
     shinyjs::reset("lower_length_ssd")
     shinyjs::reset("upper_length_ssd")
     shinyjs::reset("acute.chronic_check_ssd")
-    
+    shinyjs::reset("ingestion.translocation.switch_ssd")
+    shinyjs::reset("upper.tissue.trans.size.um_ssd")
+    shinyjs::reset("effect.metric_rad_ssd")
+    shinyjs::reset("AF.time_rad_ssd")
+    shinyjs::reset("AF.noec_rad_ssd")
+    shinyjs::reset("conc.select.rad")
+
   }) #If we add more widgets, make sure they get added here. 
   
   
