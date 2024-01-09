@@ -1674,11 +1674,30 @@ tabItem(tabName = "Calculators",
                        fluidRow(
                        
                          column(width = 12,
-                         p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021)."), "First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
+                         p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021).")),
+                         
+                         
+                         br(),
+                         
+                         strong("An illustrated and detailed example of how alignments are performed may be found in this document."),
+                         
+                         br(),
+                         
+                         column(width = 4,
+                                downloadButton("illustrated_example", "Download Illustrated Example", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                         
+                         br(),
+                         br(),
+                         br(),
+                         
+                         p("First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
+                         
+                         
                          br(),
                          
                          strong("Use this example dataset as a guide to format data for upload"),
-                         
+                       
+                       
                          br(),
                          
                          column(width = 4,
@@ -5762,6 +5781,16 @@ output$downloadSsdPlot <- downloadHandler(
     },
     content = function(file) {
       write.csv(test_data_calculator, file, row.names = FALSE)
+    }
+  )
+  
+  # Alignment walkthrough (based on .Rmd file from modelling repo)
+  output$illustrated_example <- downloadHandler(
+    filename = function() {
+      "Illustrated_Alignment_Example.html"
+    },
+    content = function(file) {
+      file.copy("calculator/ERM-Illustrative-Example.html", file)
     }
   )
   
