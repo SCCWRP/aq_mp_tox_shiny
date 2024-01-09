@@ -193,6 +193,8 @@ aoc_setup <- readRDS("aoc_setup.RDS")
 ##### AOC SETUP #####
 
 tomex2.0_aoc_setup <- tomex2.0 %>%
+   #Remove effect metrics when there are less than 3 treatments
+   mutate(`effect metric` = ifelse(treatments < 3, NA_character_, `effect metric`)) %>% 
    #Replace NAs
    replace_na(list(shape = "Not Reported", polymer = "Not Reported", life.stage = "Not Reported")) %>% 
    #Add source column
@@ -357,7 +359,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   mutate(effect = factor(effect)) %>% 
   rename(effect_f = effect) %>%
   #Factor effect metric
-  mutate(effect.metric = factor(effect.metric)) %>% 
+  mutate(effect.metric = factor(effect.metric)) %>%   
   #Add new columns for assessment factors
   mutate(af.time = case_when(
     org_f == "Algae" & exposure.duration.d < 3 ~ 10,
@@ -414,6 +416,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     polymer == "Polyisoprene" ~ "Polyisoprene",
     polymer == "Polylactic Acid" ~ "Polylactic Acid",
     polymer == "Polymethylmethacrylate" ~ "Polymethylmethacrylate",
+    polymer == "Polyoxymethylene" ~ "Polyoxymethylene",
     polymer == "Polypropylene" ~ "Polypropylene",
     polymer == "Polystyrene" ~ "Polystyrene",
     polymer == "PS" ~ "Polystyrene",
@@ -430,7 +433,9 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     polymer == "Polyethylene (co-Vinyl acetate)" ~ "Polyethylene (co-Vinyl acetate)",
     polymer == "Polytetrafluoroethylene" ~ "Polytetrafluoroethylene",
     polymer == "Polyvinyl Acetate" ~ "Polyvinyl Acetate",
+    polymer == "Polyvinylchloride" ~ "Polyvinylchloride",
     polymer == "polyvinyl chloride/ vinyl acetate co-polymer" ~ "Polyvinylchloride/vinylacetate co-polymer",
+    polymer == "Polyurethane" ~ "Polyurethane",
     polymer == "pristine tire wear particles (P-TWP)" ~ "Tire Wear",
     polymer == "Sodium Polyacrylate" ~ "Sodium Polyacrylate",
     polymer == "Starch/PBAT/PLA" ~ "Starch/Polybutylene Adipate Terephthalate/Polylactic Acid"))) %>% 
@@ -606,6 +611,10 @@ tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("sp
 
 #Re-structure alternative dosing columns in aoc-setup
 aoc_setup <- aoc_setup %>%
+  #Remove effect metrics when there are less than 3 treatments
+  mutate(effect.metric = as.character(effect.metric)) %>% 
+  #Remove effect metrics when there are less than 3 treatments
+  mutate(effect.metric = factor(ifelse(treatments < 3, NA_character_, effect.metric))) %>% 
   #Nominal Alternative Doses
   mutate(`Nominal Dose Alternative Type` = case_when(
     !is.na(dose.mg.kg.sed.nominal) ~ dose.mg.kg.sed.nominal,
@@ -689,20 +698,20 @@ tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
 
 ##### QA/QC - FLAGGING STUDIES ####
 
-tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
-  group_by(doi) %>% 
-  mutate(`Issue Flag` = case_when(
-    source == "ToMEx 2.0" & all(is.na(effect.metric)) 
-    ~ "Effect metrics missing.")) %>%
-  relocate(`Issue Flag`, .before = doi) %>% 
-  ungroup() %>% 
-  mutate(`Issue Flag` = case_when(
-    !is.na(`Issue Flag`) ~ `Issue Flag`,
-    source == "ToMEx 2.0" & exp_type_f == "Particle Only" & is.na(tech.a1) 
-    ~ "Screening scores need to be completed for Particle Only type data.",
-    source == "ToMEx 2.0" & effect_f == "Yes" & is.na(direction)
-    ~ "Detected effects missing direction."
-  )) 
+# tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
+#   group_by(doi) %>% 
+#   mutate(`Issue Flag` = case_when(
+#     source == "ToMEx 2.0" & all(is.na(effect.metric)) & treatments >= 3
+#     ~ "Effect metrics missing.")) %>%
+#   relocate(`Issue Flag`, .before = doi) %>% 
+#   ungroup() %>% 
+#   mutate(`Issue Flag` = case_when(
+#     !is.na(`Issue Flag`) ~ `Issue Flag`,
+#     source == "ToMEx 2.0" & exp_type_f == "Particle Only" & is.na(tech.a1) 
+#     ~ "Screening scores need to be completed for Particle Only type data.",
+#     source == "ToMEx 2.0" & effect_f == "Yes" & is.na(direction)
+#     ~ "Detected effects missing direction."
+#   )) 
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
@@ -720,7 +729,7 @@ saveRDS(tomex2.0_aoc_endpoint_final, file = "aoc_endpoint_tomex2.RDS")
 ##### AOC SEARCH #####
 
 tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>% 
-  dplyr::select(source, `Issue Flag`, doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
+  dplyr::select(source, doi, authors, year, tier_zero_tech_f, tier_zero_risk_f, species_f, org_f, env_f, life_f, vivo_f, sex, body.length.cm, max.size.ingest.mm,
                 #experimental parameters
                 exp_type_f, exposure.route, mix, negative.control, reference.material, exposure.media, solvent, detergent,
                 media.ph, media.sal.ppt, media.temp, media.temp.min, media.temp.max, exposure.duration.d, `Recovery (Days)`, acute.chronic_f,
@@ -742,8 +751,6 @@ tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>%
                 #scores
                 tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
                 tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.b1, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
-                #issue flag
-                # `Issue Flag`
                 )
 
 #Turn all character strings into factors if they aren't already so they are searchable via dropdown
@@ -762,8 +769,8 @@ tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>%
                 'Temperature (Max)' = media.temp.max, 'Exposure Duration (days)' = exposure.duration.d, 
                 'Acute/Chronic' = acute.chronic_f, 'Number of Doses' = treatments, 'Replicates' = replicates,
                 'Sample Size' = sample.size, 'Dosing Frequency' = dosing.frequency, 'Chemicals Added' = chem.add.nominal, 
-                'Added Chemical Dose (nominal)' = chem.add.dose.mg.L.nominal,
-                'Added Chemical Dose (measured)' = chem.add.dose.mg.L.measured, 
+                'Added Chemical Dose (mg/L, nominal)' = chem.add.dose.mg.L.nominal,
+                'Added Chemical Dose (mg/L, measured)' = chem.add.dose.mg.L.measured, 
                 'Effect' = effect_f, 'Direction' = direction, 'Broad Endpoint Category' = lvl1_f, 
                 'Specific Endpoint Category' = lvl2_f,'Endpoint' = lvl3_f, 
                 'Level of Biological Organization' = bio_f, 'Target Cell or Tissue' = target.cell.tissue, 
@@ -791,7 +798,7 @@ tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>%
                 'Effect Thresholds Score'= risk.15, 'Dose Response Score'= risk.16, 'Concentration Range Score'= risk.17, 'Aging and Biofouling Score'= risk.18, 
                 'Microplastic Diversity Score' = risk.19, 'Exposure Time Score' = risk.20,
                 "particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
-                "μg/mL (master)" = dose.mg.L.master, "μ/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
+                "μg/mL (master)" = dose.mg.L.master, "μg/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
                 "μm^3/mL (master)" = dose.um3.mL.master, "μm^2/mL (master)" = dose.um2.mL.master, "μm/ug/mL (master)" = dose.um2.ug.mL.master)
 
 #Save RDS file
@@ -916,3 +923,10 @@ saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
 #   filter(effect.metric %in% c("EC50", "LC50", "EC10", "IC50", "EC20", "LC20")) %>% 
 #   group_by(doi, env_f, org_f, species_f, effect.metric, lvl1_f, lvl2_f, lvl3_f) %>% 
 #   summarise()
+
+# not_tidy <- tomex2.0_aoc_setup_final %>% 
+#   filter(!is.na(`Issue Flag`)) #857 lines
+# 
+# not_tidy_studies <- not_tidy %>% 
+#   group_by(doi,authors,`Issue Flag`) %>% 
+#   summarise() #24 studies with issue flags

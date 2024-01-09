@@ -320,8 +320,10 @@ ui <- dashboardPage(
                     
                     h3("Toxicity of Microplastics Explorer 2.0", align = "center"), 
                     
-                    strong(p("The Toxicity of Microplastics Explorer 2.0 (ToMEx 2.0) is a major expansion of the orginal ToMEx database coordinated by SCCWRP through
-                              a four-part virtual workshop series of approximately 70 researchers from 14 different nations. ToMEx 2.0 will be released to the public in fall 2023.")),
+                    p("The Toxicity of Microplastics Explorer 2.0 (ToMEx 2.0) is a major expansion of the orginal ToMEx database coordinated by SCCWRP through
+                              a four-part virtual workshop series of approximately 70 researchers from 14 different nations. ToMEx 2.0 will be released to the public in fall 2023."),
+                    
+                    strong(p("Disclaimer: When using ToMEx 2.0, it is highly recommended that underlying data are carefully scrutinized before finalizing analyses or drawing major conclusions.")),
                     
                     h3("What is the Microplastics Toxicity Database?", align = "center"), 
                     
@@ -1499,11 +1501,11 @@ tabItem(tabName = "SSD",
             
         ), #closes out box #3
         
-        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE, height = "600px",
+        box(title = "SSD Results: Table", status = "primary", width = 12, collapsible = TRUE, height = "675px",
 
+            
             DT::dataTableOutput(outputId = "ssd_pred_table", height = "500px"),
-
-          
+           
         ), #closes out box #4   
             
         box(title = "Model Selections (Advanced)", status = "primary", width = 12, collapsible = TRUE, collapsed = TRUE,
@@ -5477,16 +5479,32 @@ output$downloadSsdPlot <- downloadHandler(
                 style = "bootstrap",
                 extensions = c('Buttons', 'Scroller'),
                 options = list(
+                  autoWidth = FALSE,
                   dom = 'Brtip',
                   scrollY = 400,
                   scroller = TRUE,
                   buttons = c('copy', 'csv', 'excel')
                 ), 
                 class = "compact",
-                colnames = c("Percent", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution"),
-                caption = "Predicted species sensitivity distribution concentrations with uncertanties."
-                )
+                colnames = c("Percent", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution", "Proportion of Data Sets Successfully Fitted"),
+                caption = "Predicted species sensitivity distribution concentrations with uncertanties.
+                Note: Mehinto et al. (2022) (doi: 10.1186/s43591-022-00033-3) refers to the point estimate as the 'median' which is interchangable with the 'estimated mean concentration' reported in the table below. If 10 or more iterations are used to bootstrap the model, the mean and median become identical.")
+               
   })
+  
+  output$databaseDataTable <- DT::renderDataTable(
+    aoc_search,
+    filter = "top",
+    rownames = FALSE,
+    style = "bootstrap",
+    options = list(
+      dom = 'ltipr',
+      scrollY = 600,
+      scrollX = TRUE,
+      autoWidth = TRUE,
+      bautoWidth = FALSE
+    ))
+  
 
   # Cullen and Frey Graph
   output$ssd_CF_plot <- renderPlot({
@@ -5600,7 +5618,7 @@ output$downloadSsdPlot <- downloadHandler(
       
       ssd_raw_data_tidy <- aoc_ssd_filtered() %>%
                   ungroup() %>% 
-                  dplyr::select(doi, authors, Group, Species, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
+                  dplyr::select(source, doi, authors, Group, Species, lvl1_f, lvl3_f, bio_f, effect.metric, acute.chronic_f, shape_f, poly_f, polydispersity, size.length.min.um.used.for.conversions, size.length.max.um.used.for.conversions,
                          size.length.um.used.for.conversions, dose.particles.mL.master, dose.particles.mL.master.converted.reported, 
                          dose.mg.L.master, dose.mg.L.master.converted.reported, EC_env_v.particles.mL, dose_new,
                          tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6,
@@ -6249,7 +6267,13 @@ output$downloadSsdPlot <- downloadHandler(
     shinyjs::reset("lower_length_ssd")
     shinyjs::reset("upper_length_ssd")
     shinyjs::reset("acute.chronic_check_ssd")
-    
+    shinyjs::reset("ingestion.translocation.switch_ssd")
+    shinyjs::reset("upper.tissue.trans.size.um_ssd")
+    shinyjs::reset("effect.metric_rad_ssd")
+    shinyjs::reset("AF.time_rad_ssd")
+    shinyjs::reset("AF.noec_rad_ssd")
+    shinyjs::reset("conc.select.rad")
+
   }) #If we add more widgets, make sure they get added here. 
   
   
