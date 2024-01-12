@@ -764,14 +764,33 @@ mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surfac
                                                  width = size.width.max.um.used.for.conversions,
                                                  p = density.g.cm3)) %>%   #equation usess g/cm3
   
+  #Sediment-based concentration metrics
+  mutate(dose.mg.kg.sediment.master = if_else(!is.na(dose.mg.kg.sed.measured), dose.mg.kg.sed.measured, dose.mg.kg.sed.nominal)) %>% #Create master column with measured concentrations preferred
+  mutate(dose.particles.kg.sediment.master = dose.particles.kg.sed.nominal) %>% #Create master column with measured concentrations preferred (only nominal concentrations available)
+  
+  #Create reported vs. converted columns for sediment-based metrics
+  mutate(dose.mg.kg.sediment.master.converted.reported = if_else(!is.na(dose.mg.kg.sediment.master), "reported", NA_character_)) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = if_else(!is.na(dose.particles.kg.sediment.master), "reported", NA_character_)) %>%  
+
+  #Sediment Mass (converted)
+  mutate(dose.mg.kg.sediment.master = ifelse(is.na(dose.mg.kg.sediment.master), (dose.particles.kg.sediment.master)*mass.per.particle.mg, dose.mg.kg.sediment.master)) %>% 
+  mutate(dose.mg.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.mg.kg.sediment.master)&is.na(dose.mg.kg.sediment.master.converted.reported)), "converted", dose.mg.kg.sediment.master.converted.reported))) %>% 
+  
+  #Sediment Count (converted)
+  mutate(dose.particles.kg.sediment.master = ifelse(is.na(dose.particles.kg.sediment.master), (dose.mg.kg.sediment.master)/mass.per.particle.mg, dose.particles.kg.sediment.master)) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.particles.kg.sediment.master)&is.na(dose.particles.kg.sediment.master.converted.reported)), "converted", dose.particles.kg.sediment.master.converted.reported))) %>%  
+  
   #Volume
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
+  mutate(dose.um3.kg.sediment.master = particle.volume.um3 * dose.particles.kg.sediment.master) %>% #calculate volume/kg sediment
   
   #Surface Area
   mutate(dose.um2.mL.master = as.numeric(particle.surface.area.um2) * dose.particles.mL.master) %>% 
+  mutate(dose.um2.kg.sediment.master = as.numeric(particle.surface.area.um2) * dose.particles.kg.sediment.master) %>% 
   
   #Specific Surface Area
   mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
+  mutate(dose.um2.ug.kg.sediment.master = dose.um2.kg.sediment.master/(mass.per.particle.mg / 1000)) %>% 
   
   #Additional tidying for nicer values
   mutate(authors = gsub(".", " & ", as.character(authors), fixed = TRUE)) %>% 
