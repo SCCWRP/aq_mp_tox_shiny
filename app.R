@@ -1628,45 +1628,50 @@ tabItem(tabName = "Calculators",
                               shinyjs::useShinyjs(), # requires package for "reset" button, DO NOT DELETE - make sure to add any new widget to the reset_input in the server
                               id = "Calculators", # adds ID for resetting filters
 
-                              fluidRow(
-                                # Alpha
-                                column(width = 3,
-                                       numericInput(inputId = "length_alpha_calculator",
+                              sidebarLayout(
+                                sidebarPanel(
+                                 # Alpha
+                                  numericInput(inputId = "length_alpha_calculator",
                                                    label = "Power law for size (length)",
                                                    value = 2.64,
                                                    min = 0.5,
-                                                   max = 3.0)),
+                                                   max = 3.0),
                                 #xmin
-                                column(width = 3,
-                                       numericInput(inputId = "xmin_calculator",
+                                  numericInput(inputId = "xmin_calculator",
                                                     label = "Minimum particle length (μm)",
                                                     value = 1,
                                                     min = 0.001,
-                                                    max = 4999)),
+                                                    max = 4999),
                                 #particle count
-                                column(width = 3,
-                                       numericInput(inputId = "particle.count_calculator",
+                                  numericInput(inputId = "particle.count_calculator",
                                                     label = "# of particles to generate",
                                                     value = 1000,
                                                     min = 1,
-                                                    max = 100000)),
+                                                    max = 100000),
+                                # Input: Slider for selecting binwidth
+                                sliderInput("userBinwidth", 
+                                            "Binwidth:",
+                                            min = 0.0001,
+                                            max = 1,
+                                            value = 0.1),
+                                selectInput(inputId = "theme.type_calculator", "Dark or Light Mode:",
+                                                   list(light = "light", dark = "dark")),
+                                selectInput(inputId = "color.type_calculator", "Color Theme:",
+                                                   list(viridis = "viridis", brewer = "brewer", tron = "tron", locusZoom = "locusZoom", d3 = "d3", Nature = "Nature", JAMA = "JAMA")),
                                 #action buttons 
-                                column(width = 4,
-                                       actionButton("go_simulate", "Simulate data", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655")),
-                                #column(width = 3,
-                                 #      actionButton("reset_input", "Reset Filters", icon("redo"), style="color: #fff; background-color: #f39c12; border-color: #d68910")), 
-                                column(width = 3,
-                                       downloadButton("downloadData_simulate", "Download Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
-                     ),
-             
-              fluidRow(
-                
-                column(width = 12,
-                       
-                       plotOutput(outputId = "simulated.data.histogram", height = "500px"),
-                )
-              ),
-                     ), #closes tabPanel
+                                actionButton("go_simulate", "Simulate data", icon("rocket"), style="color: #fff; background-color:  #117a65; border-color:  #0e6655"),
+                                downloadButton("downloadData_simulate", "Download Data (Excel File)", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")#,
+                            #    downloadButton("downloadPlot_simulate", "Download Plot") #can't get working
+                     ), #closes sidebar panel
+                        fluidRow(
+                            box(plotOutput(outputId = "simulated.data.histogram", width = "100%", height = "500px")),
+                     
+                     
+                      
+                     
+                  ) #closes sidebar layour
+              ) #closes tabBox
+          ), #closes tabPanel
               
               tabPanel("Alignments",
                        
@@ -1676,11 +1681,30 @@ tabItem(tabName = "Calculators",
                        fluidRow(
                        
                          column(width = 12,
-                         p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021)."), "First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
+                         p("This tab allows users to upload laboratory toxicity data (monodisperse or polydisperse) and calculate ERM-aligned polydisperse values corrected to a default size range of the user's choice (e.g. 1 - 5,000 um) using the equations and parameters in", a(href = "https://www.sciencedirect.com/science/article/pii/S0043135421006278", "Kooi et al., (2021).")),
+                         
+                         
+                         br(),
+                         
+                         strong("An illustrated and detailed example of how alignments are performed may be found in this document."),
+                         
+                         br(),
+                         
+                         column(width = 4,
+                                downloadButton("illustrated_example", "Download Illustrated Example", icon("download"), style="color: #fff; background-color: #337ab7; border-color: #2e6da4")),
+                         
+                         br(),
+                         br(),
+                         br(),
+                         
+                         p("First, ensure data is formatted correctly (see example dataset for guidance), then choose site-specific distribution parameters using the widgets below, press 'calculate', and download the new dataset. Note that the uploaded dataset can have any number of columns in addition to the minimum needed for performing alignments (max.size.ingest.um [numeric], dose.particles.mL.master[numeric], polydispersity [binary categorical], particle.surface.area.um2 [numeric], particle.volume.um.3 [numeric], mass.per.particle.mg [numeric]). Note that data labeled as 'polydisperse' must have minimum and maximum parameters, while data labeled 'monodisperse' do not."),
+                         
+                         
                          br(),
                          
                          strong("Use this example dataset as a guide to format data for upload"),
-                         
+                       
+                       
                          br(),
                          
                          column(width = 4,
@@ -5748,17 +5772,63 @@ output$downloadSsdPlot <- downloadHandler(
     simulated.distribution
   })
   
-  ### histrogram of simulate data ###
-  output$simulated.data.histogram <- renderPlot({
+  
+  simulatedDistribution_ggplot <- reactive({
+   # req(input$go_simulate) #won't start until button is pressed for simulattion
+    ### User defined colors
     
-    #plot
+    
+    #Theme type
+    theme.type<-switch(input$theme.type_calculator,
+                       "light" 	= theme_minimal(base_size = 15),
+                       "dark" = dark_theme_minimal(base_size = 15)) 
+    #color selection
+    fill.type <- switch(input$color.type_calculator,
+                        "viridis" = scale_fill_viridis(discrete = TRUE),
+                        "brewer" =  scale_fill_brewer(palette = "Paired"),
+                        "tron" = scale_fill_tron(),
+                        "locusZoom" = scale_fill_locuszoom(),
+                        "d3" = scale_fill_d3(),
+                        "Nature" = scale_fill_npg(),
+                        "JAMA" = scale_fill_jama())
+    #color selection
+    color.type <- switch(input$color.type_calculator,
+                         "viridis" = scale_color_viridis(discrete = TRUE),
+                         "brewer" =  scale_color_brewer(palette = "Paired"),
+                         "tron" = scale_color_tron(),
+                         "locusZoom" = scale_color_locuszoom(),
+                         "d3" = scale_color_d3(),
+                         "Nature" = scale_color_npg(),
+                         "JAMA" = scale_color_jama())
+  
+  ### histrogram of simulate data ###
+      #plot
     simulated_distribution() %>% 
       ggplot(aes(x = Size, fill = size.category)) +
-      scale_x_log10(name = "Size (um)",
-                    limits = c(input$xmin_calculator, 5000)) +
-      geom_histogram() +
-      theme_minimal()
+      scale_x_log10(name = "Particle Length (um)",
+                        # labels = scales::scientific,
+                         limits = c(input$xmin_calculator, 5000)) +
+      labs(title = "Simulated Microplastics Particle Data", fill = "Size Category") +
+      geom_histogram(binwidth = input$userBinwidth) +
+      fill.type +  
+      theme.type
     })
+  
+# Render user-created histogram
+    output$simulated.data.histogram <- renderPlot({
+    simulatedDistribution_ggplot()
+  })
+    
+    ## Create PNG of plot for downloading
+    
+    output$downloadPlot_simulate <- downloadHandler(
+      filename = function() {
+        paste('SimulatedDataHistogram-', Sys.Date(), '.png', sep='')
+      },
+      content = function(file) {
+        ggsave(file, plot = simulated.data.histogram(), width = 16, height = 8, device = 'png')
+      })
+    
   
   # Create downloadable csv of filtered dataset.
   # Removed columns created above so the dataset matches Leah's original dataset.
@@ -5780,6 +5850,16 @@ output$downloadSsdPlot <- downloadHandler(
     },
     content = function(file) {
       write.csv(test_data_calculator, file, row.names = FALSE)
+    }
+  )
+  
+  # Alignment walkthrough (based on .Rmd file from modelling repo)
+  output$illustrated_example <- downloadHandler(
+    filename = function() {
+      "Illustrated_Alignment_Example.html"
+    },
+    content = function(file) {
+      file.copy("calculator/ERM-Illustrative-Example.html", file)
     }
   )
   
