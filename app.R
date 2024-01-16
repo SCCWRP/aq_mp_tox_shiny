@@ -2277,7 +2277,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        as.matrix()
      
      #make plotly
-     tech_p <- plot_ly(x=colnames(tech), y=rownames(tech), z = tech, type = "heatmap",
+     tech_p <- plot_ly(x=colnames(tech), y=rownames(tech), z = tech,
+                       type = "heatmap",
                        ygap = .4, xgap = .4,
                        colors = c("tomato", "ivory3", "dodgerblue"),
                        hoverinfo = 'text',
@@ -2331,7 +2332,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
        as.matrix()
      
      #make plotly
-     risk_p <- plot_ly(x=colnames(risk), y=rownames(risk), z = risk, type = "heatmap",
+     risk_p <- plot_ly(x=colnames(risk), y=rownames(risk), z = risk, 
+                       type = "heatmap",
                        ygap = .4, xgap = .4,
                        colors = c("tomato", "ivory3", "dodgerblue"),
                        hoverinfo = 'text',
