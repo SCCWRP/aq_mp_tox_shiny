@@ -1453,7 +1453,7 @@ tabItem(tabName = "SSD",
                                  inputId = "conc.select.rad",
                                  label = "What summary statistic should be used for each species?",
                                  choices = list("Minimum", "Lower 95% CI", "1st Quartile", "Median", "Mean", "3rd Quartile", "Upper 95% CI", "Maximum"),
-                                 selected = "1st Quartile"))),
+                                 selected = "Median"))),
                               
             ) #close tabpanel  
             ), #closes out tabbox
