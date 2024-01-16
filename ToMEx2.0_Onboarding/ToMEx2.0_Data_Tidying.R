@@ -327,17 +327,50 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     measured.dose...mass.units == "ng/L" ~ measured.dose...mass/1000000,
   )) %>% 
     relocate(dose.mg.L.measured, .after = dose.particles.mL.measured) %>% 
+  #Mass - Nominal (sediment)
+  mutate(nominal.dose.mg.kg.sediment = case_when(
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "g/kg sediment" ~ `nominal.dose...alternative.type`/1000,
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "mg/kg sediment" ~ `nominal.dose...alternative.type`,
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "mg/kg sediment dry weight" ~ `nominal.dose...alternative.type`,
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "mg/kg" ~ `nominal.dose...alternative.type`,
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "g/kg (dw) sediment" ~ `nominal.dose...alternative.type`/1000,
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "mg/Kg sediment" ~ `nominal.dose...alternative.type`,
+  )) %>%
+  mutate(`nominal.dose...alternative.type.units` = ifelse(!is.na(nominal.dose.mg.kg.sediment), NA_real_, `nominal.dose...alternative.type.units`)) %>% #Clear alternative dose column
+  mutate(`nominal.dose...alternative.type` = ifelse(!is.na(nominal.dose.mg.kg.sediment), NA_real_, `nominal.dose...alternative.type`)) %>% #Clear alternative dose column
+  #Count - Nominal (sediment)
+  add_column(nominal.dose.particles.kg.sediment = NA_real_) %>%  #Place holder for nominal count doses
+  #Mass - Measured (sediment)
+  add_column(measured.dose.mg.kg.sediment = NA_real_) %>%  #Place holder for measured mass doses
+  #Count - Measured (sediment)
+  mutate(measured.dose.particles.kg.sediment = case_when(
+    exposure.route == "sediment" & `measured.dose.alternative.units` == "particles/kg sediment dry weight" ~ `measured.dose.alternative`,
+  )) %>% 
+  mutate(`measured.dose.alternative.units` = ifelse(!is.na(measured.dose.particles.kg.sediment), NA_real_, `measured.dose.alternative.units`)) %>% #Clear alternative dose column
+  mutate(`measured.dose.alternative` = ifelse(!is.na(measured.dose.particles.kg.sediment), NA_real_, `measured.dose.alternative`)) %>% #Clear alternative dose column
+  
+  relocate(nominal.dose.mg.kg.sediment, .after = dose.mg.L.measured) %>% 
+  relocate(nominal.dose.particles.kg.sediment, .after = nominal.dose.mg.kg.sediment) %>% 
+  relocate(measured.dose.mg.kg.sediment, .after = nominal.dose.particles.kg.sediment) %>% 
+  relocate(measured.dose.particles.kg.sediment, .after = measured.dose.mg.kg.sediment) %>% 
   #Create master columns for dose and count - measured doses preferred
   mutate(dose.particles.mL.master = if_else(!is.na(dose.particles.mL.measured), dose.particles.mL.measured, dose.particles.mL.nominal)) %>% 
   relocate(dose.particles.mL.master, .after = dose.mg.L.measured) %>% 
   mutate(dose.mg.L.master = if_else(!is.na(dose.mg.L.measured), dose.mg.L.measured, dose.mg.L.nominal)) %>% 
   relocate(dose.mg.L.master, .after = dose.particles.mL.master)  %>% 
+  mutate(dose.mg.kg.sediment.master = if_else(!is.na(measured.dose.mg.kg.sediment), measured.dose.mg.kg.sediment, nominal.dose.mg.kg.sediment)) %>% 
+  relocate(dose.mg.kg.sediment.master, .after = dose.mg.L.master)  %>% 
+  mutate(dose.particles.kg.sediment.master = if_else(!is.na(measured.dose.particles.kg.sediment), measured.dose.particles.kg.sediment, nominal.dose.particles.kg.sediment)) %>% 
+  relocate(dose.particles.kg.sediment.master, .after = dose.mg.kg.sediment.master)  %>%
   #Mark that doses were reported (converted doses are to be added later in script)
   mutate(dose.particles.mL.master.converted.reported = if_else(!is.na(dose.particles.mL.master), "reported", NA_character_)) %>% 
   relocate(dose.particles.mL.master.converted.reported, .after = dose.particles.mL.master) %>% 
   mutate(dose.mg.L.master.converted.reported = if_else(!is.na(dose.mg.L.master), "reported", NA_character_)) %>% 
   relocate(dose.mg.L.master.converted.reported, .after = dose.mg.L.master) %>% 
-  
+  mutate(dose.mg.kg.sediment.master.converted.reported = if_else(!is.na(dose.mg.kg.sediment.master), "reported", NA_character_)) %>% 
+  relocate(dose.mg.kg.sediment.master.converted.reported, .after = dose.mg.kg.sediment.master) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = if_else(!is.na(dose.particles.kg.sediment.master), "reported", NA_character_)) %>% 
+  relocate(dose.particles.kg.sediment.master.converted.reported, .after = dose.particles.kg.sediment.master) %>% 
   #Chemical Dosing
   rename(chem.add.nominal = nominal.chemicals.added) %>% 
   mutate(chem.add.dose.mg.L.nominal = case_when(
@@ -354,7 +387,6 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   )) %>% 
   relocate(chem.add.measured, .after = chem.add.dose.mg.L.nominal) %>% 
   relocate(chem.add.dose.mg.L.measured, .after = chem.add.measured) %>%  
-  
   #Factor effect
   mutate(effect = factor(effect)) %>% 
   rename(effect_f = effect) %>%
@@ -507,9 +539,9 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   mutate(mass.per.particle.mg = (particle.volume.um3*density.g.cm3)*0.000000001) %>% 
   relocate(mass.per.particle.mg, .after = particle.volume.um3) %>%
   ####
-  #calculate dose metrics accordingly
-  mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
-  mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
+  # #calculate dose metrics accordingly
+  # mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
+  # mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
   
   # create label for polydispersity
   mutate(polydispersity = case_when(
@@ -561,19 +593,37 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   #calculate minimum and maximum volume for polydisperse particles
   mutate(mass.per.particle.mg.min = massfnx_poly(length = size.length.min.um.used.for.conversions,
                                                  width = size.width.min.um.used.for.conversions,
-                                                 p = density.g.cm3)) %>% #equation usess g/cm3
+                                                 p = density.g.cm3)) %>% #equation uses g/cm3
   mutate(mass.per.particle.mg.max = massfnx_poly(length = size.length.max.um.used.for.conversions,
                                                  width = size.width.max.um.used.for.conversions,
-                                                 p = density.g.cm3)) %>%   #equation usess g/cm3
+                                                 p = density.g.cm3)) %>%   #equation uses g/cm3
+  
+  #Mass (converted)
+  mutate(dose.mg.L.master = ifelse(is.na(dose.mg.L.master), (dose.particles.mL.master*1000)*mass.per.particle.mg, dose.mg.L.master)) %>% 
+  mutate(dose.mg.L.master.converted.reported = factor(ifelse((!is.na(dose.mg.L.master)&is.na(dose.mg.L.master.converted.reported)), "converted", dose.mg.L.master.converted.reported))) %>% 
+      
+  mutate(dose.mg.kg.sediment.master = ifelse(is.na(dose.mg.kg.sediment.master), (dose.particles.kg.sediment.master)*mass.per.particle.mg, dose.mg.kg.sediment.master)) %>% 
+  mutate(dose.mg.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.mg.kg.sediment.master)&is.na(dose.mg.kg.sediment.master.converted.reported)), "converted", dose.mg.kg.sediment.master.converted.reported))) %>% 
+  
+  #Count (converted)
+  mutate(dose.particles.mL.master = ifelse(is.na(dose.particles.mL.master),(dose.mg.L.master/mass.per.particle.mg)/1000,dose.particles.mL.master)) %>% 
+  mutate(dose.particles.mL.master.converted.reported = factor(ifelse((!is.na(dose.particles.mL.master)&is.na(dose.particles.mL.master.converted.reported)), "converted", dose.particles.mL.master.converted.reported))) %>% 
+
+  mutate(dose.particles.kg.sediment.master = ifelse(is.na(dose.particles.kg.sediment.master), (dose.mg.kg.sediment.master)/mass.per.particle.mg, dose.particles.kg.sediment.master)) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.particles.kg.sediment.master)&is.na(dose.particles.kg.sediment.master.converted.reported)), "converted", dose.particles.kg.sediment.master.converted.reported))) %>%  
   
   #Volume
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
+  mutate(dose.um3.kg.sediment.master = particle.volume.um3 * dose.particles.kg.sediment.master) %>% #calculate volume/kg sediment
   
   #Surface Area
   mutate(dose.um2.mL.master = as.numeric(particle.surface.area.um2) * dose.particles.mL.master) %>% 
-  
+  mutate(dose.um2.kg.sediment.master = as.numeric(particle.surface.area.um2) * dose.particles.kg.sediment.master) %>% 
+    
   #Specific Surface Area
   mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
+  mutate(dose.um2.ug.kg.sediment.master = dose.um2.kg.sediment.master/(mass.per.particle.mg / 1000)) %>% 
+
   #Factor particle weathering
   mutate(weathered.or.biofouled. = factor(weathered.or.biofouled.)) %>% 
   #Rename columns to match/look nicer
@@ -617,26 +667,26 @@ aoc_setup <- aoc_setup %>%
   mutate(effect.metric = factor(ifelse(treatments < 3, NA_character_, effect.metric))) %>% 
   #Nominal Alternative Doses
   mutate(`Nominal Dose Alternative Type` = case_when(
-    !is.na(dose.mg.kg.sed.nominal) ~ dose.mg.kg.sed.nominal,
+    # !is.na(dose.mg.kg.sed.nominal) ~ dose.mg.kg.sed.nominal,
     !is.na(dose.mg.kg.food.nominal) ~ dose.mg.kg.food.nominal,
     !is.na(dose.particles.kg.food.nominal) ~ dose.particles.kg.food.nominal,
     !is.na(dose.percent.sed.nominal) ~ dose.percent.sed.nominal,
     !is.na(dose.particles.m2.nominal) ~ dose.particles.m2.nominal,
     !is.na(dose.percent.food.nominal) ~ dose.percent.food.nominal,
-    !is.na(dose.particles.kg.sed.nominal) ~ dose.particles.kg.sed.nominal,
+    # !is.na(dose.particles.kg.sed.nominal) ~ dose.particles.kg.sed.nominal,
   )) %>%  
   mutate(`Nominal Dose Alternative Type Units` = case_when(
-    !is.na(dose.mg.kg.sed.nominal) ~ "mg/kg sediment",
+    # !is.na(dose.mg.kg.sed.nominal) ~ "mg/kg sediment",
     !is.na(dose.mg.kg.food.nominal) ~ "mg/kg food",
     !is.na(dose.particles.kg.food.nominal) ~ "particles/kg food",
     !is.na(dose.percent.sed.nominal) ~ "percent mass (%) sediment",
     !is.na(dose.particles.m2.nominal) ~ "particles/m^2",
     !is.na(dose.percent.food.nominal) ~ "percent mass (%) food",
-    !is.na(dose.particles.kg.sed.nominal) ~ "particles/kg sediment",
+    # !is.na(dose.particles.kg.sed.nominal) ~ "particles/kg sediment",
   )) %>% 
   #Measured Alternative Doses
   mutate(`Measured Dose Alternative Type` = case_when(
-    !is.na(dose.mg.kg.sed.measured) ~ dose.mg.kg.sed.measured,
+    # !is.na(dose.mg.kg.sed.measured) ~ dose.mg.kg.sed.measured,
     !is.na(dose.mg.kg.food.measured) ~ dose.mg.kg.food.measured,
     !is.na(dose.particles.kg.food.measured) ~ dose.particles.kg.food.measured,
     !is.na(dose.particles.kg.food.min.measured) ~ dose.particles.kg.food.min.measured,
@@ -645,14 +695,17 @@ aoc_setup <- aoc_setup %>%
     !is.na(dose.particles.m2.measured) ~ dose.particles.m2.measured,
   )) %>%  
   mutate(`Measured Dose Alternative Type Units` = case_when(
-    !is.na(dose.mg.kg.sed.measured) ~ "mg/kg sediment",
+    # !is.na(dose.mg.kg.sed.measured) ~ "mg/kg sediment",
     !is.na(dose.mg.kg.food.measured) ~ "mg/kg food",
     !is.na(dose.particles.kg.food.measured) ~ "particles/kg food",
     !is.na(dose.particles.kg.food.min.measured) ~ "particles/kg food minimum",
     !is.na(dose.particles.kg.food.max.measured) ~ "particles/kg food maximum",
     !is.na(dose.percent.sed.measured) ~ "percent mass (%) sediment",
     !is.na(dose.particles.m2.measured) ~ "particles/m^2",
-  ))
+  )) %>% 
+  rename(nominal.dose.mg.kg.sediment = dose.mg.kg.sed.nominal,
+         measured.dose.mg.kg.sediment = dose.mg.kg.sed.measured,
+         nominal.dose.particles.kg.sediment = dose.particles.kg.sed.nominal)
   
 #Join tomex2.0_aoc_setup to aoc_setup (from ToMEx 1.0)
 
@@ -682,7 +735,8 @@ aoc_setup <- aoc_setup %>%
   add_column(chem.add.measured = NA_character_,
              `Nominal Dose Alternative Category` = NA_character_,
              `Measured Dose Alternative Category` = NA_character_,
-             `Recovery (Days)` = NA_real_)
+             `Recovery (Days)` = NA_real_,
+             measured.dose.particles.kg.sediment = NA_real_,)
 
 #remove unwanted character strings from DOI column
 aoc_setup$doi <- gsub('https://dx.doi.org/','',aoc_setup$doi)
@@ -691,7 +745,7 @@ aoc_setup$doi <- gsub('doi.org/','',aoc_setup$doi)
 aoc_setup$doi <- gsub('https://','',aoc_setup$doi)
 
 aoc_setup <- aoc_setup %>%
-  select(all_of(names))
+  select(all_of(names)) #If this throws an error, aoc_setup doesn't have all the column names as tomex2.0 df
 
 #Join rows
 tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
@@ -737,6 +791,10 @@ tomex2.0_aoc_search <- tomex2.0_aoc_setup_final %>%
                 #master/alternative doses
                 dose.particles.mL.master, dose.particles.mL.master.converted.reported, dose.mg.L.master, dose.mg.L.master.converted.reported,
                 dose.um3.mL.master, dose.um2.mL.master, dose.um2.ug.mL.master, 
+                
+                dose.particles.kg.sediment.master, dose.particles.kg.sediment.master.converted.reported, dose.mg.kg.sediment.master, dose.mg.kg.sediment.master.converted.reported,
+                dose.um3.kg.sediment.master, dose.um2.kg.sediment.master, dose.um2.ug.kg.sediment.master,
+                
                 `Nominal Dose Alternative Category`, `Nominal Dose Alternative Type`, `Nominal Dose Alternative Type Units`,
                 `Measured Dose Alternative Category`, `Measured Dose Alternative Type`, `Measured Dose Alternative Type Units`,
                 #biological effects
@@ -797,9 +855,14 @@ tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>%
                 'Replication Score'= tech.12, 'Number of Treatments Score'= risk.b1, 'Endpoints Score'= risk.13, 'Food Availability Score'= risk.14,
                 'Effect Thresholds Score'= risk.15, 'Dose Response Score'= risk.16, 'Concentration Range Score'= risk.17, 'Aging and Biofouling Score'= risk.18, 
                 'Microplastic Diversity Score' = risk.19, 'Exposure Time Score' = risk.20,
-                "particles/mL (master)" = dose.particles.mL.master, "particles/mL (master), reported or converted" = dose.particles.mL.master.converted.reported,
-                "μg/mL (master)" = dose.mg.L.master, "μg/mL (master), reported or converted" = dose.mg.L.master.converted.reported,
-                "μm^3/mL (master)" = dose.um3.mL.master, "μm^2/mL (master)" = dose.um2.mL.master, "μm/ug/mL (master)" = dose.um2.ug.mL.master)
+                #water
+                "particles/mL water (master)" = dose.particles.mL.master, "particles/mL water (master), reported or converted" = dose.particles.mL.master.converted.reported,
+                "μg/mL water (master)" = dose.mg.L.master, "μg/mL water (master), reported or converted" = dose.mg.L.master.converted.reported,
+                "μm^3/mL water (master)" = dose.um3.mL.master, "μm^2/mL water (master)" = dose.um2.mL.master, "μm^2/ug/mL water (master)" = dose.um2.ug.mL.master,
+                #sediment
+                "particles/kg sediment dry weight (master)" = dose.particles.kg.sediment.master, "particles/kg sediment dry weight (master), reported or converted" = dose.particles.kg.sediment.master.converted.reported, 
+                "mg/kg sediment dry weight (master)" = dose.mg.kg.sediment.master, "mg/kg sediment dry weight (master), reported or converted" = dose.mg.kg.sediment.master.converted.reported,
+                "μm^3/kg sediment dry weight (master)" = dose.um3.kg.sediment.master, "μm^2/kg sediment dry weight (master)" = dose.um2.kg.sediment.master, "μm^2/ug/kg sediment dry weight (master)" = dose.um2.ug.kg.sediment.master)
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_search_final, file = "aoc_search_tomex2.RDS")
