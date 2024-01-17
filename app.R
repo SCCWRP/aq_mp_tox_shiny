@@ -4424,7 +4424,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       
       ###### Alignments #1 ######
       # Particle ERM #
-      # calculate effect threshold for particles
+      # calculate effect threshold for particles (the case_when below is simply to tell ToMEx to align the particles for either sediment or water)
       mutate(EC_mono_p.particles.mL = case_when(
         #Water-based concentrations
         dose_check == "Particles/mL" ~ dose.particles.mL.master,
@@ -4433,7 +4433,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         dose_check == "µm2/mL" ~ dose.particles.mL.master,
         dose_check == "µm2/µg/mL" ~ dose.particles.mL.master,
         #Sediment-based concentrations
-        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master/1000,
+        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master/1000, #divide by 1,000 to get particles/g (identical to particles/mL)
         dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master/1000,
         dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master/1000,
         dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master/1000,
