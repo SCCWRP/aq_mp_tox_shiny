@@ -1452,7 +1452,7 @@ tabItem(tabName = "SSD",
                                  pickerInput(
                                  inputId = "conc.select.rad",
                                  label = "What summary statistic should be used for each species?",
-                                 choices = list("Minimum", "Lower 95% CI", "1st Quartile", "Median", "Mean", "3rd Quartile", "Upper 95% CI", "Maximum"),
+                                 choices = list("Minimum", "Lower 95% CI", "1st Quartile", "Median", "Mean", "Geometric Mean", "3rd Quartile", "Upper 95% CI", "Maximum"),
                                  selected = "Median"))),
                               
             ) #close tabpanel  
@@ -1972,12 +1972,20 @@ tabItem(tabName = "Predictions",
 tabItem(tabName = "Resources", 
          
         
-         box(title = "Resources", width = 6, status = "primary",     
-         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeyE7n7JZdJPi_EYUD_D-dsBxNv5qlBtzwihmr9SbxH_Og?e=Crfu6Z", 'Data Category Descriptions')),
+         box(title = "Resources", width = 12, status = "primary",     
+         h4(align = "left", "Data Submission Template:"),
+         
+         h5(align = "left",a(href = "https://sccwrp-my.sharepoint.com/:x:/g/personal/leahth_sccwrp_org/EUOMAPG9I3FBor2pUEpGmKYB1hjGDsDvg6WTOUAwfYXzPg?e=wphbNJ", 'Data Mining Template')),
          br(),
-         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EeEqwDA28OdNq4zXvO-U-p4B6aF-3v-rCvq0xB7oy8GAZg?e=27smxu", 'Study Screening Rubric')),
-         br(),
-         p(align = "center",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EZ0r1AdQqsJGnPuvDJFNyxMBQ60ibEbAiCqrjNqRtlX7gg?e=18fTUr", 'Aquatic Organisms Study List'))),
+         h4(align = "left", "Data Category Descriptions and Data Mining Guides:"),
+         
+         h5(align = "left",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EdU9Xj4Loc1HtoO-L3aAl-oBfluhMzKwjlaChyWZfGWpnA?e=40VyRT", 'Particle Only Studies')),
+         
+         h5(align = "left",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EbmjFIgU9kFFvH1LVy2-NjEB8jjkRVBVK-AzHl11LMSFqg?e=brn8Xh", 'Leachate Studies')),
+         
+         h5(align = "left",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/EYk-r5MbFtNDrI2zL6GYvo0B0F9PK7C-lYqeVOvnKU3PKg?e=OkVneU", 'Chemical Transfer Studies')),
+         
+         h5(align = "left",a(href = "https://sccwrp-my.sharepoint.com/:b:/g/personal/leahth_sccwrp_org/ETArwhasnrtOgeqSfuxJDRQBdfYWXK5UDngqGHjNtKAKJw?e=pUzLfS", 'Chemical Co-Exposure Studies'))),
          
         ), #close tab
 
@@ -6710,11 +6718,29 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                        ingestion.translocation.switch == "ingestion" ~  between(size.length.um.used.for.conversions, x1D_set, x2D_set))) %>%  #if ingestion-limited, don't use data outside upper default size range
       drop_na(dose_new) %>%  #must drop NAs or else nothing will work
       group_by(Species, Group) %>%
-      summarise(minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),MaxConcEffect = max(dose_new), CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), firstQuartileConcEffect = quantile(dose_new, 0.25), CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), thirdQuartileConcEffect = quantile(dose_new, 0.75), CountEffect = n(), MinEffectType = lvl1_f[which.min(dose_new)], Minlvl2EffectType = lvl2_f[which.min(dose_new)], MinEnvironment = env_f[which.min(dose_new)], MinDoi = doi[which.min(dose_new)], MinLifeStage = life_f[which.min(dose_new)], Mininvitro.invivo = vivo_f[which.min(dose_new)])# %>%  #set concentration to minimum observed effect
+      summarise(geomeanEffect = exp(mean(log(dose_new))),
+                minConcEffect = min(dose_new), meanConcEffect = mean(dose_new), 
+                medianConcEffect = median(dose_new), SDConcEffect = sd(dose_new),
+                MaxConcEffect = max(dose_new), 
+                CI95_LCL = meanConcEffect - 1.96 * SDConcEffect/sqrt(n()), 
+                firstQuartileConcEffect = quantile(dose_new, 0.25), 
+                CI95_UCL = meanConcEffect + 1.96 * SDConcEffect/sqrt(n()), 
+                thirdQuartileConcEffect = quantile(dose_new, 0.75), 
+                CountEffect = n(), 
+                MinEffectType = lvl1_f[which.min(dose_new)], 
+                Minlvl2EffectType = lvl2_f[which.min(dose_new)], 
+                MinEnvironment = env_f[which.min(dose_new)], 
+                MinDoi = doi[which.min(dose_new)], 
+                MinLifeStage = life_f[which.min(dose_new)], 
+                Mininvitro.invivo = vivo_f[which.min(dose_new)])# %>%  #set concentration to minimum observed effect
       #mutate_if(is.numeric, ~ signif(., 6))
    
     #dynamically change concentrations used based on user input
     ###concentration selector ("minimum", "lower 95% CI", "1st Quartile", "median", "mean", "3rd Quartile", "upper 95% CI", "maximum")###
+    if(conc.select.r == "Geometric Mean"){
+      aoc_ssd <- aoc_ssd %>% 
+        mutate(Conc = geomeanEffect)
+    }
     if(conc.select.r == "Minimum"){
       aoc_ssd <- aoc_ssd %>% 
         mutate(Conc = minConcEffect)
