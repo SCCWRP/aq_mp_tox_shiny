@@ -2459,11 +2459,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         dose_check == "µm2/mL" ~ dose.particles.mL.master,
         dose_check == "µm2/µg/mL" ~ dose.particles.mL.master,
         #Sediment-based concentrations
-        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master/1000)) %>% 
+        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master)) %>% 
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
       mutate(mu.p.poly = mux.polyfnx(a.x = alpha, x_UL= x2M, x_LL = x1M_set)) %>% 
       # polydisperse effect threshold for particles
@@ -4433,11 +4433,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         dose_check == "µm2/mL" ~ dose.particles.mL.master,
         dose_check == "µm2/µg/mL" ~ dose.particles.mL.master,
         #Sediment-based concentrations
-        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master/1000, #divide by 1,000 to get particles/g (identical to particles/mL)
-        dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-        dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master/1000)) %>%
+        dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master, 
+        dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master,
+        dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master)) %>%
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
       mutate(mu.p.poly = mux.polyfnx(a.x = alpha, x_UL= x2M, x_LL = x1M_set)) %>% 
       # polydisperse effect threshold for particles
@@ -5612,11 +5612,11 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       dose_check == "µm2/mL" ~ dose.particles.mL.master,
       dose_check == "µm2/µg/mL" ~ dose.particles.mL.master,
       #Sediment-based concentrations
-      dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-      dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-      dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-      dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master/1000,
-      dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master/1000)) %>%
+      dose_check == "Particles/kg sediment" ~ dose.particles.kg.sediment.master,
+      dose_check == "mg/kg sediment" ~ dose.particles.kg.sediment.master,
+      dose_check == "µm3/kg sediment" ~ dose.particles.kg.sediment.master,
+      dose_check == "µm2/kg sediment" ~ dose.particles.kg.sediment.master,
+      dose_check == "µm2/µg/kg sediment" ~ dose.particles.kg.sediment.master)) %>%
       mutate(mu.p.mono = 1) %>% #mu_x_mono is always 1 for particles to particles
       mutate(mu.p.poly = mux.polyfnx(a.x = alpha, x_UL= x2M, x_LL = x1M_set)) %>% 
       # polydisperse effect threshold for particles
@@ -6771,7 +6771,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
   #print summarize filtered data in data table
   output$aoc_filter_ssd_table <- DT::renderDataTable(server = FALSE,{ #server= FALSE prints ALL data, not just what's shown
-    dose_check_ssd <- input$dose_check_ssd
+    dose_check_ssd <- input$dose_check_ssd # units for ERM, different for sediment or surface water
     req(input$SSDgo)
     
     datatable(aoc_filter_ssd() %>%  mutate_if(is.numeric, ~ signif(., 3)),
