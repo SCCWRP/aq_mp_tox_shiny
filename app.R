@@ -1195,7 +1195,7 @@ tabItem(tabName = "SSD",
                                   pickerInput(inputId = "Group_check_ssd", 
                                   label = "Organism Group:",
                                   choices = levels(aoc_z$Group),
-                                  selected = c("Annelida","Cnidaria", "Crustacea", "Echinoderm", "Fish", "Insect", "Mixed", "Mollusca", "Nematoda", "Rotifera"),
+                                  selected = c("Algae","Annelida","Cnidaria", "Crustacea", "Fish", "Insect", "Mixed", "Mollusca", "Plant", "Rotifera", "Cyanobacteria", "Dinoflagellate", "Ciliophora"),
                                   options = list(`actions-box` = TRUE), 
                                   multiple = TRUE),
                                   
@@ -1243,7 +1243,7 @@ tabItem(tabName = "SSD",
                           column(width = 4,
                                  #polymer selection
                                  pickerInput(inputId = "poly_check_ssd", 
-                                 label = "Biological Organization:",
+                                 label = "Polymer:",
                                  choices = levels(aoc_z$poly_f),
                                  selected = levels(aoc_z$poly_f),
                                  options = list(`actions-box` = TRUE), 
@@ -1252,7 +1252,7 @@ tabItem(tabName = "SSD",
                           column(width = 4,
                                   #shape selection
                                  pickerInput(inputId = "shape_check_ssd", 
-                                 label = "Biological Organization:",
+                                 label = "Shape:",
                                  choices = levels(aoc_z$shape_f),
                                  selected = levels(aoc_z$shape_f),
                                  options = list(`actions-box` = TRUE), 
@@ -1340,7 +1340,7 @@ tabItem(tabName = "SSD",
                                  radioButtons(inputId = "alpha.value.matrix_ssd",
                                               label = "Alpha Values by Environmental Compartment:",
                                               choices = c("Marine Surface Water", "Freshwater Surface Water", "Marine Sediment", "Freshwater Sediment"),
-                                              selected = "Marine Surface Water")),
+                                              selected = "Freshwater Surface Water")),
                              
                                     #Alpha checkbox
                                     column(width = 4,
@@ -1429,7 +1429,7 @@ tabItem(tabName = "SSD",
                                  pickerInput(inputId = "effect.metric_rad_ssd", 
                                  label = "Effect Metric:",
                                  choices = levels(aoc_z$effect.metric),
-                                 selected = c("EC10","EC50","EMT50", "IC50","LC50","LOEC", "NOEC"),
+                                 selected = c("EC10","EC50","EMT50", "IC50","LC50","LOEC", "NOEC", "LC20", "EC20"),
                                  options = list(`actions-box` = TRUE),
                                  multiple = TRUE), 
                           
@@ -1453,7 +1453,7 @@ tabItem(tabName = "SSD",
                                  inputId = "conc.select.rad",
                                  label = "What summary statistic should be used for each species?",
                                  choices = list("Minimum", "Lower 95% CI", "1st Quartile", "Median", "Mean", "Geometric Mean", "3rd Quartile", "Upper 95% CI", "Maximum"),
-                                 selected = "Median"))),
+                                 selected = "Geometric Mean"))),
                               
             ) #close tabpanel  
             ), #closes out tabbox
@@ -2625,25 +2625,32 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       # specific surface area to specific surface area #
       mutate(EC_env_ssa.um2.ug.mL =  EC_env_ssa.particles.mL * mux.polyfnx(a.x = a.ssa, x_UL = x2D_set, x_LL = x1D_set))
     
-#### Alpha Value Radio Buttons ####
+    ###### Alpha Value Radio Buttons ######
     observeEvent(input$alpha.value.matrix,{
-    
-    if(input$alpha.value.matrix == "Marine Surface Water"){
-      updateNumericInput(inputId = "alpha",
-                         value = 2.07)
       
-      updateNumericInput(inputId = "a.sa",
-                         value = 1.50)
-      
-      updateNumericInput(inputId = "a.v",
-                         value = 1.48)
-      
-      updateNumericInput(inputId = "a.m",
-                         value = 1.32)
-      
-      updateNumericInput(inputId = "a.ssa",
-                         value = 1.98)
-    }
+      if(input$alpha.value.matrix == "Marine Surface Water"){
+        updateNumericInput(inputId = "alpha",
+                           value = 2.07)
+        
+        updateNumericInput(inputId = "a.sa",
+                           value = 1.50)
+        
+        updateNumericInput(inputId = "a.v",
+                           value = 1.48)
+        
+        updateNumericInput(inputId = "a.m",
+                           value = 1.32)
+        
+        updateNumericInput(inputId = "a.ssa",
+                           value = 1.98)
+        
+        updateNumericInput(inputId = "R.ave",
+                           value = 0.77)
+        
+        updateNumericInput(inputId = "p.ave",
+                           value = 1.10)
+        
+      }
       
       if(input$alpha.value.matrix == "Freshwater Surface Water"){
         updateNumericInput(inputId = "alpha",
@@ -2660,6 +2667,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         
         updateNumericInput(inputId = "a.ssa",
                            value = 2.71)
+        
+        updateNumericInput(inputId = "R.ave",
+                           value = 0.67)
+        
+        updateNumericInput(inputId = "p.ave",
+                           value = 1.04)
       }
       
       if(input$alpha.value.matrix == "Marine Sediment"){
@@ -2677,6 +2690,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         
         updateNumericInput(inputId = "a.ssa",
                            value = 2.54)
+        
+        updateNumericInput(inputId = "R.ave",
+                           value = 0.75)
+        
+        updateNumericInput(inputId = "p.ave",
+                           value = 1.16)
       }
       
       if(input$alpha.value.matrix == "Freshwater Sediment"){
@@ -2694,8 +2713,14 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
         
         updateNumericInput(inputId = "a.ssa",
                            value = 2.82)
+        
+        updateNumericInput(inputId = "R.ave",
+                           value = 0.70)
+        
+        updateNumericInput(inputId = "p.ave",
+                           value = 1.15)
       }
-    
+      
     })
 
     ###### Water Radio Button Alignments ######
@@ -4316,6 +4341,13 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       
       updateNumericInput(inputId = "a.ssa_ssd",
                          value = 1.98)
+      
+      updateNumericInput(inputId = "R.ave_ssd",
+                         value = 0.77)
+      
+      updateNumericInput(inputId = "p.ave_ssd",
+                         value = 1.10)
+      
     }
     
     if(input$alpha.value.matrix_ssd == "Freshwater Surface Water"){
@@ -4333,6 +4365,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       
       updateNumericInput(inputId = "a.ssa_ssd",
                          value = 2.71)
+      
+      updateNumericInput(inputId = "R.ave_ssd",
+                         value = 0.67)
+      
+      updateNumericInput(inputId = "p.ave_ssd",
+                         value = 1.04)
     }
     
     if(input$alpha.value.matrix_ssd == "Marine Sediment"){
@@ -4350,6 +4388,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       
       updateNumericInput(inputId = "a.ssa_ssd",
                          value = 2.54)
+      
+      updateNumericInput(inputId = "R.ave_ssd",
+                         value = 0.75)
+      
+      updateNumericInput(inputId = "p.ave_ssd",
+                         value = 1.16)
     }
     
     if(input$alpha.value.matrix_ssd == "Freshwater Sediment"){
@@ -4367,6 +4411,12 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
       
       updateNumericInput(inputId = "a.ssa_ssd",
                          value = 2.82)
+      
+      updateNumericInput(inputId = "R.ave_ssd",
+                         value = 0.70)
+      
+      updateNumericInput(inputId = "p.ave_ssd",
+                         value = 1.15)
     }
     
   })
