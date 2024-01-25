@@ -711,8 +711,8 @@ mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surfac
   
   # create label for polydispersity
   mutate(polydispersity = case_when(
-    is.na(size.length.min.mm.nominal) ~ "monodisperse",
-    !is.na(size.length.min.mm.nominal) ~ "polydisperse")) %>% 
+    is.na(size.length.min.mm.nominal|size.length.min.mm.measured) ~ "monodisperse",
+    !is.na(size.length.min.mm.nominal|size.length.min.mm.measured) ~ "polydisperse")) %>% 
   
   ####prioritize measured parameters for conversions ###
   # minima
