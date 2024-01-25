@@ -339,12 +339,17 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   mutate(`nominal.dose...alternative.type.units` = ifelse(!is.na(nominal.dose.mg.kg.sediment), NA_real_, `nominal.dose...alternative.type.units`)) %>% #Clear alternative dose column
   mutate(`nominal.dose...alternative.type` = ifelse(!is.na(nominal.dose.mg.kg.sediment), NA_real_, `nominal.dose...alternative.type`)) %>% #Clear alternative dose column
   #Count - Nominal (sediment)
-  add_column(nominal.dose.particles.kg.sediment = NA_real_) %>%  #Place holder for nominal count doses
+  mutate(nominal.dose.particles.kg.sediment = case_when(
+    exposure.route == "sediment" & `nominal.dose...alternative.type.units` == "particles/kg sediment dry weight" ~ `nominal.dose...alternative.type`
+  )) %>%  
   #Mass - Measured (sediment)
-  add_column(measured.dose.mg.kg.sediment = NA_real_) %>%  #Place holder for measured mass doses
+  mutate(measured.dose.mg.kg.sediment = case_when(
+    exposure.route == "sediment" & `measured.dose.alternative.units` == "mg/kg sediment" ~ `measured.dose.alternative`,
+  )) %>%  #Place holder for measured mass doses
   #Count - Measured (sediment)
   mutate(measured.dose.particles.kg.sediment = case_when(
     exposure.route == "sediment" & `measured.dose.alternative.units` == "particles/kg sediment dry weight" ~ `measured.dose.alternative`,
+    exposure.route == "sediment" & `measured.dose.alternative.units` == "particles/kg" ~ `measured.dose.alternative`,
   )) %>% 
   mutate(`measured.dose.alternative.units` = ifelse(!is.na(measured.dose.particles.kg.sediment), NA_real_, `measured.dose.alternative.units`)) %>% #Clear alternative dose column
   mutate(`measured.dose.alternative` = ifelse(!is.na(measured.dose.particles.kg.sediment), NA_real_, `measured.dose.alternative`)) %>% #Clear alternative dose column
@@ -459,6 +464,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     polymer == "Low density polyethylene" ~ "Low Density Polyethylene",
     polymer == "LDPE" ~ "Low Density Polyethylene",
     polymer == "Medium Density Polyethylene" ~ "Medium Density Polyethylene",
+    polymer == "Mix - See Original Study" ~ "Mix - See Original Study",
     polymer == "Poly-amidoamine (PAMAM)" ~ "Polyamidoamine",
     polymer == "Poly (Styrene-co-acrylonitrile)" ~ "Poly(Styrene-co-acrylonitrile)",
     polymer == "Polyamide 66" ~ "Polyamide 66",
@@ -650,13 +656,25 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   
 #Add-in body size metrics from ToMEx 1.0
 
+#### Ingestibility ####
+
 #Create summary data frame from ToMEx 1.0
-  bodysize_summary <- aoc_setup %>% 
-    group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>% 
-    summarise()
+  bodysize_summary <- aoc_setup %>%
+    group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>%
+    summarise() %>%
+    ungroup()
+
+  bodysize_addons <- data.frame(species_f = c("Cerastoderma edule", "Chironomus tepperi", "Strombidium sulcatum", "Moina macrocopa"),
+                               body.length.cm = c(1.42, 5, 0.02, 0.18),
+                               body.size.source = c("10.1021/acs.est.3c06829", "10.1007/BF00016865", "WoRMS","10.1590/S1676-06032013000300011")) %>%
+  #calculate maximum ingestible size (if not already in database)
+  mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
+  mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
+
+  bodysize_summary <- bind_rows(bodysize_summary,bodysize_addons)
   
 #Join summary to tidy ToMEx 2.0 data frame
-  
+
 tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f"))
 
 #Re-structure alternative dosing columns in aoc-setup
