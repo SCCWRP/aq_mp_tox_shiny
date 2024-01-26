@@ -656,15 +656,12 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   
 #Add-in body size metrics from ToMEx 1.0
 
-#### Ingestibility ####
-
 #Create summary data frame from ToMEx 1.0
   bodysize_summary <- aoc_setup %>%
-    group_by(species_f, org_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>%
+    group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>%
     summarise() 
 
-  bodysize_addons <- data.frame(species_f = c("Cerastoderma edule", "Chironomus tepperi", "Strombidium sulcatum", "Moina macrocopa"),
-                                org_f = c("Mollusca", "Insect", "Ciliophora", "Crustacea"),
+  bodysize_addons <- data.frame(species_f = as.factor(c("Cerastoderma edule", "Chironomus tepperi", "Strombidium sulcatum", "Moina macrocopa")),
                                body.length.cm = c(1.42, 5, 0.02, 0.18),
                                body.size.source = c("10.1021/acs.est.3c06829", "10.1007/BF00016865", "WoRMS","10.1590/S1676-06032013000300011")) %>%
   #calculate maximum ingestible size (if not already in database)
@@ -675,7 +672,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
   
 #Join summary to tidy ToMEx 2.0 data frame
 
-tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f", "org_f"))
+tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f"))
 
 #Re-structure alternative dosing columns in aoc-setup
 aoc_setup <- aoc_setup %>%
