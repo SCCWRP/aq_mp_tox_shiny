@@ -235,6 +235,11 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    replace_na(list(tier_zero_tech_f  = "Scoring Not Applicable", tier_zero_risk_f = "Scoring Not Applicable")) %>%
    mutate(tier_zero_tech_f  = factor(tier_zero_tech_f )) %>% 
    mutate(tier_zero_risk_f = factor(tier_zero_risk_f)) %>%
+   #Fix life stages for algae and bacteria
+   mutate(life.stage = if_else(organism.group == "Algae", "Not Reported", life.stage)) %>% 
+   mutate(life.stage = if_else(organism.group == "Bacterium", "Not Reported", life.stage)) %>%  
+   #Change Mytilus NA to Mytilus species
+   mutate(species = if_else(species == "Mytilus NA", "Mytilus species", species)) %>% 
    #Factor species
    mutate(species = factor(species)) %>% 
    rename(species_f = species) %>% 
@@ -250,7 +255,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    ))) %>% 
    rename(vivo_f = in.vitro.in.vivo) %>%
    #Factor life stage
-   mutate(life.stage = factor(life.stage)) %>% 
+   mutate(life.stage = factor(life.stage)) %>%  
    rename(life_f = life.stage) %>%
    #Factor environment
    mutate(environment = factor(environment)) %>% 
@@ -764,6 +769,9 @@ aoc_setup <- aoc_setup %>%
 
 #Join rows
 tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
+
+tomex2.0_aoc_setup_final %>% 
+  mutate(source = as.factor(source))
 
 ##### QA/QC - FLAGGING STUDIES ####
 
