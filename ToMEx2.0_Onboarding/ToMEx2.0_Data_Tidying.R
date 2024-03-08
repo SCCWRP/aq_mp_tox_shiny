@@ -666,12 +666,13 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>%
     summarise() 
 
-  bodysize_addons <- data.frame(species_f = as.factor(c("Cerastoderma edule", "Chironomus tepperi", "Strombidium sulcatum", "Moina macrocopa")),
-                               body.length.cm = c(1.42, 5, 0.02, 0.18),
-                               body.size.source = c("10.1021/acs.est.3c06829", "10.1007/BF00016865", "WoRMS","10.1590/S1676-06032013000300011")) %>%
-  #calculate maximum ingestible size (if not already in database)
-  mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
-  mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
+  bodysize_addons <- read_csv("gape_size.csv")
+    
+  bodysize_addons <- bodysize_addons %>% 
+    mutate(species_f = as.factor(species_f)) %>% 
+    #calculate maximum ingestible size (if not already in database)
+    mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
+    mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
 
   bodysize_summary <- bind_rows(bodysize_summary,bodysize_addons)
   
