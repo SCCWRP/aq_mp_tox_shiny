@@ -503,7 +503,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                    lvl3 == "pcc.level"~"Protein Carbonylation Content",
                                    lvl3 == "pche.activity"~"Pseudocholinesterase Activity",
                                    lvl3 == "pepckc.mrnaexpression"~"pepckc mRNA expression",
-                                   lvl3 == "percent.dstage.larvae"~"Pertengage of D-stage Larvae",
+                                   lvl3 == "percent.dstage.larvae"~"Percentage of D-stage Larvae",
                                    lvl3 == "percent.dveliger"~"Percentage of Veliger Larvae",
                                    lvl3 == "percent.motile.sperm"~"Percentage of Motile Sperm",
                                    lvl3 == "percent.tank.used"~"Percentage of Tank Used",

@@ -35,13 +35,13 @@ library(caret) # for random forest predictions
 library(randomForest) # for random forest predictions
 
 # Load finalized dataset (prepped in RDAmaker.R)
-aoc <- readRDS("aoc_setup.RDS")
-aoc_endpoint <- readRDS("aoc_endpoint.RDS")
-aoc_quality <- readRDS("aoc_quality.RDS")
-aoc_search <- readRDS("aoc_search.RDS")
-aoc_setup <- readRDS("aoc_setup.RDS")
+aoc <- readRDS("aoc_setup_tomex2.RDS")
+aoc_endpoint <- readRDS("aoc_endpoint_tomex2.RDS")
+aoc_quality <- readRDS("aoc_quality_tomex2.RDS")
+aoc_search <- readRDS("aoc_search_tomex2.RDS")
+aoc_setup <- readRDS("aoc_setup_tomex2.RDS")
 # aoc_v1 <- readRDS("aoc_v1.RDS")
-aoc_z <- readRDS("aoc_z.RDS")
+aoc_z <- readRDS("aoc_z_tomex2.RDS")
 
 #prediction models generated in aq_mp_tox_modelling repo (Scott_distributions_no_touchy.Rmd)
 predictionModel_tissue.translocation <- readRDS("prediction/randomForest_oxStress.rds")
