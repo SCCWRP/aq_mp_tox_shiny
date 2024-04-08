@@ -992,7 +992,8 @@ tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
 #Calculate the median density for each polymer
 median_density_by_polymer = tomex2.0_aoc_setup_final %>%
   group_by(poly_f) %>%
-  summarize(median_density = median(density.g.cm3, na.rm = TRUE))
+  summarize(median_density = median(density.g.cm3, na.rm = TRUE)) %>% 
+  ungroup()
 
 #Join the mean temperature back to the original data
 tomex2.0_aoc_setup_final = left_join(tomex2.0_aoc_setup_final, median_density_by_polymer, by = "poly_f")
