@@ -235,6 +235,11 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    replace_na(list(tier_zero_tech_f  = "Scoring Not Applicable", tier_zero_risk_f = "Scoring Not Applicable")) %>%
    mutate(tier_zero_tech_f  = factor(tier_zero_tech_f )) %>% 
    mutate(tier_zero_risk_f = factor(tier_zero_risk_f)) %>%
+   #Fix life stages for algae and bacteria
+   mutate(life.stage = if_else(organism.group == "Algae", "Not Reported", life.stage)) %>% 
+   mutate(life.stage = if_else(organism.group == "Bacterium", "Not Reported", life.stage)) %>%  
+   #Change Mytilus NA to Mytilus species
+   mutate(species = if_else(species == "Mytilus NA", "Mytilus species", species)) %>% 
    #Factor species
    mutate(species = factor(species)) %>% 
    rename(species_f = species) %>% 
@@ -250,7 +255,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
    ))) %>% 
    rename(vivo_f = in.vitro.in.vivo) %>%
    #Factor life stage
-   mutate(life.stage = factor(life.stage)) %>% 
+   mutate(life.stage = factor(life.stage)) %>%  
    rename(life_f = life.stage) %>%
    #Factor environment
    mutate(environment = factor(environment)) %>% 
@@ -523,7 +528,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     size.length.um.used.for.conversions >= 0.1 & size.length.um.used.for.conversions < 1 ~ "100nm < 1µm",
     size.length.um.used.for.conversions >= 1 & size.length.um.used.for.conversions < 100 ~ "1µm < 100µm",
     size.length.um.used.for.conversions >= 100 & size.length.um.used.for.conversions < 1000 ~ "100µm < 1mm",
-    size.length.um.used.for.conversions >= 1000 & size.length.um.used.for.conversions < 5000 ~ "1mm < 5mm",
+    size.length.um.used.for.conversions >= 1000 & size.length.um.used.for.conversions <= 5000 ~ "1mm < 5mm",
     is.na(size.length.um.used.for.conversions) ~ "Not Reported"),  
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   relocate(size_f, .after = size.width.um.used.for.conversions) %>% 
@@ -661,12 +666,13 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     group_by(species_f, body.length.cm, body.size.source, max.size.ingest.mm, max.size.ingest.um) %>%
     summarise() 
 
-  bodysize_addons <- data.frame(species_f = as.factor(c("Cerastoderma edule", "Chironomus tepperi", "Strombidium sulcatum", "Moina macrocopa")),
-                               body.length.cm = c(1.42, 5, 0.02, 0.18),
-                               body.size.source = c("10.1021/acs.est.3c06829", "10.1007/BF00016865", "WoRMS","10.1590/S1676-06032013000300011")) %>%
-  #calculate maximum ingestible size (if not already in database)
-  mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
-  mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
+  bodysize_addons <- read_csv("gape_size.csv")
+    
+  bodysize_addons <- bodysize_addons %>% 
+    mutate(species_f = as.factor(species_f)) %>% 
+    #calculate maximum ingestible size (if not already in database)
+    mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
+    mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
 
   bodysize_summary <- bind_rows(bodysize_summary,bodysize_addons)
   
@@ -765,22 +771,289 @@ aoc_setup <- aoc_setup %>%
 #Join rows
 tomex2.0_aoc_setup_final <- bind_rows(aoc_setup, tomex2.0_aoc_setup)
 
-##### QA/QC - FLAGGING STUDIES ####
+tomex2.0_aoc_setup_final %>% 
+  mutate(source = as.factor(source))
 
-# tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
-#   group_by(doi) %>% 
-#   mutate(`Issue Flag` = case_when(
-#     source == "ToMEx 2.0" & all(is.na(effect.metric)) & treatments >= 3
-#     ~ "Effect metrics missing.")) %>%
-#   relocate(`Issue Flag`, .before = doi) %>% 
-#   ungroup() %>% 
-#   mutate(`Issue Flag` = case_when(
-#     !is.na(`Issue Flag`) ~ `Issue Flag`,
-#     source == "ToMEx 2.0" & exp_type_f == "Particle Only" & is.na(tech.a1) 
-#     ~ "Screening scores need to be completed for Particle Only type data.",
-#     source == "ToMEx 2.0" & effect_f == "Yes" & is.na(direction)
-#     ~ "Detected effects missing direction."
-#   )) 
+##### Variable Management - Ana's code ####
+
+#life stage
+tomex2.0_aoc_setup_final$life_f =
+  fct_collapse(tomex2.0_aoc_setup_final$life_f,
+               "adult" = "Adult",
+               "early" = c("Early", "Early, F0 generation", "Early, F1 generation", "Early, F2 generation", "Instar II", "Instar III"),
+               "Not Reported" = c("early/juvenile/adult", "Not Reported"),
+               "juvenile" = "Juvenile")
+
+tomex2.0_aoc_setup_final$life_f = fct_na_value_to_level(tomex2.0_aoc_setup_final$life_f, "Not Reported")
+
+#sex
+tomex2.0_aoc_setup_final$sex = fct_collapse(tomex2.0_aoc_setup_final$sex,
+                       "F" = "f",
+                       "M" = "m",
+                       "M_F" = c("M,F",  "M/F"))
+
+tomex2.0_aoc_setup_final$sex = fct_na_value_to_level(tomex2.0_aoc_setup_final$sex, "Not Reported")
+
+#exposure route
+tomex2.0_aoc_setup_final$exposure.route = fct_collapse(tomex2.0_aoc_setup_final$exposure.route,
+                                  "parental_water" = "coparental exposure+water",
+                                  "water_food" = "water+food",
+                                  "parental" =  c("Co-Parental Exposure", "coparental exposure", "maternal exposure","paternal exposure"))
+
+tomex2.0_aoc_setup_final$exposure.route = fct_na_value_to_level(tomex2.0_aoc_setup_final$exposure.route, "Not Reported")
+
+#particle mix
+tomex2.0_aoc_setup_final$mix = fct_collapse(tomex2.0_aoc_setup_final$mix,
+                                 "No"= c("N", "No"),
+                                 "Yes"= c("Y", "Yes"))
+
+#new column - dissolved organic matter
+tomex2.0_aoc_setup_final$DOM_present = NA
+
+tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>% group_by(exposure.media) %>%
+  mutate(DOM_present = case_when(
+    exposure.media %in% c("brackish water", "filtered aerated natural seawater", "filtered autoclaved natural seawater",  "filtered natural seawater",
+                          "filtered seawater", "filtered sterilized seawater", "filtered uv treated seawater", "freshwater", "Hemolymph serum (mussel)",
+                          "high nitrogen and phosphorus lake water", "marine sediment seawater", "natural brackish water", "natural river water",
+                          "natural seawater", "seawater", "Seawater", "sediment", "sediment filtered seawater", "sediment freshwater",
+                          "sediment seawater", "sterile natural seawater", "uv treated filtered seawater", "uv treated seawater") ~ "Yes",
+    chem.add.nominal %in% c("harbor effluent", "seawater", "sewage") ~ "Yes"))
+   
+tomex2.0_aoc_setup_final$DOM_present = fct_na_value_to_level(tomex2.0_aoc_setup_final$DOM_present, "No")
+
+#exposure media
+tomex2.0_aoc_setup_final$exposure.media = fct_collapse(tomex2.0_aoc_setup_final$exposure.media,
+                                  "artificial_medium" = c("0.3x Danieau's solution", "10% Hoagland Solution", "30percent danieaus medium",
+                                                          "AAP medium", "adam medium", "alga gro freshwater medium", "artificial freshwater",
+                                                          "artificial medium", "artificial seawater", "basal medium", "bg11 medium", 
+                                                          "BG11 medium", "Bold's Basal Medium", "culture medium", "cyanobacterial growth medium - AA/8+N medium",
+                                                          "distilled water containing 10% Hoagland solution", "dulbecco's modified eagle's medium", "e3 embryo medium",
+                                                          "egg water", "Elendt m4 medium", "Elendt M4 medium", "elendt m7 medium", "embryo culture medium", "f2 medium",
+                                                          "filter-sterilized artificial seawater", "filtered artificial seawater", "filtered artificial water", "hanks balanced salt soution",
+                                                          "hutners medium", "Immune cell exposure media", "instant ocean", "iso medium", "jarworski media", "M4 medium", "m7 medium",
+                                                          "M7 medium", "oecd 202 culture media", "oecd media", "osmosis water", "reverse osmosis water", "RT medium", "SE medium",
+                                                          "steinburg medium", "sterilized artificial seawater", "synthetic freshwater", "Synthetic seawater", "tris acetate phosphate medium",
+                                                          "trisacetatephosphatemedium", "trout culture medium (TCM)", "WC medium", "zebrafish water", "AA/8+N"),
+                                  "water" = c("3 parts tap 1 part softened water", "astm hard water", "circlulated water", "copper free water", "culture water",
+                                              "Culture water", "dechlorinated tap water", "dechlorinated water", "deionized water", "diluted mineral water",
+                                              "double distilled water", "filtered dechlorinated water", "hard reconstituted water", "moderately hard water",
+                                              "Naturally dechlorinated water", "sediment dutch standard water", "standard salt water", "tap deionized water",
+                                              "tap water", "uv sterilized water", "uv treated dechlorinated tap water", "uv treated water", "uv-sterilized milli-q water",
+                                              "uv-sterilized well aerated dechlorinated tap water"),
+                                  "freshwater"= c("culture fresh water", "high nitrogen and phosphorus lake water", "natural river water",
+                                                  "sediment freshwater"),
+                                  "other" =  c("brackish water", "Hemolymph serum (mussel)", "natural brackish water"),
+                                  "seawater" = c("filtered aerated natural seawater", "filtered autoclaved natural seawater", "filtered natural seawater", "filtered seawater",
+                                                 "filtered sterilized seawater", "filtered uv treated seawater", "marine sediment seawater", "natural seawater", "seawater", "Seawater",
+                                                 "sediment artificial seawater", "sediment filtered seawater", "sediment seawater", "sterile natural seawater", "uv treated filtered seawater",
+                                                 "uv treated seawater"))
+tomex2.0_aoc_setup_final$exposure.media = fct_na_value_to_level(tomex2.0_aoc_setup_final$exposure.media, "Not Reported")
+
+#solvent
+tomex2.0_aoc_setup_final$solvent = fct_na_value_to_level(tomex2.0_aoc_setup_final$solvent, "Not Reported")
+
+#detergent
+tomex2.0_aoc_setup_final$detergent = fct_collapse(tomex2.0_aoc_setup_final$detergent,
+                             "cetyl_alcohol" = "cetyl alcohol",
+                             "SDS"= c("SDS", "unknown, but similar to sodium dodecyl sulfate (SDS)"),
+                             "triton_x-100" = "Triton X-100", 
+                             "tween80"= c("Tween80", "tween80"))
+
+tomex2.0_aoc_setup_final$detergent = fct_na_value_to_level(tomex2.0_aoc_setup_final$detergent, "Not Reported")
+
+#chemicals added
+tomex2.0_aoc_setup_final$chem.add.nominal = fct_collapse(tomex2.0_aoc_setup_final$chem.add.nominal,
+                                   "silver_nitrate" = "AgNO3",
+                                   "silver" = "AgNP",
+                                   "bap" = "BaP",
+                                   "benzophenone" = c("BP3", "BP4", "benzophenone-3"),
+                                   "cadmium" = "Cadmium", 
+                                   "chlorpyrifos" = "Chlorpyrifos", 
+                                   "glyphosate_formulation" = "glyphosate-based herbicide (Roundup)",
+                                   "phenantherene" = "phenanthrene",
+                                   "esfenvalerate" = "pyrethroid pesticide (esfenvalerate)",
+                                   "mix" = "various - see paper")
+
+tomex2.0_aoc_setup_final$chem.add.nominal = fct_na_value_to_level(tomex2.0_aoc_setup_final$chem.add.nominal, "Not Reported")
+
+#direction
+tomex2.0_aoc_setup_final$direction = fct_collapse(tomex2.0_aoc_setup_final$direction,
+                             "decrease"= "Decreasing",
+                             "increase" = c("Increase", "Increasing"),
+                             "increase.decrease" = c("increase and decrease", "increase.decrease", "increase/decrease"),
+                             "Not Reported" = c("Na"))
+
+tomex2.0_aoc_setup_final$direction = fct_na_value_to_level(tomex2.0_aoc_setup_final$direction, "Not Reported")
+
+#target cell or tissue
+tomex2.0_aoc_setup_final$target.cell.tissue  = fct_collapse(tomex2.0_aoc_setup_final$target.cell.tissue,
+                                          "digestive.gland" = "digestive.gland:total",
+                                          "gills" = c("gill", "Gills"),
+                                          "intestine" = c("digestive.tract", "distal intestine", "gut", "intestines", "proximal intestine"),
+                                          "whole.body" = c("dstage.larvae", "embryo", "gut.whole.body"),
+                                          "kidney" = "kidney.neutrophil",
+                                          "liver" = "Liver")
+
+tomex2.0_aoc_setup_final$target.cell.tissue = fct_na_value_to_level(tomex2.0_aoc_setup_final$target.cell.tissue , "Not Reported")
+
+#polymer
+tomex2.0_aoc_setup_final$poly_f = fct_collapse(tomex2.0_aoc_setup_final$poly_f,
+"Polyamide" = c("Polyamide", "Polyamide 66"),
+"Polyethylene vinyl acetate" = c("Polyethylene (co-Vinyl acetate)", "Polyethylene Vinyl Acetate"),
+"Not Reported" = "Not Reported",
+"Polystyrene" = "Latex")
+
+tomex2.0_aoc_setup_final$poly_f = fct_na_value_to_level(tomex2.0_aoc_setup_final$poly_f, "Not Reported")
+
+# exclude Polyamidoamine -> not MP
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final[tomex2.0_aoc_setup_final$poly_f != "Polyamidoamine", ]
+
+#particle source
+tomex2.0_aoc_setup_final$source = fct_collapse(tomex2.0_aoc_setup_final$source,
+                                   "environmental" = c("Environmental",  "Field collected"),
+                                   "not_reported" = c("N",  "No"),
+                                   "commercial" = "Commercial") 
+
+#sodium azide
+tomex2.0_aoc_setup_final$sodium.azide = fct_collapse(tomex2.0_aoc_setup_final$sodium.azide,
+                                         "No" =  c("N",  "No"),
+                                         "Yes" = c("Y",  "Yes"))
+
+#cleaning
+tomex2.0_aoc_setup_final$clean.method = fct_collapse(tomex2.0_aoc_setup_final$clean.method,
+                                      "not_cleaned" = c("N",  "No", "Not Cleaned"),
+                                      "centrifugal_filter" = c("centrifugal filter",  "dialysis"),
+                                      "rinse" = c("centrifugation rinse",  "rinse", "rinse dialyzed"),
+                                      "ultrasonic" = "ultrasonic extraction")
+
+#solvent
+tomex2.0_aoc_setup_final$sol.rinse = fct_collapse(tomex2.0_aoc_setup_final$sol.rinse,
+                                 "none" = c("N",  "No"),
+                                 "distilled water" = "distillled water", 
+                                 "ultrapure water" = "ultrapurewater")
+
+tomex2.0_aoc_setup_final$sol.rinse = fct_na_value_to_level(tomex2.0_aoc_setup_final$sol.rinse, "Not Reported")
+
+#particle behavior
+tomex2.0_aoc_setup_final$particle.behavior = fct_collapse(tomex2.0_aoc_setup_final$particle.behavior,
+                                     "none" = c("aeration",  "aeration,pdi quantified", "air pump", "beads did not float air pump in tanks",
+                                                "cultures agitated", "detergent", "dynamic light scatter", "dynamic light scatter aerated",
+                                                "gentle resuspension", "homogenized cement mill", "homogenized paintmixer", "images captured in test medium",
+                                                "microscopic observation", "mixed thoroughly in bulk sediment", "mixing testing solution twice daily",
+                                                "particles conditioned in a solution of Triton X-100", "particles conditioned in river water",
+                                                "particles in food pellets", "particles mixed into sediment", "particles mixed into top layer of sediment",
+                                                "particles weathered to ensure suspension in water column", "polydisperisty index quantified",
+                                                "quantified particles on sediment surface", "resuspended daily", "sedimentation rate quantified",
+                                                "Sedimentation rate quantified", "shaken by hand twice a day", "shaker", "shaker,mechnical rotator",
+                                                "sonicated", "sonicated aeration", "sonication aeration", "stirring", "stock solution on rolling mixer",
+                                                "surfactant added", "vortex sonicated", "vortexed dynamic light scatter", "water circulation",
+                                                "water column concentrations monitored"),
+                                     "adhering_to_surface" = "adhere surface chorion",
+                                     "not_settling" = "aeration no settling observed",
+                                     "aggregates" = c("aggregates observed by dynamic light scattering",  "aggregates observed via dynamic light scattering", "aggregates observed via TEM",
+                                                      "aggregates observed visually", "poly disperisity quantified aggregates observed", "SEM aggregates observed", "some aggregates",
+                                                      "sonicated aggregates observed", "sonication aeration aggregates observed", "TEM aggregates"),
+                                     "uniformly_dispersed" = c("confirmed homogeneity in food microscopy", "homogenous mixture within food microscopy", "methodunclear noaggregation",
+                                                               "microscopic observation no aggregation", "particles described as neutrally bouyant dispersion quantified", "particles mixed into food confirmed by microscopy",
+                                                               "sonicated no aggregates observed", "sonicated no aggregation observed via dynamic light scattering", "sonication no aggregates observed",
+                                                               "suspended in water column", "visual observation no aggregates"),
+                                     "floating" = "floated on medium surface",
+                                     "Not Evaluated" = c("No", "not evaluated", "Not Evaluated"),
+                                     "settling" = c("particles allowed to sink", "quantified settling", "settled on bottom", "sink to bottom"))
+
+tomex2.0_aoc_setup_final$particle.behavior = fct_na_value_to_level(tomex2.0_aoc_setup_final$particle.behavior, "Not Evaluated")
+
+#organisms fed
+tomex2.0_aoc_setup_final$fed = fct_collapse(tomex2.0_aoc_setup_final$fed,
+                                  "Yes" = c("0.5 mg CL-1 M. minutum combined w/MPs",  "0.5 mg CL-1 mix of M. minutum and Cryptomonas sp. Combined w/MPs",
+                                            "16 blue mussels", "2 blue mussels", "2 mg CL-1 M. minutum combined w/MPs",
+                                            "2 mg CL-1 mix of M. minutum and Cryptomonas sp. Combined w/MPs", "3*10^4 cells T. suecica",
+                                            "32 blue mussels", "4 blue mussels", "6*10^4 cells T. suecica", "6*10^5 cells T. suecica",
+                                            "64 blue mussels", "8 blue mussels", "High food - food content 1.2% dry sediment weight",
+                                            "Low food - food content 0.15% dry sediment weight", "Y", "Yes"),
+                                  "No" = c("N",  "No"))
+
+tomex2.0_aoc_setup_final$fed = fct_na_value_to_level(tomex2.0_aoc_setup_final$fed, "No")
+
+#weathering
+tomex2.0_aoc_setup_final$weather.biofoul_f = fct_na_value_to_level(tomex2.0_aoc_setup_final$weather.biofoul_f, "No")
+
+#add 0s for chemical dose
+tomex2.0_aoc_setup_final$chem.add.dose.mg.L.nominal = ifelse(is.na(tomex2.0_aoc_setup_final$chem.add.dose.mg.L.nominal), 0, tomex2.0_aoc_setup_final$chem.add.dose.mg.L.nominal)
+
+#Fill width with length for rows where shape is "sphere"
+tomex2.0_aoc_setup_final$size.width.um.used.for.conversions[tomex2.0_aoc_setup_final$shape_f == "Sphere" & !is.na(tomex2.0_aoc_setup_final$size.length.um.used.for.conversions)] = 
+  tomex2.0_aoc_setup_final$size.length.um.used.for.conversions[tomex2.0_aoc_setup_final$shape_f == "Sphere" & !is.na(tomex2.0_aoc_setup_final$size.length.um.used.for.conversions)]
+
+#Add 1 as sample size for Algae, Bacterium, Cyanobacteria, Plant, and Mixed
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
+  mutate(sample.size = ifelse(org_f %in% c("Algae", "Bacterium", "Cyanobacteria", "Dinoflagellate"), 1, sample.size))
+
+#Calculate the median density for each polymer
+median_density_by_polymer = tomex2.0_aoc_setup_final %>%
+  group_by(poly_f) %>%
+  summarize(median_density = median(density.g.cm3, na.rm = TRUE)) %>% 
+  ungroup()
+
+#Join the mean temperature back to the original data
+tomex2.0_aoc_setup_final = left_join(tomex2.0_aoc_setup_final, median_density_by_polymer, by = "poly_f")
+
+#Fill NA values of density.g.cm.3. with the calculated median per polymer type
+tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>%
+  mutate(density.g.cm3 = ifelse(is.na(density.g.cm3), median_density, density.g.cm3))
+
+#Remove the temporary column median_density
+tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>% select(-median_density)
+
+#Identify unique Polymers with NA values in density.g.cm3
+na_polymer = unique(tomex2.0_aoc_setup_final$poly_f[is.na(tomex2.0_aoc_setup_final$density.g.cm3)])
+
+# Convert to character and sort the unique species alphabetically
+na_polymer = data.frame(poly_f = sort(as.character(na_polymer)))
+na_polymer # >>> check the density in the literature
+
+#
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "High Density Polyethylene"] = "0.953"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Poly(Styrene-co-acrylonitrile)"] = "1.08"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "polyethylene_vinyl_acetate"] = "0.953"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Polyisoprene"] = "0.905"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Polytetrafluoroethylene"] = "2.2"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Polyurethane"] = "1.19"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Polyvinyl Acetate"] = "1.19"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Polyvinylchloride/vinylacetate co-polymer"] = "1.38"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Sodium Polyacrylate"] = "1.32"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Starch/Polybutylene Adipate Terephthalate/Polylactic Acid"] = "1.05"
+tomex2.0_aoc_setup_final$density.g.cm3[tomex2.0_aoc_setup_final$poly_f == "Tire Wear"] = "1.45"
+
+# Restructure temp column
+tomex2.0_aoc_setup_final$media.temp = as.numeric(tomex2.0_aoc_setup_final$media.temp)
+
+# Calculate the median temperature for each Species
+median_temp_by_group = tomex2.0_aoc_setup_final %>%
+  group_by(species_f) %>%
+  summarize(median_temp = median(media.temp, na.rm = TRUE))
+
+# Join the mean temperature back to the original data
+tomex2.0_aoc_setup_final = left_join(tomex2.0_aoc_setup_final, median_temp_by_group, by = "species_f")
+
+# Fill NA values of media.temp with the calculated median temperature
+tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>%
+  mutate(media.temp = ifelse(is.na(media.temp), median_temp, media.temp))
+
+# Remove the temporary column median_temp
+tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>% select(-median_temp)
+
+# Calculate the mean temperature for each organism group
+median_temp_by_group = tomex2.0_aoc_setup_final %>%
+  group_by(org_f) %>%
+  summarize(median_temp = median(media.temp, na.rm = TRUE))
+
+# Join the mean temperature back to the original data
+tomex2.0_aoc_setup_final <- left_join(tomex2.0_aoc_setup_final, median_temp_by_group, by = "org_f")
+
+# Fill NA values of media.temp with the calculated mean temperature
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
+  mutate(media.temp = ifelse(is.na(media.temp), median_temp, media.temp))
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
@@ -898,10 +1171,12 @@ tomex2.0_aoc_quality_final <- tomex2.0_aoc_setup_final %>%
   filter(tier_zero_risk_f != "Scoring Not Applicable") %>% 
   mutate(Study = paste0(authors, " (", year,")")) %>%
   mutate(Study_plus = as.factor(paste0(authors, " (", year,")", " (",doi,")"))) %>%
-  distinct(Study, Study_plus, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
+  group_by(Study, Study_plus, doi, treatment_range, tech.a1, tech.a2, tech.a3, tech.a4, tech.a5, tech.a6, tech.1, tech.2, tech.3, tech.4, tech.5,
            tech.6, tech.7, tech.8, tech.9, tech.10, tech.11, tech.12, risk.13, risk.14, risk.15, risk.16, risk.17, risk.18, risk.19, risk.20,
-           lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f) %>%     
-  
+           lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f) %>% 
+  summarise()
+
+tomex2.0_aoc_quality_final <- tomex2.0_aoc_quality_final %>% 
   pivot_longer(!c(Study, Study_plus, doi, treatment_range, lvl1_f, lvl2_f, bio_f, effect_f, life_f, poly_f, shape_f, size_f, species_f, env_f, org_f, acute.chronic_f, tier_zero_tech_f, tier_zero_risk_f),
                names_to ="Criteria", 
                values_to ="Score") %>%  

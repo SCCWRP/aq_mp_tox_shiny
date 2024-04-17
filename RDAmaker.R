@@ -503,7 +503,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                    lvl3 == "pcc.level"~"Protein Carbonylation Content",
                                    lvl3 == "pche.activity"~"Pseudocholinesterase Activity",
                                    lvl3 == "pepckc.mrnaexpression"~"pepckc mRNA expression",
-                                   lvl3 == "percent.dstage.larvae"~"Pertengage of D-stage Larvae",
+                                   lvl3 == "percent.dstage.larvae"~"Percentage of D-stage Larvae",
                                    lvl3 == "percent.dveliger"~"Percentage of Veliger Larvae",
                                    lvl3 == "percent.motile.sperm"~"Percentage of Motile Sperm",
                                    lvl3 == "percent.tank.used"~"Percentage of Tank Used",
@@ -650,6 +650,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
                                   environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(species = if_else(genus == "Mytilus" & is.na(species), "species", species)) %>% 
   mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 

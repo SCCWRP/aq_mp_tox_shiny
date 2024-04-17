@@ -70,4 +70,44 @@ SSA.inversefnx = function(sa, #surface area, calcaulted elsewhere
   SSA.inverse = m / sa
   return(SSA.inverse)}
 
+#data tidying functions from Ana
+
+############## Levels summary ##################
+summarize_and_print <- function(data, column_name)
+{
+  result <- data %>%
+    group_by({{ column_name }}) %>%
+    summarise(n_datapoints = n()) %>%
+    arrange(as.numeric(as.character({{ column_name }}))) %>%
+    print(n = 1000)
+  return(result)
+}
+
+
+############## Change particle length ##################
+update_particle_length <- function(data, doi, length, polymer, shape, new_value) {
+  data$Particle.Length..μm.[
+    data$DOI == doi &
+      data$Particle.Length..μm. == length &
+      data$Polymer == polymer &
+      data$Shape == shape
+  ] = new_value
+  
+  return(data)
+}
+
+
+###### check what is missing #########
+generate_structure_checks <- function(data) {
+  structure.checks <- data.frame(
+    na.counts = sapply(data, function(x) sum(is.na(x))),
+    na.percent = round(sapply(data, function(x) sum(is.na(x)) / nrow(data) * 100), digits = 1),
+    n.levels = sapply(data, function(x) length(unique(x)))
+  )
+  return(structure.checks)
+  
+}
+
+
+
 

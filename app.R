@@ -6970,7 +6970,7 @@ SSD_plot_react <- reactive({
   ssd_plot(
      aoc_ssd, #data
      aoc_pred(), #prediction
-     color = "Group",
+     color = "source",
      label = "Species",
      xlab = dose_check_ssd,
      ci = TRUE, #confidence interval plotting
