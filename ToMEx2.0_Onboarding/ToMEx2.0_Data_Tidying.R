@@ -513,7 +513,11 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     !is.na(size.length.mm.measured) ~ size.length.mm.measured*1000,
     !is.na(size.length.min.mm.measured) ~ ((size.length.max.mm.measured + size.length.min.mm.measured)/2)*1000,
     !is.na(size.length.mm.nominal) ~ size.length.mm.nominal*1000,
-    !is.na(size.length.min.mm.nominal) ~ ((size.length.max.mm.nominal + size.length.min.mm.nominal)/2)*1000)) %>% 
+    !is.na(size.length.min.mm.nominal) ~ ((size.length.max.mm.nominal + size.length.min.mm.nominal)/2)*1000,
+    
+    !is.na(size.length.max.mm.measured) ~ size.length.max.mm.measured*1000,
+    !is.na(size.width.max.mm.nominal) ~ size.width.max.mm.nominal*1000)) %>% 
+  
   relocate(size.length.um.used.for.conversions, .after = zetapotential.media) %>% 
   #Select size widths to be used for conversions
   mutate(size.width.um.used.for.conversions = case_when(
@@ -1160,6 +1164,8 @@ saveRDS(tomex2.0_aoc_search_final, file = "aoc_search_tomex2.RDS")
 tomex2.0_aoc_z_final <- tomex2.0_aoc_setup_final %>%
   rename(Species = species_f) %>%  #must make value 'Species" (uppercase)
   rename(Group = org_f)
+
+tomex2.0_aoc_z_final$rowid <- sapply(seq_len(nrow(tomex2.0_aoc_z_final)), function(x) uuid::UUIDgenerate())
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_z_final, file = "aoc_z_tomex2.RDS")
