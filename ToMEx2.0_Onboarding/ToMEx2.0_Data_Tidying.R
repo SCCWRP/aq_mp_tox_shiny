@@ -674,6 +674,8 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     
   bodysize_addons <- bodysize_addons %>% 
     mutate(species_f = as.factor(species_f)) %>% 
+    #annotate whether max size ingest was estimated or reported (all estiamted here)
+    mutate(max.size.ingest.reported.estimated = "estimated") %>% 
     #calculate maximum ingestible size (if not already in database)
     mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
     mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
@@ -685,7 +687,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
 tomex2.0_aoc_setup <- left_join(tomex2.0_aoc_setup, bodysize_summary, by = c("species_f"))
 
 #Re-structure alternative dosing columns in aoc-setup
-aoc_setup <- aoc_setup %>%
+aoc_setup <- aoc_setup %>% 
   #Remove effect metrics when there are less than 3 treatments
   mutate(effect.metric = as.character(effect.metric)) %>% 
   #Remove effect metrics when there are less than 3 treatments

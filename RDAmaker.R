@@ -681,6 +681,11 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   group_by(doi) %>% 
   mutate(treatment_range = ifelse(min(treatments) == max(treatments), paste0(treatments), paste0(min(treatments),"-",max(treatments)))) %>% 
   ungroup() %>% 
+  #annotate whether max size ingest was estimated or reported
+  mutate(max.size.ingest.reported.estimated = case_when(
+    is.na(max.size.ingest.mm) ~ "estimated",  # If the value is NA, label it "estimated"
+    TRUE ~ "reported"                   # Otherwise, label it "converted"
+  )) %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
                                      10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
