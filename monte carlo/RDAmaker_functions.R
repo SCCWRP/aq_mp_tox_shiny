@@ -5,8 +5,9 @@ library(tidyverse) #General everything
 
 source("functions.R") # necessary for surface area, volume calculations
 
-R.ave = 0.77 # for aquatic environments.
+#R.ave = 0.77 # for aquatic environments. Just here for reference. Run in Master_Data_Tidying.R to produce RDS files.
 
+ToMEx1.0fxn <- function(R.ave, beta_log10_body_length, body_length_intercept){
 ##### Read in Data ####
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% rowid_to_column()
 
@@ -690,7 +691,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   )) %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
-                                     10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+                                     10^(beta_log10_body_length * log10(body.length.cm) - body_length_intercept) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
                                      max.size.ingest.mm)) %>%  # if already present, just use that
   mutate(max.size.ingest.um = 1000 * max.size.ingest.mm) %>%  #makes it less confusing below
   #Make factor for experiment type
@@ -1016,10 +1017,13 @@ aoc_quality <- aoc_setup %>%
 
 
 ###### SAVE DATA #####
-saveRDS(aoc, file = "aoc.RDS")
-saveRDS(aoc_endpoint, file = "aoc_endpoint.RDS")
-saveRDS(aoc_quality, file = "aoc_quality.RDS")
-saveRDS(aoc_search, file = "aoc_search.RDS")
-saveRDS(aoc_setup, file = "aoc_setup.RDS")
-saveRDS(aoc_v1, file = "aoc_v1.RDS")
-saveRDS(aoc_z, file = "aoc_z.RDS")
+# saveRDS(aoc, file = "aoc.RDS")
+# saveRDS(aoc_endpoint, file = "aoc_endpoint.RDS")
+# saveRDS(aoc_quality, file = "aoc_quality.RDS")
+# saveRDS(aoc_search, file = "aoc_search.RDS")
+# saveRDS(aoc_setup, file = "aoc_setup.RDS")
+# saveRDS(aoc_v1, file = "aoc_v1.RDS")
+# saveRDS(aoc_z, file = "aoc_z.RDS")
+
+return(aoc_setup)
+} #end function

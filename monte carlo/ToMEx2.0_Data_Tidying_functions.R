@@ -11,8 +11,6 @@ library(readr)
 #setwd("~aq_mp_tox_shiny/")
 source("functions.R") # necessary for surface area, volume calculations
 
-R.ave = 0.77 # for aquatic environments.
-
 #### Extract Data from Submitted Templates ####
 
 #Set working directory to location with .csv files
@@ -190,9 +188,11 @@ setwd("..")
 setwd("..")
 
 #Read in ToMEx 1.0 Tidy Data sets
-aoc_setup <- readRDS("aoc_setup.RDS")
+#aoc_setup <- readRDS("aoc_setup.RDS")
 
 ##### AOC SETUP #####
+
+ToMEx2.0fxn <- function(aoc_setup, R.ave, beta_log10_body_length, body_length_intercept){
 
 tomex2.0_aoc_setup <- tomex2.0 %>%
    #Remove effect metrics when there are less than 3 treatments
@@ -543,14 +543,14 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
                                                shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
                                                shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
                                                shape_f == "Fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
-                                                                           b = 0.77 * size.length.um.used.for.conversions,
-                                                                           c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>%
+                                                                           b = R.ave * size.length.um.used.for.conversions,
+                                                                           c = R.ave * 0.67 * size.length.um.used.for.conversions))) %>%
   relocate(particle.surface.area.um2, .after = size_f) %>% 
   #Calculate particle volume
   mutate(particle.volume.um3 = case_when(shape_f == "Sphere" ~ (4/3)*pi*((size.length.um.used.for.conversions/2)^3),
                                          shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assume 15 um as width (kooi et al 2021)
                                          shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width reported
-                                         shape_f == "Fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
+                                         shape_f == "Fragment" ~ volumefnx(R = R.ave, L = size.length.um.used.for.conversions))) %>% 
   relocate(particle.volume.um3, .after = particle.surface.area.um2) %>% 
   #Calculate particle mass
   mutate(mass.per.particle.mg = (particle.volume.um3*density.g.cm3)*0.000000001) %>% 
@@ -572,28 +572,28 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     !is.na(size.length.min.mm.measured) ~ size.length.min.mm.measured * 1000)) %>% 
   mutate(size.width.min.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape_f == "Fiber" ~ 0.77 * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
-    shape_f == "Not Reported" ~ 0.77 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fragment" ~ 0.77 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ R.ave * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
   mutate(size.height.min.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fiber" ~  0.77 * size.length.min.um.used.for.conversions, #height same as width for fibers
-    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~  R.ave * size.length.min.um.used.for.conversions, #height same as width for fibers
+    shape_f == "Fragment" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
   # maxima
   mutate(size.length.max.um.used.for.conversions = case_when(
     is.na(size.length.max.mm.measured) ~ size.length.max.mm.nominal * 1000,
     !is.na(size.length.max.mm.measured) ~ size.length.max.mm.measured * 1000)) %>% 
   mutate(size.width.max.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
-    shape_f == "Not Reported" ~ 0.77 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fragment" ~ 0.77 * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
+    shape_f == "Not Reported" ~ R.ave * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ R.ave * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
   mutate(size.height.max.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #hieght same as width
-    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.max.um.used.for.conversions, #hieght same as width
+    shape_f == "Fragment" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
   
   #calculate minimum and maximum surface area for polydisperse particles
   mutate(particle.surface.area.um2.min = SAfnx(a = size.length.min.um.used.for.conversions,
@@ -679,7 +679,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     #annotate whether max size ingest was estimated or reported (all estiamted here)
     mutate(max.size.ingest.reported.estimated = "estimated") %>% 
     #calculate maximum ingestible size (if not already in database)
-    mutate(max.size.ingest.mm = 10^(0.9341 * log10(body.length.cm) - 1.1200) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
+    mutate(max.size.ingest.mm = 10^(beta_log10_body_length * log10(body.length.cm) - body_length_intercept) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
     mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
 
   bodysize_summary <- bind_rows(bodysize_summary,bodysize_addons)
@@ -1064,7 +1064,7 @@ tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
   mutate(media.temp = ifelse(is.na(media.temp), median_temp, media.temp))
 
 #Save RDS file
-saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
+#saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
 
 ##### AOC ENDPOINT #####
 
@@ -1074,7 +1074,7 @@ tomex2.0_aoc_endpoint_final <- tomex2.0_aoc_setup_final %>%
   summarise()
 
 #Save RDS file
-saveRDS(tomex2.0_aoc_endpoint_final, file = "aoc_endpoint_tomex2.RDS")
+#saveRDS(tomex2.0_aoc_endpoint_final, file = "aoc_endpoint_tomex2.RDS")
 
 ##### AOC SEARCH #####
 
@@ -1161,7 +1161,7 @@ tomex2.0_aoc_search_final <- tomex2.0_aoc_search %>%
                 "μm^3/kg sediment dry weight (master)" = dose.um3.kg.sediment.master, "μm^2/kg sediment dry weight (master)" = dose.um2.kg.sediment.master, "μm^2/ug/kg sediment dry weight (master)" = dose.um2.ug.kg.sediment.master)
 
 #Save RDS file
-saveRDS(tomex2.0_aoc_search_final, file = "aoc_search_tomex2.RDS")
+#saveRDS(tomex2.0_aoc_search_final, file = "aoc_search_tomex2.RDS")
 
 ##### AOC SSD (AOC_Z) #####
 
@@ -1169,11 +1169,10 @@ tomex2.0_aoc_z_final <- tomex2.0_aoc_setup_final %>%
   rename(Species = species_f) %>%  #must make value 'Species" (uppercase)
   rename(Group = org_f)
 
-set.seed(123456789)
-tomex2.0_aoc_z_final$rowid <- sapply(seq_len(nrow(tomex2.0_aoc_z_final)), function(x) uuid::UUIDgenerate())
+#tomex2.0_aoc_z_final$rowid <- sapply(seq_len(nrow(tomex2.0_aoc_z_final)), function(x) uuid::UUIDgenerate())
 
 #Save RDS file
-saveRDS(tomex2.0_aoc_z_final, file = "aoc_z_tomex2.RDS")
+#saveRDS(tomex2.0_aoc_z_final, file = "aoc_z_tomex2.RDS")
 
 ##### AOC QUALITY #####
 
@@ -1260,7 +1259,11 @@ tomex2.0_aoc_quality_final <- tomex2.0_aoc_quality_final %>%
                                                   "Sample Size*", "Test Species*", "Administration Route*","Test Medium*")))
 
 #Save RDS file
-saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
+#saveRDS(tomex2.0_aoc_quality_final, file = "aoc_quality_tomex2.RDS")
+
+return(tomex2.0_aoc_z_final)
+} #end function (DO NOT DELETE)
+
 
 #quick stats
 # library(tidyverse)
