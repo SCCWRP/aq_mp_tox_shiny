@@ -11,7 +11,10 @@ library(readr)
 #setwd("~aq_mp_tox_shiny/")
 source("functions.R") # necessary for surface area, volume calculations
 
-R.ave = 0.77 # for aquatic environments.
+R.ave.water.marine <- 0.77 # average length to width ratio of microplastics in marine environment (Kooi et al. 2021)
+R.ave.water.freshwater <- 0.67
+R.ave.sediment.marine <- 0.75
+R.ave.sediment.freshwater <- 0.70
 
 #### Extract Data from Submitted Templates ####
 
@@ -538,19 +541,24 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     is.na(size.length.um.used.for.conversions) ~ "Not Reported"),  
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   relocate(size_f, .after = size.width.um.used.for.conversions) %>% 
+  ### assign average length to width ratio based on compartment
+  mutate(R.ave = case_when(env_f == "Marine" & `exposure.route` == "water" ~ R.ave.water.marine,
+                           env_f == "Marine" & `exposure.route` == "sediment" ~ R.ave.sediment.marine,
+                           env_f == "Freshwater" & `exposure.route` == "water" ~ R.ave.water.freshwater,
+                           env_f == "Freshwater" & `exposure.route` == "sediment" ~ R.ave.sediment.freshwater)) %>% 
   #Calculate particle surface area
   mutate(particle.surface.area.um2 = case_when(shape_f == "Sphere" ~ 4*pi*((size.length.um.used.for.conversions/2)^2),
                                                shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
                                                shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
                                                shape_f == "Fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
-                                                                           b = 0.77 * size.length.um.used.for.conversions,
-                                                                           c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>%
+                                                                           b = R.ave * size.length.um.used.for.conversions,
+                                                                           c = R.ave * 0.67 * size.length.um.used.for.conversions))) %>%
   relocate(particle.surface.area.um2, .after = size_f) %>% 
   #Calculate particle volume
   mutate(particle.volume.um3 = case_when(shape_f == "Sphere" ~ (4/3)*pi*((size.length.um.used.for.conversions/2)^3),
                                          shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assume 15 um as width (kooi et al 2021)
                                          shape_f == "Fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width reported
-                                         shape_f == "Fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
+                                         shape_f == "Fragment" ~ volumefnx(R = R.ave, L = size.length.um.used.for.conversions))) %>% 
   relocate(particle.volume.um3, .after = particle.surface.area.um2) %>% 
   #Calculate particle mass
   mutate(mass.per.particle.mg = (particle.volume.um3*density.g.cm3)*0.000000001) %>% 
@@ -572,28 +580,28 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     !is.na(size.length.min.mm.measured) ~ size.length.min.mm.measured * 1000)) %>% 
   mutate(size.width.min.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape_f == "Fiber" ~ 0.77 * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
-    shape_f == "Not Reported" ~ 0.77 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fragment" ~ 0.77 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ R.ave * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
   mutate(size.height.min.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fiber" ~  0.77 * size.length.min.um.used.for.conversions, #height same as width for fibers
-    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~  R.ave * size.length.min.um.used.for.conversions, #height same as width for fibers
+    shape_f == "Fragment" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
   # maxima
   mutate(size.length.max.um.used.for.conversions = case_when(
     is.na(size.length.max.mm.measured) ~ size.length.max.mm.nominal * 1000,
     !is.na(size.length.max.mm.measured) ~ size.length.max.mm.measured * 1000)) %>% 
   mutate(size.width.max.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
-    shape_f == "Not Reported" ~ 0.77 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fragment" ~ 0.77 * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
+    shape_f == "Not Reported" ~ R.ave * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fragment" ~ R.ave * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
   mutate(size.height.max.um.used.for.conversions = case_when(
     shape_f == "Sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape_f == "Not Reported" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape_f == "Fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #hieght same as width
-    shape_f == "Fragment" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape_f == "Not Reported" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape_f == "Fiber" ~ R.ave * size.length.max.um.used.for.conversions, #hieght same as width
+    shape_f == "Fragment" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
   
   #calculate minimum and maximum surface area for polydisperse particles
   mutate(particle.surface.area.um2.min = SAfnx(a = size.length.min.um.used.for.conversions,

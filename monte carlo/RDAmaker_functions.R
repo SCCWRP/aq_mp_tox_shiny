@@ -5,9 +5,14 @@ library(tidyverse) #General everything
 
 source("functions.R") # necessary for surface area, volume calculations
 
-#R.ave = 0.77 # for aquatic environments. Just here for reference. Run in Master_Data_Tidying.R to produce RDS files.
+# R.ave.water.marine <- 0.77 # average length to width ratio of microplastics in marine environment (Kooi et al. 2021)
+# R.ave.water.freshwater <- 0.67
+# R.ave.sediment.marine <- 0.75
+# R.ave.sediment.freshwater <- 0.70
 
-ToMEx1.0fxn <- function(R.ave, beta_log10_body_length, body_length_intercept){
+
+ToMEx1.0fxn <- function(R.ave.water.marine, R.ave.water.freshwater, R.ave.sediment.freshwater, R.ave.sediment.marine,
+                        beta_log10_body_length, body_length_intercept){
 ##### Read in Data ####
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% rowid_to_column()
 
@@ -701,6 +706,13 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                        chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>%
   
   #### Recalculation of surface area and volume based on shape ####
+
+## Assign average length to width ratio (R.Ave) based on compartment (values from Kooi et al. 2021 SI)
+  mutate(R.ave = case_when(environment == "Marine" & exposure.route == "water" ~ R.ave.water.marine,
+                           environment == "Marine" & exposure.route == "sediment" ~ R.ave.sediment.marine,
+                           environment == "Freshwater" & exposure.route == "water" ~ R.ave.water.freshwater,
+                           environment == "Freshwater" & exposure.route == "sediment" ~ R.ave.sediment.freshwater,
+                           T ~ NA)) %>% # if doesn't meet these conditions, annotate as NA
   #calculate surface area based on shape
 #calculate surface area based on shape
 mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surface.area.um2,

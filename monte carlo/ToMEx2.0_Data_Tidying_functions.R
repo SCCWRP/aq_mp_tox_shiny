@@ -192,7 +192,14 @@ setwd("..")
 
 ##### AOC SETUP #####
 
-ToMEx2.0fxn <- function(aoc_setup, R.ave, beta_log10_body_length, body_length_intercept){
+# R.ave.water.marine <- 0.77 # average length to width ratio of microplastics in marine environment (Kooi et al. 2021)
+# R.ave.water.freshwater <- 0.67
+# R.ave.sediment.marine <- 0.75
+# R.ave.sediment.freshwater <- 0.70
+
+ToMEx2.0fxn <- function(aoc_setup, 
+                        R.ave.water.marine, R.ave.water.freshwater, R.ave.sediment.freshwater, R.ave.sediment.marine,
+                        beta_log10_body_length, body_length_intercept){
 
 tomex2.0_aoc_setup <- tomex2.0 %>%
    #Remove effect metrics when there are less than 3 treatments
@@ -538,6 +545,13 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     is.na(size.length.um.used.for.conversions) ~ "Not Reported"),  
     levels = c("1nm < 100nm", "100nm < 1µm", "1µm < 100µm", "100µm < 1mm", "1mm < 5mm", "Not Reported"))) %>% # creates new column with nicer names and order by size levels.
   relocate(size_f, .after = size.width.um.used.for.conversions) %>% 
+  ### assign average length to width ratio based on compartment
+  mutate(R.ave = case_when(env_f == "Marine" & `exposure.route` == "water" ~ R.ave.water.marine,
+                           env_f == "Marine" & `exposure.route` == "sediment" ~ R.ave.sediment.marine,
+                           env_f == "Freshwater" & `exposure.route` == "water" ~ R.ave.water.freshwater,
+                           env_f == "Freshwater" & `exposure.route` == "sediment" ~ R.ave.sediment.freshwater,
+                           T ~ NA)) %>% # if doesn't meet these conditions, annotate as NA
+  
   #Calculate particle surface area
   mutate(particle.surface.area.um2 = case_when(shape_f == "Sphere" ~ 4*pi*((size.length.um.used.for.conversions/2)^2),
                                                shape_f == "Fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
@@ -679,7 +693,7 @@ tomex2.0_aoc_setup <- tomex2.0 %>%
     #annotate whether max size ingest was estimated or reported (all estiamted here)
     mutate(max.size.ingest.reported.estimated = "estimated") %>% 
     #calculate maximum ingestible size (if not already in database)
-    mutate(max.size.ingest.mm = 10^(beta_log10_body_length * log10(body.length.cm) - body_length_intercept) * 10) %>% #(Jamm et al 2020 Nature paper)correction for cm to mm
+    mutate(max.size.ingest.mm = 10^(beta_log10_body_length * log10(body.length.cm) - body_length_intercept) * 10) %>% #(Jâms, et al 2020 Nature paper)correction for cm to mm
     mutate(max.size.ingest.um = 1000 * max.size.ingest.mm)
 
   bodysize_summary <- bind_rows(bodysize_summary,bodysize_addons)

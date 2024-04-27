@@ -5,7 +5,11 @@ library(tidyverse) #General everything
 
 source("functions.R") # necessary for surface area, volume calculations
 
-R.ave = 0.77 # for aquatic environments.
+R.ave.water.marine <- 0.77 # average length to width ratio of microplastics in marine environment (Kooi et al. 2021)
+R.ave.water.freshwater <- 0.67
+R.ave.sediment.marine <- 0.75
+R.ave.sediment.freshwater <- 0.70
+
 
 ##### Read in Data ####
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% rowid_to_column()
@@ -700,6 +704,10 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                        chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>%
   
   #### Recalculation of surface area and volume based on shape ####
+mutate(R.ave = case_when(environment == "Marine" & exposure.route == "water" ~ R.ave.water.marine,
+                         environment == "Marine" & exposure.route == "sediment" ~ R.ave.sediment.marine,
+                         environment == "Freshwater" & exposure.route == "water" ~ R.ave.water.freshwater,
+                         environment == "Freshwater" & exposure.route == "sediment" ~ R.ave.sediment.freshwater)) %>% 
   #calculate surface area based on shape
 #calculate surface area based on shape
 mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surface.area.um2,
