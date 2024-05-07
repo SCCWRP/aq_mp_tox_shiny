@@ -55,197 +55,6 @@ train_data_prediction <- readr::read_csv("prediction/training_data_prediction.cs
 # Load functions
 source("functions.R")
 
-##### Overview Setup #####
-
-polydf<-rowPerc(xtabs( ~poly_f +effect_f, aoc)) #pulls polymers by effect 
-polyf<-as.data.frame(polydf)%>% #Makes data frame
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>% 
-  filter(effect_f %in% c("Yes","No"))%>% #Sorts into Yes and No
-  # mutate(polymer = factor(case_when(
-  #   polymer == "BIO" ~ "Biopolymer",
-  #   polymer == "EVA" ~ "Polyethylene Vinyl Acetate",
-  #   polymer == "LTX" ~ "Latex",
-  #   polymer == "PA" ~ "Polyamide",
-  #   polymer == "PE" ~ "Polyethylene",
-  #   polymer == "PC" ~ "Polycarbonate",
-  #   polymer == "PET" ~ "Polyethylene Terephthalate",
-  #   polymer == "PI" ~ "Polyisoprene",
-  #   polymer == "PMMA" ~ "Polymethylmethacrylate",
-  #   polymer == "PP" ~ "Polypropylene",
-  #   polymer == "PS" ~ "Polystyrene",
-  #   polymer == "PUR" ~ "Polyurethane",
-  #   polymer == "PVC" ~ "Polyvinylchloride",
-  #   polymer == "PLA" ~ "Polylactic Acid",
-  #   polymer == "Not Reported" ~ "Not Reported"))) %>%
-  mutate_if(is.numeric, round,0) #rounds percents 
-
-Endpoints<-xtabs(~poly_f +effect_f ,aoc) #Pulls all study obs. for polymer from dataset
-
-polyfinal<- data.frame(cbind(polyf, Endpoints))%>% #adds it as a column
-  rename(Endpoints='Freq.1')%>% #renames column
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-sizedf<-rowPerc(xtabs(~size_f +effect_f, aoc))
-
-sizef<-as.data.frame(sizedf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  # mutate(size.category = case_when(
-  #   size.category == 1 ~ "1nm < 100nm",
-  #   size.category == 2 ~ "100nm < 1µm",
-  #   size.category == 3 ~ "1µm < 100µm",
-  #   size.category == 4 ~ "100µm < 1mm",
-  #   size.category == 5 ~ "1mm < 5mm",
-  #   size.category == 0 ~ "Not Reported"))%>%
-  rename(Type = "size_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Size")
-
-study_s<-xtabs(~size_f +effect_f,aoc)
-
-sizefinal<- data.frame(cbind(sizef, study_s))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='size_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-shapedf<-rowPerc(xtabs(~shape_f + effect_f, aoc))
-
-shapef<-as.data.frame(shapedf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type="shape_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Shape")
-  # mutate(Type = case_when(
-  #   Type == "sphere" ~ "Sphere",
-  #   Type == "fragment" ~ "Fragment",
-  #   Type == "fiber" ~ "Fiber"))
-
-study_sh<-xtabs(~shape_f + effect_f,aoc)
-
-shapefinal<- data.frame(cbind(shapef, study_sh))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='shape_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-taxdf<-rowPerc(xtabs(~org_f +effect_f, aoc))
-
-taxf<-as.data.frame(taxdf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type= "org_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Organism")
-
-study_t<-xtabs(~org_f +effect_f,aoc)
-
-taxfinal<- data.frame(cbind(taxf, study_t))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='org_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-lvl1df<-rowPerc(xtabs(~lvl1_f +effect_f, aoc))
-
-lvl1f<-as.data.frame(lvl1df)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type= "lvl1_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Lvl1")
-  # mutate(Type = case_when(
-  #   Type == "alimentary.excretory" ~ "Alimentary, Excretory",
-  #   Type == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
-  #   Type == "circulatory.respiratory" ~ "Circulatory, Respiratory",
-  #   Type == "community" ~ "Community",
-  #   Type == "fitness" ~ "Fitness",
-  #   Type == "immune" ~ "Immune",
-  #   Type == "metabolism" ~ "Metabolism",
-  #   Type == "microbiome" ~ "Microbiome",
-  #   Type == "stress" ~ "Stress"))
-
-study_l<-xtabs(~lvl1_f +effect_f,aoc)
-
-lvl1final<- data.frame(cbind(lvl1f, study_l))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='lvl1_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-lifedf<-rowPerc(xtabs(~life_f +effect_f, aoc))
-
-lifef<-as.data.frame(lifedf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type= "life_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Life.stage")
-
-studyli<-xtabs(~life_f +effect_f ,aoc)
-
-lifefinal<- data.frame(cbind(lifef, studyli))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='life_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-vivodf<-rowPerc(xtabs(~vivo_f +effect_f, aoc))
-
-vivof<-as.data.frame(vivodf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type= "vivo_f")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Invivo.invivo")
-  # mutate(Type = case_when(
-  #   Type=="invivo"~"In Vivo",
-  #   Type=="invitro"~"In Vitro"))
-
-study_v<-xtabs(~vivo_f +effect_f,aoc)
-
-vivofinal<- data.frame(cbind(vivof, study_v))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='vivo_f')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-routedf<-rowPerc(xtabs(~exposure.route +effect_f, aoc))
-
-routef<-as.data.frame(routedf)%>%
-  # mutate(effect = case_when(effect == "Y" ~ "Yes",
-  #                           effect == "N" ~ "No")) %>%
-  filter(effect_f %in% c("Yes","No"))%>%
-  rename(Type= "exposure.route")%>%
-  mutate_if(is.numeric, round,0)%>%
-  mutate(plot="Exposure.route")
-  # mutate(Type = case_when(
-  #   Type == "coparental.exposure" ~"Co-Parental Exposure",
-  #   Type == "paternal.exposure" ~ "Paternal Exposure",
-  #   Type == "maternal.exposure" ~ "Maternal Exposure",
-  #   Type == "food" ~ "Food",
-  #   Type == "water" ~ "Water",
-  #   Type == "sediment" ~ "Sediment",
-  #   Type == "media" ~ "Media"))
-
-study_r<-xtabs(~exposure.route +effect_f,aoc)
-
-routefinal<- data.frame(cbind(routef, study_r))%>%
-  rename(Endpoints='Freq.1')%>%
-  rename(category='exposure.route')%>%
-  mutate(logEndpoints = log(Endpoints))%>%
-  rename(Percent = Freq)#renames column
-
-
 ## Create environmentally realistic data
 synthetic_data_builder <- function(count){
   #Preset parameters for pdfs
@@ -2045,135 +1854,206 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
   
    output$polymer_plot <- renderPlot({
     
-    # generate plot
-     ggplot(polyfinal,aes(fill=effect_f, y= logEndpoints, x= poly_f, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~poly_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(poly_f, label, pos)
+     
+     poly <- as.data.frame(xtabs(~poly_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "poly_f")
+     
+     #generate plot
+     ggplot(poly,aes(fill= fct_rev(effect_f), x= reorder(poly_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("seagrass"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17), plot.title = element_text(hjust = 0.5, face="bold",size=20))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
-             
              axis.ticks= element_blank(),
-             axis.text.x = element_text(),
-             axis.text.y = element_blank(),
+             axis.text.x = element_text(size = 12),
              axis.title.x = element_blank())
     })
   
    output$vivo_plot <- renderPlot({
      
-     # generate plot
-     ggplot(vivofinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~vivo_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(vivo_f, label, pos)
+     
+     vivo <- as.data.frame(xtabs(~vivo_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "vivo_f")
+     
+     #generate plot
+     ggplot(vivo,aes(fill= fct_rev(effect_f), x= reorder(vivo_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("lupinus"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
+
    })
    
    output$size_plot <- renderPlot({
      
-     # generate plot
-     ggplot(sizefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~size_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(size_f, label, pos)
+     
+     size <- as.data.frame(xtabs(~size_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "size_f")
+     
+     #generate plot
+     ggplot(size,aes(fill= fct_rev(effect_f), x= reorder(size_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("bigsur2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
+
    })
    
    output$shape_plot <- renderPlot({
      
-     # generate plot
-     ggplot(shapefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~shape_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(shape_f, label, pos)
+     
+     shape <- as.data.frame(xtabs(~shape_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "shape_f")
+     
+     #generate plot
+     ggplot(shape,aes(fill= fct_rev(effect_f), x= reorder(shape_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("vermillion"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
    })
    
    output$life_plot <- renderPlot({
      
-     # generate plot
-     ggplot(lifefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~life_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(life_f, label, pos)
+     
+     life <- as.data.frame(xtabs(~life_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "life_f")
+     
+     #generate plot
+     ggplot(life,aes(fill= fct_rev(effect_f), x= reorder(life_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("lake"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
    })
    
    output$tax_plot <- renderPlot({
      
-     # generate plot
-     ggplot(taxfinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~org_f + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(org_f, label, pos)
+     
+     tax <- as.data.frame(xtabs(~org_f + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "org_f")
+     
+     #generate plot
+     ggplot(tax,aes(fill= fct_rev(effect_f), x= reorder(org_f, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("superbloom2"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size = 15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
    })
    
    output$exposure_plot <- renderPlot({
      
-     # generate plot
-     ggplot(routefinal,aes(fill=effect_f, y= logEndpoints, x= Type, Percent=Percent)) +
-       geom_bar(position="stack", stat="identity") +
-       geom_text(aes(label= paste0(Endpoints)), position = position_stack(vjust = 0.5),colour="black", size = 5) +
+     #setup
+     labeldf<-as.data.frame(xtabs(~exposure.route + effect_f, aoc_setup)) %>% 
+       pivot_wider(names_from = effect_f, values_from = Freq) %>% 
+       mutate(label = paste0(Yes,"/",No)) %>% 
+       mutate(pos = No + Yes) %>% 
+       select(exposure.route, label, pos)
+     
+     exproute <- as.data.frame(xtabs(~exposure.route + effect_f, aoc_setup)) %>% 
+       left_join(labeldf, by = "exposure.route")
+     
+     #generate plot
+     ggplot(exproute,aes(fill= fct_rev(effect_f), x= reorder(exposure.route, -Freq), y= Freq)) +
+       geom_bar(position="stack", stat = "identity") +
+       geom_text(aes(y=pos, label=label), vjust=0, size = 5) +
        scale_fill_manual(values = cal_palette("wetland"))+
        theme_classic() +
        ylab("Number of Endpoints Measured") +
-       labs(fill="Effect") +
-       guides(x = guide_axis(angle = 45))+
-       theme(text = element_text(size=17),plot.title = element_text(hjust = 0.5, face="bold"))+
+       labs(fill="Effect", caption = "The first value in each data label indicates number of endpoints where effects were detected (i.e., 'Yes').
+            The second value indciates the number of endpoints where effects were not detected (i.e., 'No').") +
+       guides(x = guide_axis(angle = 25))+
+       theme(text = element_text(size=15),plot.title = element_text(hjust = 0.5, face="bold"))+
        theme(legend.position = "right",
              axis.ticks= element_blank(),
              axis.text.x = element_text(),
-             axis.text.y = element_blank(),
              axis.title.x = element_blank())
    })
    
@@ -3717,7 +3597,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
    
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = org_f, fill = effect_f)) +
+    p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "org_f", "effect_f")]), aes(x = dose_new, y = org_f, fill = effect_f)) +
       plot.type + 
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
@@ -3797,7 +3677,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = size_f, fill = effect_f)) +
+    p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "size_f", "effect_f")]), aes(x = dose_new, y = size_f, fill = effect_f)) +
       plot.type + 
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
@@ -3875,7 +3755,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = shape_f, fill = effect_f)) +
+    p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "shape_f", "effect_f")]), aes(x = dose_new, y = shape_f, fill = effect_f)) +
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
                          labels = trans_format("log10", scales::math_format(10^.x))) +
@@ -3954,7 +3834,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = poly_f, fill = effect_f)) +
+    p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "poly_f", "effect_f")]), aes(x = dose_new, y = poly_f, fill = effect_f)) +
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
                          labels = trans_format("log10", scales::math_format(10^.x))) +
@@ -4033,7 +3913,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-    p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl1_f, fill = effect_f)) +
+    p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "lvl1_f", "effect_f")]), aes(x = dose_new, y = lvl1_f, fill = effect_f)) +
       coord_trans(x = "log10") +
       scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
                          labels = trans_format("log10", scales::math_format(10^.x))) +
@@ -4110,7 +3990,7 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
                 measurements = n(),
                 studies = n_distinct(article))
     
-  p <- ggplot(aoc_filter(), aes(x = dose_new, y = lvl2_f, fill = effect_f)) +
+  p <- ggplot(na.omit(aoc_filter()[, c("dose_new", "lvl2_f", "effect_f")]), aes(x = dose_new, y = lvl2_f, fill = effect_f)) +
     coord_trans(x = "log10") +
     scale_x_continuous(breaks = scales::trans_breaks("log10", function(x) 10^x, n = 10),
                        labels = trans_format("log10", scales::math_format(10^.x))) +
