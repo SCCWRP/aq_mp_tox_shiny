@@ -16,7 +16,9 @@ body_length_intercept <- 1.1200
 ### --- LOAD FUNCTIONS --- ###
 # each script is now a function. Source files to load functions #
 source("monte carlo/RDAmaker_functions.R") #get ToMEx1.0 fxn
-source("monte carlo/ToMEx2.0_Data_Tidying_functions.R") 
+source("monte carlo/ToMEx2.0_Data_Tidying_functions.R")  #generated tomex2.0 df from individual excel files
+saveRDS(tomex2.0, "monte carlo/ref data/tomex2_input.rds") #necessary to save to port to ecoTox risk repo
+
 
 ####### ---- RUN FUNCTIONS ---- ###
 ### Static with base parameters to ensure everything is working ###
