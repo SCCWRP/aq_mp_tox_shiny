@@ -833,7 +833,8 @@ tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>% group_by(exposure.media)
                           "high nitrogen and phosphorus lake water", "marine sediment seawater", "natural brackish water", "natural river water",
                           "natural seawater", "seawater", "Seawater", "sediment", "sediment filtered seawater", "sediment freshwater",
                           "sediment seawater", "sterile natural seawater", "uv treated filtered seawater", "uv treated seawater") ~ "Yes",
-    chem.add.nominal %in% c("harbor effluent", "seawater", "sewage") ~ "Yes"))
+    chem.add.nominal %in% c("harbor effluent", "seawater", "sewage") ~ "Yes")) %>% 
+  ungroup()
    
 tomex2.0_aoc_setup_final$DOM_present = fct_na_value_to_level(tomex2.0_aoc_setup_final$DOM_present, "No")
 
@@ -1047,7 +1048,8 @@ tomex2.0_aoc_setup_final$media.temp = as.numeric(tomex2.0_aoc_setup_final$media.
 # Calculate the median temperature for each Species
 median_temp_by_group = tomex2.0_aoc_setup_final %>%
   group_by(species_f) %>%
-  summarize(median_temp = median(media.temp, na.rm = TRUE))
+  summarize(median_temp = median(media.temp, na.rm = TRUE)) %>% 
+  ungroup()
 
 # Join the mean temperature back to the original data
 tomex2.0_aoc_setup_final = left_join(tomex2.0_aoc_setup_final, median_temp_by_group, by = "species_f")
@@ -1062,7 +1064,8 @@ tomex2.0_aoc_setup_final = tomex2.0_aoc_setup_final %>% select(-median_temp)
 # Calculate the mean temperature for each organism group
 median_temp_by_group = tomex2.0_aoc_setup_final %>%
   group_by(org_f) %>%
-  summarize(median_temp = median(media.temp, na.rm = TRUE))
+  summarize(median_temp = median(media.temp, na.rm = TRUE)) %>% 
+  ungroup()
 
 # Join the mean temperature back to the original data
 tomex2.0_aoc_setup_final <- left_join(tomex2.0_aoc_setup_final, median_temp_by_group, by = "org_f")
@@ -1070,6 +1073,22 @@ tomex2.0_aoc_setup_final <- left_join(tomex2.0_aoc_setup_final, median_temp_by_g
 # Fill NA values of media.temp with the calculated mean temperature
 tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
   mutate(media.temp = ifelse(is.na(media.temp), median_temp, media.temp))
+
+# Populate NA values for quality scores where studies are not "particle only"
+tomex2.0_aoc_setup_final_test <- tomex2.0_aoc_setup_final %>% 
+  mutate(technical.quality = case_when(exp_type_f == "Particle Only" ~ technical.quality,
+                                       exp_type_f == "Leachate" ~ NA_real_,
+                                       exp_type_f == "Chemical Co-Exposure" ~ NA_real_,
+                                       exp_type_f == "Chemical Transfer" ~ NA_real_)) %>% 
+  mutate(risk.quality = case_when(exp_type_f == "Particle Only" ~ risk.quality,
+                                       exp_type_f == "Leachate" ~ NA_real_,
+                                       exp_type_f == "Chemical Co-Exposure" ~ NA_real_,
+                                       exp_type_f == "Chemical Transfer" ~ NA_real_)) %>%
+  mutate(total.quality = case_when(exp_type_f == "Particle Only" ~ total.quality,
+                                       exp_type_f == "Leachate" ~ NA_real_,
+                                       exp_type_f == "Chemical Co-Exposure" ~ NA_real_,
+                                       exp_type_f == "Chemical Transfer" ~ NA_real_))
+
 
 #Save RDS file
 saveRDS(tomex2.0_aoc_setup_final, file = "aoc_setup_tomex2.RDS")
