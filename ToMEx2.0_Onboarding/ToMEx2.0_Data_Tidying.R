@@ -1075,7 +1075,7 @@ tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
   mutate(media.temp = ifelse(is.na(media.temp), median_temp, media.temp))
 
 # Populate NA values for quality scores where studies are not "particle only"
-tomex2.0_aoc_setup_final_test <- tomex2.0_aoc_setup_final %>% 
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>% 
   mutate(technical.quality = case_when(exp_type_f == "Particle Only" ~ technical.quality,
                                        exp_type_f == "Leachate" ~ NA_real_,
                                        exp_type_f == "Chemical Co-Exposure" ~ NA_real_,
