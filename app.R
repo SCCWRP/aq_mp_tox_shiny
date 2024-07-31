@@ -6812,8 +6812,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     stats::predict(fit_dists(), #Predict fitdist. 
-            average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
-            ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+          #  average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+         #   ic = pred_c_ic_ssd, #tells which information criteria to use - user input
             nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
     }
@@ -6821,8 +6821,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     else{
       set.seed(99)
       predict(fit_dists(), #Predict fitdist. 
-                     average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
-                     ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+            #         average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+             #        ic = pred_c_ic_ssd, #tells which information criteria to use - user input
                      nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
                      ci= TRUE) %>%  #estimates confidence intervals
         as.data.frame() %>% 
@@ -6902,20 +6902,20 @@ output$downloadSsdPlot <- downloadHandler(
       if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     ssd_hc(fit_dists(), #dataset
-           percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+        #   percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
            nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
-           average = pred_c_ave_ssd, #tells whether or not the average models
-           ic = pred_c_ic_ssd, #tells which information criteria to use
+           #average = pred_c_ave_ssd, #tells whether or not the average models
+        #   ic = pred_c_ic_ssd, #tells which information criteria to use
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
       }
     
     #create hc based on user choice of distribution
     else{
       ssd_hc(fit_dists(), #dataset
-             percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+          #   percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
              nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
-             average = pred_c_ave_ssd, #tells whether or not the average models
-             ic = pred_c_ic_ssd, #tells which information criteria to use
+             #average = pred_c_ave_ssd, #tells whether or not the average models
+         #    ic = pred_c_ic_ssd, #tells which information criteria to use
              ci = TRUE) %>%  #flag to estimate confidence intervals using parametric bootstrapping
         as.data.frame() %>% 
         filter(dist == dist_c)
@@ -7020,7 +7020,8 @@ output$downloadSsdPlot <- downloadHandler(
     dose_check_ssd <- input$dose_check_ssd #assign whether or not to use particles/mL or mass/mL
      req(aoc_pred())
     aoc_pred <- aoc_pred() %>% 
-      mutate_if(is.numeric, ~ signif(., 3))
+      mutate_if(is.numeric, ~ signif(., 3)) %>% 
+      select(percent, est, se, lcl, ucl, method, dist, nboot, pboot)
     
       datatable(aoc_pred,
                 rownames = FALSE,
@@ -7034,7 +7035,8 @@ output$downloadSsdPlot <- downloadHandler(
                   buttons = c('copy', 'csv', 'excel')
                 ), 
                 class = "compact",
-                colnames = c("Percent", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", "Upper 95% Confidence Limit", "Distribution", "Proportion of Data Sets Successfully Fitted"),
+                colnames = c("Hazard Concentration (%)", paste0("Estimated Mean Concentration ",  dose_check_ssd), paste0("Standard Error ",  dose_check_ssd), "Lower 95% Confidence Limit", 
+                             "Upper 95% Confidence Limit", "Fitting Method", "Distribution", "Bootstrap Iterations", "Proportion of Data Sets Successfully Fitted"),
                 caption = "Predicted species sensitivity distribution concentrations with uncertanties.
                 Note: Mehinto et al. (2022) (doi: 10.1186/s43591-022-00033-3) refers to the point estimate as the 'median' which is interchangable with the 'estimated mean concentration' reported in the table below. If 10 or more iterations are used to bootstrap the model, the mean and median become identical.")
                
