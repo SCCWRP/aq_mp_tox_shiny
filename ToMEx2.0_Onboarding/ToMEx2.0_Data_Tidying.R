@@ -1003,7 +1003,7 @@ tomex2.0_aoc_setup_final$size.width.um.used.for.conversions[tomex2.0_aoc_setup_f
   tomex2.0_aoc_setup_final$size.length.um.used.for.conversions[tomex2.0_aoc_setup_final$shape_f == "Sphere" & !is.na(tomex2.0_aoc_setup_final$size.length.um.used.for.conversions)]
 
 #Add 1 as sample size for Algae, Bacterium, Cyanobacteria, Plant, and Mixed
-%>% %>%
+tomex2.0_aoc_setup_final <- tomex2.0_aoc_setup_final %>%
   mutate(sample.size = ifelse(org_f %in% c("Algae", "Bacterium", "Cyanobacteria", "Dinoflagellate"), 1, sample.size))
 
 #Calculate the median density for each polymer

@@ -6812,8 +6812,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     stats::predict(fit_dists(), #Predict fitdist. 
-          #  average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
-         #   ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+          average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+           ic = pred_c_ic_ssd, #tells which information criteria to use - user input
             nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
             ci= TRUE) #estimates confidence intervals
     }
@@ -6821,8 +6821,8 @@ server <- function (input, output){  #dark mode: #(input, output, session) {
     else{
       set.seed(99)
       predict(fit_dists(), #Predict fitdist. 
-            #         average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
-             #        ic = pred_c_ic_ssd, #tells which information criteria to use - user input
+                    average = pred_c_ave_ssd, #flag tells whether or not to average models from user input
+                   ic = pred_c_ic_ssd, #tells which information criteria to use - user input
                      nboot = nbootNum, #number of bootstrap samples to use to estimate SE and CL
                      ci= TRUE) %>%  #estimates confidence intervals
         as.data.frame() %>% 
@@ -6902,20 +6902,20 @@ output$downloadSsdPlot <- downloadHandler(
       if(pred_c_ave_ssd == TRUE){
     set.seed(99)
     ssd_hc(fit_dists(), #dataset
-        #   percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+          percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
            nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
-           #average = pred_c_ave_ssd, #tells whether or not the average models
-        #   ic = pred_c_ic_ssd, #tells which information criteria to use
+        average = pred_c_ave_ssd, #tells whether or not the average models
+          ic = pred_c_ic_ssd, #tells which information criteria to use
            ci = TRUE) #flag to estimate confidence intervals using parametric bootstrapping
       }
     
     #create hc based on user choice of distribution
     else{
       ssd_hc(fit_dists(), #dataset
-          #   percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
+            percent = pred_c_hc_ssd, #numeric threshold input by user (default is 0.05)
              nboot = nbootNum, # number of bootstrap predictions to make. 10 is minimum, 1,000 is default
-             #average = pred_c_ave_ssd, #tells whether or not the average models
-         #    ic = pred_c_ic_ssd, #tells which information criteria to use
+         average = pred_c_ave_ssd, #tells whether or not the average models
+            ic = pred_c_ic_ssd, #tells which information criteria to use
              ci = TRUE) %>%  #flag to estimate confidence intervals using parametric bootstrapping
         as.data.frame() %>% 
         filter(dist == dist_c)
