@@ -6967,7 +6967,8 @@ output$downloadSsdPlot <- downloadHandler(
       geom_xribbon(aes_string(xmin = "lcl", xmax = "ucl", y = "percent/100"), alpha = 0.2, color = "grey") +
       geom_line(aes_string(y = "percent/100"), color = "gray") +
       geom_point(data = aoc_ssd,aes(x = Conc, y =frac, color = Group)) + 
-      geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5) + #species labels
+      #geom_text(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group)) +
+      geom_text_repel(data = aoc_ssd, aes(x = Conc, y = frac, label = Species, color = Group), nudge_x = 0.2, size = 4, segment.alpha = 0.5, max.overlaps = Inf) + #species labels
       scale_y_continuous("Species Affected (%)", labels = scales::percent, limits = c(0,1)) +
       #expand_limits(x = c(0.000000001, 100000)) + #ensure species labels fit
       # reactive x axis based on alignment
