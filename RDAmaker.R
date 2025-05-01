@@ -5,6 +5,12 @@ library(tidyverse) #General everything
 
 source("functions.R") # necessary for surface area, volume calculations
 
+R.ave.water.marine <- 0.77 # average length to width ratio of microplastics in marine environment (Kooi et al. 2021)
+R.ave.water.freshwater <- 0.67
+R.ave.sediment.marine <- 0.75
+R.ave.sediment.freshwater <- 0.70
+
+
 ##### Read in Data ####
 aoc <- read_csv("AquaticOrganisms_Clean_final.csv", guess_max = 10000) %>% rowid_to_column()
 
@@ -55,7 +61,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
     polymer == "Not Reported" ~ "Not Reported"))) %>%
   # taxonomic category data tidying.
   mutate(org_f = factor(organism.group, levels = c("Algae", "Annelida", "Bacterium", "Cnidaria", "Crustacea",
-                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Nematoda", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
+                                                   "Echinoderm", "Fish", "Insect", "Mollusca", "Plant", "Rotifera", "Mixed"))) %>% # order our different organisms.
   mutate(lvl1_f = factor(case_when(lvl1 == "alimentary.excretory" ~ "Alimentary, Excretory",
                                    lvl1 == "behavioral.sense.neuro" ~ "Behavioral, Sensory, Neurological",
                                    lvl1 == "circulatory.respiratory" ~ "Circulatory, Respiratory",
@@ -503,7 +509,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                    lvl3 == "pcc.level"~"Protein Carbonylation Content",
                                    lvl3 == "pche.activity"~"Pseudocholinesterase Activity",
                                    lvl3 == "pepckc.mrnaexpression"~"pepckc mRNA expression",
-                                   lvl3 == "percent.dstage.larvae"~"Pertengage of D-stage Larvae",
+                                   lvl3 == "percent.dstage.larvae"~"Percentage of D-stage Larvae",
                                    lvl3 == "percent.dveliger"~"Percentage of Veliger Larvae",
                                    lvl3 == "percent.motile.sperm"~"Percentage of Motile Sperm",
                                    lvl3 == "percent.tank.used"~"Percentage of Tank Used",
@@ -650,6 +656,7 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   mutate(env_f = factor(case_when(environment == "Freshwater"~"Freshwater",
                                   environment == "Marine" ~ "Marine",
                                   environment == "Terrestrial" ~ "Terrestrial"))) %>%
+  mutate(species = if_else(genus == "Mytilus" & is.na(species), "species", species)) %>% 
   mutate(species_f = as.factor(paste(genus,species))) %>% 
   mutate(dose.mg.L.master.converted.reported = factor(dose.mg.L.master.converted.reported)) %>%
   mutate(dose.particles.mL.master.converted.reported = factor(dose.particles.mL.master.converted.reported)) %>% 
@@ -680,9 +687,14 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
   group_by(doi) %>% 
   mutate(treatment_range = ifelse(min(treatments) == max(treatments), paste0(treatments), paste0(min(treatments),"-",max(treatments)))) %>% 
   ungroup() %>% 
+  #annotate whether max size ingest was estimated or reported
+  mutate(max.size.ingest.reported.estimated = case_when(
+    is.na(max.size.ingest.mm) ~ "estimated",  # If the value is NA, label it "estimated"
+    TRUE ~ "reported"                   # Otherwise, label it "converted"
+  )) %>% 
   #calculate maximum ingestible size (if not already in database)
   mutate(max.size.ingest.mm = ifelse(is.na(max.size.ingest.mm), 
-                                     10^(0.9341 * log10(body.length.cm) - 1.1200) * 10,  #(Jamm et al 2020 Nature paper)correction for cm to mm
+                                     10^(0.9341 * log10(body.length.cm * 10) - 1.1200),  #(Jamm et al 2020 Nature paper)correction for cm to mm
                                      max.size.ingest.mm)) %>%  # if already present, just use that
   mutate(max.size.ingest.um = 1000 * max.size.ingest.mm) %>%  #makes it less confusing below
   #Make factor for experiment type
@@ -692,86 +704,120 @@ aoc_setup <- aoc_v1 %>% # start with original dataset
                                        chem.exp.typ.nominal == "sorbed" ~ "Chemical Transfer"))) %>%
   
   #### Recalculation of surface area and volume based on shape ####
-  #calculate surface area based on shape
-#calculate surface area based on shape
-mutate(particle.surface.area.um2 = case_when(shape == "sphere" ~ particle.surface.area.um2,
-                                             shape == "fiber" & is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assum 15 um width (kooi et al 2021)
-                                             shape == "fiber" & !is.na(size.width.um.used.for.conversions) ~ SAfnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width is known
-                                             shape == "fragment" ~ SAfnx(a = size.length.um.used.for.conversions,
-                                                                         b = 0.77 * size.length.um.used.for.conversions,
-                                                                         c = 0.77 * 0.67 * size.length.um.used.for.conversions))) %>% 
-  mutate(particle.volume.um3 = case_when(shape == "sphere" ~ particle.volume.um3, #sphere volume is correct in excel
-                                         shape == "fiber" & is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = 15, length = size.length.um.used.for.conversions), #assume 15 um as width (kooi et al 2021)
-                                         shape == "fiber" & !is.na(size.width.um.used.for.conversions) ~ volumefnx_fiber(width = size.width.um.used.for.conversions, length = size.length.um.used.for.conversions), #if width reported
-                                         shape == "fragment" ~ volumefnx(R = 0.77, L = size.length.um.used.for.conversions))) %>% 
-  
-  #calcualte dose metrics accordingly
-  mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
-  mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
+mutate(R.ave = case_when(environment == "Marine" & exposure.route == "water" ~ R.ave.water.marine,
+                         environment == "Marine" & exposure.route == "sediment" ~ R.ave.sediment.marine,
+                         environment == "Freshwater" & exposure.route == "water" ~ R.ave.water.freshwater,
+                         environment == "Freshwater" & exposure.route == "sediment" ~ R.ave.sediment.freshwater)) %>% 
+ 
   
   # create label for polydispersity
   mutate(polydispersity = case_when(
-    is.na(size.length.min.mm.nominal) ~ "monodisperse",
-    !is.na(size.length.min.mm.nominal) ~ "polydisperse")) %>% 
+    is.na(size.length.min.mm.nominal|size.length.min.mm.measured) ~ "monodisperse",
+    !is.na(size.length.min.mm.nominal|size.length.min.mm.measured) ~ "polydisperse")) %>% 
   
   ####prioritize measured parameters for conversions ###
   # minima
+  mutate(H_W_ratio = 0.67) %>%  #Kooi et al. (2021)
   mutate(size.length.min.um.used.for.conversions = case_when(
     is.na(size.length.min.mm.measured) ~ size.length.min.mm.nominal * 1000,
     !is.na(size.length.min.mm.measured) ~ size.length.min.mm.measured * 1000)) %>% 
   mutate(size.width.min.um.used.for.conversions = case_when(
     shape == "sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape == "fiber" ~ 0.77 * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
-    shape == "Not Reported" ~ 0.77 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape == "fragment" ~ 0.77 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fiber" ~ R.ave * size.length.min.um.used.for.conversions, #median holds for all particles (Kooi et al 2021)
+    shape == "Not Reported" ~ R.ave * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fragment" ~ R.ave * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
   mutate(size.height.min.um.used.for.conversions = case_when(
     shape == "sphere" ~ size.length.min.um.used.for.conversions, #all dims same
-    shape == "Not Reported" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape == "fiber" ~  0.77 * size.length.min.um.used.for.conversions, #height same as width for fibers
-    shape == "fragment" ~ 0.77 * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape == "Not Reported" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fiber" ~  R.ave * size.length.min.um.used.for.conversions, #height same as width for fibers
+    shape == "fragment" ~ R.ave * 0.67 * size.length.min.um.used.for.conversions)) %>% # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
   # maxima
   mutate(size.length.max.um.used.for.conversions = case_when(
     is.na(size.length.max.mm.measured) ~ size.length.max.mm.nominal * 1000,
     !is.na(size.length.max.mm.measured) ~ size.length.max.mm.measured * 1000)) %>% 
   mutate(size.width.max.um.used.for.conversions = case_when(
     shape == "sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape == "fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
-    shape == "Not Reported" ~ 0.77 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape == "fragment" ~ 0.77 * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fiber" ~ R.ave * size.length.max.um.used.for.conversions, #median holds for all particles (Kooi et al 2021) #there are no fibers
+    shape == "Not Reported" ~ R.ave * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fragment" ~ R.ave * size.length.max.um.used.for.conversions)) %>% # average width to length ratio in the marine environment (kooi et al 2021)
+  #estimate height based on shape (data doesn't exist in ToMEx for monodisperse, because never reported)
+  mutate(size.height.um.used.for.conversions = case_when(
+    shape_f == "Sphere" ~ size.length.um.used.for.conversions, # if spherical, height = length
+    shape_f != "Sphere" ~ size.width.um.used.for.conversions * H_W_ratio # if not spherical, height = width * H:W ratio
+  )) %>% 
   mutate(size.height.max.um.used.for.conversions = case_when(
     shape == "sphere" ~ size.length.max.um.used.for.conversions, #all dims same
-    shape == "Not Reported" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
-    shape == "fiber" ~ 0.77 * size.length.max.um.used.for.conversions, #hieght same as width
-    shape == "fragment" ~ 0.77 * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+    shape == "Not Reported" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions, # average width to length ratio in the marine environment (kooi et al 2021)
+    shape == "fiber" ~ R.ave * size.length.max.um.used.for.conversions, #hieght same as width
+    shape == "fragment" ~ R.ave * 0.67 * size.length.max.um.used.for.conversions)) %>%  # average width to length ratio in the marine environment AND average height to width ratio (kooi et al 2021)
+  # calculate surface are for monodisperse particles
+  mutate(particle.surface.area.um2 = SAfnx(length = size.length.um.used.for.conversions,
+                                           width = size.width.um.used.for.conversions,
+                                           height = size.height.um.used.for.conversions,
+                                           R = R.ave,
+                                           H_W_ratio = H_W_ratio)) %>% 
+  # calculate min/max SA for polydisperse mixtures (being sure to use translocation-restricted polydisperse upper sizes)
+  mutate(particle.surface.area.um2.min = SAfnx(length = size.length.min.um.used.for.conversions,
+                                               width = size.width.min.um.used.for.conversions,
+                                               height = size.height.min.um.used.for.conversions,
+                                               R = R.ave,
+                                               H_W_ratio = H_W_ratio),
+         particle.surface.area.um2.max = SAfnx(length = size.length.max.um.used.for.conversions,
+                                               width = size.width.max.um.used.for.conversions,
+                                               height = size.height.max.um.used.for.conversions,
+                                               R = R.ave,
+                                               H_W_ratio = H_W_ratio)) %>% 
+  # calculate volume for monodisperse particles #
+  mutate(particle.volume.um3 = volumefnx(R = R.ave,
+                                         length = size.length.um.used.for.conversions, 
+                                         width = size.width.um.used.for.conversions,
+                                         height = size.height.um.used.for.conversions
+  )) %>% 
+  # calculate min and max volume when polydisperse particles are used (being sure to use ingestion-restricted sizes)
+  mutate(particle.volume.um3.min = volumefnx(R = R.ave, 
+                                             length = size.length.min.um.used.for.conversions,
+                                             width = size.width.min.um.used.for.conversions, 
+                                             height = size.height.min.um.used.for.conversions),
+         particle.volume.um3.max = volumefnx(R = R.ave,
+                                             length = size.length.max.um.used.for.conversions,
+                                             width = size.width.max.um.used.for.conversions, 
+                                             height = size.height.max.um.used.for.conversions)) %>% 
+  #calculate minimum and maximum mass for polydisperse particles
+  mutate(mass.per.particle.mg.min = massfnx(v = particle.volume.um3.min, p = density.g.cm3) * 1e-3) %>% #equation uses g/cm3
+  mutate(mass.per.particle.mg.max = massfnx(v = particle.volume.um3.max, p = density.g.cm3) * 1e-3) %>%   #equation uses g/cm3
+  mutate(mass.per.particle.mg = massfnx(v = particle.volume.um3, p = density.g.cm3) * 1e-3) %>%   #equation uses g/cm3
   
-  #calculate minimum and maximum surface area for polydisperse particles
-  mutate(particle.surface.area.um2.min = SAfnx(a = size.length.min.um.used.for.conversions,
-                                               b = size.width.min.um.used.for.conversions,
-                                               c = size.height.min.um.used.for.conversions)) %>%
-  mutate(particle.surface.area.um2.max = SAfnx(a = size.length.max.um.used.for.conversions,
-                                               b = size.width.max.um.used.for.conversions,
-                                               c = size.height.max.um.used.for.conversions)) %>% 
-  #calculate minimum and maximum volume for polydisperse particles
-  mutate(particle.volume.um3.min = volumefnx_poly(length = size.length.min.um.used.for.conversions,
-                                                  width =  size.width.min.um.used.for.conversions)) %>% 
-  mutate(particle.volume.um3.max = volumefnx_poly(length = size.length.max.um.used.for.conversions,
-                                                  width = size.width.max.um.used.for.conversions)) %>% 
-  #calculate minimum and maximum volume for polydisperse particles
-  mutate(mass.per.particle.mg.min = massfnx_poly(length = size.length.min.um.used.for.conversions,
-                                                 width = size.width.min.um.used.for.conversions,
-                                                 p = density.g.cm3)) %>% #equation usess g/cm3
-  mutate(mass.per.particle.mg.max = massfnx_poly(length = size.length.max.um.used.for.conversions,
-                                                 width = size.width.max.um.used.for.conversions,
-                                                 p = density.g.cm3)) %>%   #equation usess g/cm3
+  #calcualte dose metrics accordingly
+  mutate(dose.surface.area.um2.mL.master = particle.surface.area.um2 * dose.particles.mL.master) %>% 
+  mutate(particle.surface.area.um2.mg = particle.surface.area.um2 / mass.per.particle.mg) %>% 
+  
+  #Sediment-based concentration metrics
+  mutate(dose.mg.kg.sediment.master = if_else(!is.na(dose.mg.kg.sed.measured), dose.mg.kg.sed.measured, dose.mg.kg.sed.nominal)) %>% #Create master column with measured concentrations preferred
+  mutate(dose.particles.kg.sediment.master = dose.particles.kg.sed.nominal) %>% #Create master column with measured concentrations preferred (only nominal concentrations available)
+  
+  #Create reported vs. converted columns for sediment-based metrics
+  mutate(dose.mg.kg.sediment.master.converted.reported = if_else(!is.na(dose.mg.kg.sediment.master), "reported", NA_character_)) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = if_else(!is.na(dose.particles.kg.sediment.master), "reported", NA_character_)) %>%  
+
+  #Sediment Mass (converted)
+  mutate(dose.mg.kg.sediment.master = ifelse(is.na(dose.mg.kg.sediment.master), (dose.particles.kg.sediment.master)*mass.per.particle.mg, dose.mg.kg.sediment.master)) %>% 
+  mutate(dose.mg.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.mg.kg.sediment.master)&is.na(dose.mg.kg.sediment.master.converted.reported)), "converted", dose.mg.kg.sediment.master.converted.reported))) %>% 
+  
+  #Sediment Count (converted)
+  mutate(dose.particles.kg.sediment.master = ifelse(is.na(dose.particles.kg.sediment.master), (dose.mg.kg.sediment.master)/mass.per.particle.mg, dose.particles.kg.sediment.master)) %>% 
+  mutate(dose.particles.kg.sediment.master.converted.reported = factor(ifelse((!is.na(dose.particles.kg.sediment.master)&is.na(dose.particles.kg.sediment.master.converted.reported)), "converted", dose.particles.kg.sediment.master.converted.reported))) %>%  
   
   #Volume
   mutate(dose.um3.mL.master = particle.volume.um3 * dose.particles.mL.master) %>%  #calculate volume/mL
+  mutate(dose.um3.kg.sediment.master = particle.volume.um3 * dose.particles.kg.sediment.master) %>% #calculate volume/kg sediment
   
   #Surface Area
   mutate(dose.um2.mL.master = as.numeric(particle.surface.area.um2) * dose.particles.mL.master) %>% 
+  mutate(dose.um2.kg.sediment.master = as.numeric(particle.surface.area.um2) * dose.particles.kg.sediment.master) %>% 
   
   #Specific Surface Area
   mutate(dose.um2.ug.mL.master = dose.um2.mL.master / (mass.per.particle.mg / 1000)) %>% #correct mg to ug
+  mutate(dose.um2.ug.kg.sediment.master = dose.um2.kg.sediment.master/(mass.per.particle.mg / 1000)) %>% 
   
   #Additional tidying for nicer values
   mutate(authors = gsub(".", " & ", as.character(authors), fixed = TRUE)) %>% 
@@ -972,17 +1018,17 @@ aoc_quality <- aoc_setup %>%
                               Criteria == "tech.10" ~ "Exposure Homogeneity",
                               Criteria == "tech.11" ~ "Exposure Assessment",
                               Criteria == "tech.12" ~ "Replication",
-                              Criteria == "risk.13" ~ "Endpoints",
+                              Criteria == "risk.13" ~ "Endpoints*",
                               Criteria == "risk.14" ~ "Food Availability",
                               Criteria == "risk.15" ~ "Effect Thresholds",
-                              Criteria == "risk.16" ~ "Dose Response",
+                              Criteria == "risk.16" ~ "Dose Response*",
                               Criteria == "risk.17" ~ "Concentration Range",
                               Criteria == "risk.18" ~ "Aging and Biofouling",
                               Criteria == "risk.19" ~ "Microplastic Diversity",
                               Criteria == "risk.20" ~ "Exposure Time")) %>% 
   #Create factor for criteria and set order - need to be in reverse order here to plot correctly
-  mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Aging and Biofouling", "Concentration Range", "Dose Response",
-                                                  "Effect Thresholds", "Food Availability", "Endpoints", "Replication", "Exposure Assessment", "Exposure Homogeneity",
+  mutate(Criteria_f = factor(Criteria, levels = c("Exposure Time", "Microplastic Diversity", "Aging and Biofouling", "Concentration Range", "Dose Response*",
+                                                  "Effect Thresholds", "Food Availability", "Endpoints*", "Replication", "Exposure Assessment", "Exposure Homogeneity",
                                                   "Exposure Verification", "Background Contamination", "Laboratory Preparation","Chemical Purity","Data Reporting*",
                                                   "Source of Microplastics*","Polymer Type*","Particle Shape*","Particle Size*","Exposure Duration*","Control Group*",
                                                   "Sample Size*", "Test Species*", "Administration Route*","Test Medium*")))
@@ -996,3 +1042,6 @@ saveRDS(aoc_search, file = "aoc_search.RDS")
 saveRDS(aoc_setup, file = "aoc_setup.RDS")
 saveRDS(aoc_v1, file = "aoc_v1.RDS")
 saveRDS(aoc_z, file = "aoc_z.RDS")
+
+library(crayon)
+cat(blue("ToMEx 1 dataset prepared and RDS files saved in main folder!"))
